@@ -62,7 +62,8 @@ struct GridSequencerView: View {
                                 isPlaying: audioEngine.isPlaying && step == audioEngine.currentPlayingStep,
                                 selectedInstrument: audioEngine.selectedInstrument,
                                 instrumentColor: getInstrumentColor(for: audioEngine.selectedInstrument),
-                                darkerColor: getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument))
+                                darkerColor: getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument)),
+                                octave: audioEngine.getGridCellOctave(row: track, col: step)
                             ) {
                                 audioEngine.toggleGridCell(row: track, col: step)
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -92,6 +93,7 @@ struct GridCell: View {
     let selectedInstrument: Int
     let instrumentColor: Color
     let darkerColor: Color
+    let octave: Int
     let action: () -> Void
     
     var body: some View {
@@ -146,8 +148,20 @@ struct GridCell: View {
                 }
             }
         } else {
-            // All other instruments: use the selected instrument's color scheme
-            return isActive ? darkerColor : instrumentColor.opacity(0.3)
+            // All other instruments: use the selected instrument's color scheme with octave shading
+            if isActive {
+                // Adjust color brightness based on octave
+                switch octave {
+                case -2: return darkerColor.opacity(0.5)  // Very low octave
+                case -1: return darkerColor.opacity(0.7)  // Low octave
+                case 0: return darkerColor                 // Base octave
+                case 1: return instrumentColor.opacity(0.9)   // High octave - use base color lighter
+                case 2: return instrumentColor.opacity(0.8)   // Very high octave - even lighter base
+                default: return darkerColor
+                }
+            } else {
+                return instrumentColor.opacity(0.3)
+            }
         }
     }
 }

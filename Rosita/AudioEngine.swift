@@ -174,8 +174,8 @@ class AudioEngine: ObservableObject {
                         let drumNote = drumRowToNote(row: row)
                         playDrumSound(drumType: drumNote)
                     } else {
-                        // Melodic instruments
-                        let note = rowToNote(row: row, instrument: instrument)
+                        // Melodic instruments - use stored note or default
+                        let note = instrumentNotes[key] ?? rowToNote(row: row, instrument: instrument)
                         playNote(instrument: instrument, note: note)
                     }
                 }
@@ -381,6 +381,24 @@ class AudioEngine: ObservableObject {
         return instrumentSteps[key] ?? false
     }
     
+    func getGridCellOctave(row: Int, col: Int) -> Int {
+        guard row >= 0 && row < 8 && col >= 0 && col < 16 else { return 0 }
+        
+        let key = "\(selectedInstrument)_\(row)_\(col)"
+        if let note = instrumentNotes[key] {
+            // Calculate octave relative to the instrument's base octave
+            let baseNote: Int
+            switch selectedInstrument {
+            case 0: baseNote = 60 // C4
+            case 1: baseNote = 36 // C2
+            case 2: baseNote = 48 // C3
+            default: baseNote = 60
+            }
+            return (note - baseNote) / 12
+        }
+        return 0 // Default octave
+    }
+    
     func clearGrid() {
         // Clear only current instrument's steps
         let keysToRemove = instrumentSteps.keys.filter { $0.hasPrefix("\(selectedInstrument)_") }
@@ -391,6 +409,8 @@ class AudioEngine: ObservableObject {
     
     // Simple storage for instrument steps
     @Published private var instrumentSteps: [String: Bool] = [:]
+    // Store actual note values for each step
+    private var instrumentNotes: [String: Int] = [:]
     
     // MARK: - Effects Control
     
@@ -560,6 +580,7 @@ class AudioEngine: ObservableObject {
             // Set the step in the grid
             let key = "\(selectedInstrument)_\(row)_\(currentRecordingStep)"
             instrumentSteps[key] = true
+            instrumentNotes[key] = note  // Store the actual note value
             
             // Move to next step
             currentRecordingStep += 1
@@ -575,6 +596,7 @@ class AudioEngine: ObservableObject {
                 let row = noteToGridRow(note: note, instrument: selectedInstrument)
                 let key = "\(selectedInstrument)_\(row)_\(currentPlayingStep)"
                 instrumentSteps[key] = true
+                instrumentNotes[key] = note  // Store the actual note value
                 
                 // Mark this note as recently recorded to prevent double triggering
                 recentlyRecordedNotes.insert(key)

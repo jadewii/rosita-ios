@@ -4,6 +4,8 @@ struct ContentView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @State private var showHelp = false
     @State private var showExportAlert = false
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @Environment(\.verticalSizeClass) var verticalSizeClass
     
     var body: some View {
         GeometryReader { geometry in
@@ -152,6 +154,47 @@ struct ContentView: View {
                             // Effects - aligned with grid end
                             EffectsView()
                                 .frame(maxHeight: .infinity)
+                            
+                            // Octave controls
+                            HStack(spacing: 8) {
+                                Text("OCTAVE")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.black)
+                                
+                                RetroButton(
+                                    title: "-",
+                                    color: Color(hex: "FF69B4"),
+                                    textColor: .black,
+                                    action: {
+                                        if audioEngine.transpose > -24 {
+                                            audioEngine.transpose -= 12
+                                        }
+                                    },
+                                    width: 40,
+                                    height: 32,
+                                    fontSize: 18
+                                )
+                                
+                                Text("\(audioEngine.transpose / 12)")
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 30)
+                                
+                                RetroButton(
+                                    title: "+",
+                                    color: Color(hex: "FF69B4"),
+                                    textColor: .black,
+                                    action: {
+                                        if audioEngine.transpose < 24 {
+                                            audioEngine.transpose += 12
+                                        }
+                                    },
+                                    width: 40,
+                                    height: 32,
+                                    fontSize: 18
+                                )
+                            }
+                            .padding(.bottom, 4)
                         }
                         .frame(width: 200) // Fixed width for left column
                         
@@ -162,9 +205,9 @@ struct ContentView: View {
                     .frame(maxHeight: .infinity)
                     .padding(.horizontal, 8)
                     
-                    // BOTTOM - Piano keyboard
+                    // BOTTOM - Piano keyboard with adaptive height
                     PianoKeyboardView()
-                        .frame(height: max(120, geometry.size.height * 0.18))
+                        .frame(height: horizontalSizeClass == .compact ? 100 : max(120, geometry.size.height * 0.18))
                         .padding(.horizontal, 8)
                         .padding(.bottom, 4)
                 }
