@@ -63,6 +63,9 @@ class AudioEngine: ObservableObject {
     @Published var currentRecordingStep = 0
     @Published var recordingMode: RecordingMode = .freeForm
     
+    // Track recently recorded notes to prevent double triggering
+    private var recentlyRecordedNotes: Set<String> = []
+    
     
     enum RecordingMode: String {
         case freeForm = "FREE"
@@ -159,6 +162,12 @@ class AudioEngine: ObservableObject {
         for instrument in 0..<4 {
             for row in 0..<8 {
                 let key = "\(instrument)_\(row)_\(currentStep)"
+                
+                // Skip if this was just recorded to prevent double triggering
+                if recentlyRecordedNotes.contains(key) {
+                    continue
+                }
+                
                 if instrumentSteps[key] == true {
                     if instrument == 3 {
                         // Drums
@@ -566,6 +575,14 @@ class AudioEngine: ObservableObject {
                 let row = noteToGridRow(note: note, instrument: selectedInstrument)
                 let key = "\(selectedInstrument)_\(row)_\(currentPlayingStep)"
                 instrumentSteps[key] = true
+                
+                // Mark this note as recently recorded to prevent double triggering
+                recentlyRecordedNotes.insert(key)
+                
+                // Clear it after a short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    self?.recentlyRecordedNotes.remove(key)
+                }
             }
         }
     }

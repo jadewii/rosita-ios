@@ -61,26 +61,6 @@ struct ContentView: View {
                                 )
                             }
                             
-                            // BPM display
-                            HStack(spacing: 3) {
-                                Text("BPM:")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(.black)
-                                
-                                Text("\(Int(audioEngine.bpm))")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.black)
-                                    .frame(width: 36, height: 42)
-                                    .background(
-                                        Rectangle()
-                                            .fill(Color.pink)
-                                            .overlay(
-                                                Rectangle()
-                                                    .stroke(Color.black, lineWidth: 2)
-                                            )
-                                    )
-                            }
-                            
                             // Instrument, Arpeggiator, and utility buttons in one row
                             HStack(spacing: 8) {
                                 InstrumentSelectorView()
@@ -123,11 +103,39 @@ struct ContentView: View {
                         Spacer()
                             .frame(height: 12)
                         
-                        // Second row: Just pattern slots centered with more space
-                        HStack {
+                        // Second row: Pattern slots and BPM control
+                        HStack(spacing: 16) {
                             Spacer()
+                            
                             PatternSlotsView()
                                 .frame(height: 56)
+                            
+                            // BPM control with slider
+                            VStack(spacing: 4) {
+                                HStack(spacing: 4) {
+                                    Text("BPM")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.black)
+                                    
+                                    Text("\(Int(audioEngine.bpm))")
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.black)
+                                        .frame(width: 36, height: 20)
+                                        .background(
+                                            Rectangle()
+                                                .fill(Color.white)
+                                                .overlay(
+                                                    Rectangle()
+                                                        .stroke(Color.black, lineWidth: 1)
+                                                )
+                                        )
+                                }
+                                
+                                Slider(value: $audioEngine.bpm, in: 60...200, step: 1)
+                                    .frame(width: 120)
+                                    .accentColor(Color(hex: "FF1493"))
+                            }
+                            
                             Spacer()
                         }
                     }
