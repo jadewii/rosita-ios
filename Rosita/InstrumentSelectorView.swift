@@ -6,14 +6,14 @@ struct InstrumentSelectorView: View {
     var body: some View {
         VStack(spacing: 4) {
             // Title
-            Text("Instrument")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.white)
+            Text("INSTRUMENT")
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundColor(.black)
             
-            // Instrument buttons in a single row
+            // Instrument buttons in a single row - retro style
             HStack(spacing: 6) {
                 ForEach(0..<4) { index in
-                    InstrumentButton(
+                    RetroInstrumentButton(
                         index: index,
                         isSelected: audioEngine.selectedInstrument == index,
                         type: InstrumentType(rawValue: index) ?? .synth
@@ -25,17 +25,17 @@ struct InstrumentSelectorView: View {
         }
         .padding(8)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.white.opacity(0.15))
+            Rectangle()
+                .fill(Color.white)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    Rectangle()
+                        .stroke(Color.black, lineWidth: 2)
                 )
         )
     }
 }
 
-struct InstrumentButton: View {
+struct RetroInstrumentButton: View {
     let index: Int
     let isSelected: Bool
     let type: InstrumentType
@@ -43,25 +43,58 @@ struct InstrumentButton: View {
     
     var body: some View {
         Button(action: {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(.easeInOut(duration: 0.1)) {
                 action()
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
         }) {
             Text(type.displayNumber)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.white)
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(isSelected ? .black : .white)
                 .frame(width: 36, height: 36)
                 .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(isSelected ? type.color.opacity(0.8) : Color.white.opacity(0.2))
+                    Rectangle()
+                        .fill(isSelected ? type.color : Color.black)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.white, lineWidth: isSelected ? 2 : 1)
+                            ZStack {
+                                // 3D bevel effect
+                                if isSelected {
+                                    // Top and left highlight
+                                    VStack(spacing: 0) {
+                                        Rectangle()
+                                            .fill(Color.white.opacity(0.4))
+                                            .frame(height: 2)
+                                        Spacer()
+                                    }
+                                    
+                                    HStack(spacing: 0) {
+                                        Rectangle()
+                                            .fill(Color.white.opacity(0.4))
+                                            .frame(width: 2)
+                                        Spacer()
+                                    }
+                                    
+                                    // Bottom and right shadow
+                                    VStack(spacing: 0) {
+                                        Spacer()
+                                        Rectangle()
+                                            .fill(Color.black.opacity(0.6))
+                                            .frame(height: 2)
+                                    }
+                                    
+                                    HStack(spacing: 0) {
+                                        Spacer()
+                                        Rectangle()
+                                            .fill(Color.black.opacity(0.6))
+                                            .frame(width: 2)
+                                    }
+                                }
+                                
+                                Rectangle()
+                                    .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                            }
                         )
-                        .shadow(color: isSelected ? type.color.opacity(0.6) : Color.clear, radius: 8)
                 )
-                .scaleEffect(isSelected ? 1.1 : 1.0)
         }
     }
 }

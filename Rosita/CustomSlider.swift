@@ -136,23 +136,8 @@ struct CustomEffectSlider: View {
                 }
                 .frame(height: 24)
                 
-                // Enable/disable checkbox
-                Button(action: {
-                    isEnabled.toggle()
-                }) {
-                    Rectangle()
-                        .fill(isEnabled ? thumbColor : Color.gray.opacity(0.3))
-                        .frame(width: 20, height: 20)
-                        .overlay(
-                            Rectangle()
-                                .stroke(Color.black, lineWidth: 2)
-                        )
-                        .overlay(
-                            Text(isEnabled ? "✓" : "")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.white)
-                        )
-                }
+                // Enable/disable retro toggle
+                RetroToggleButton(isOn: $isEnabled)
             }
         }
     }

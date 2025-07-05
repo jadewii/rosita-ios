@@ -16,8 +16,8 @@ struct EffectsView: View {
     }
     
     private var titleView: some View {
-        Text("Effects")
-            .font(.system(size: 14, weight: .bold))
+        Text("EFFECTS")
+            .font(.system(size: 14, weight: .bold, design: .monospaced))
             .foregroundColor(.black)
     }
     
@@ -45,12 +45,11 @@ struct EffectsView: View {
     }
     
     private var backgroundView: some View {
-        RoundedRectangle(cornerRadius: 12)
+        Rectangle()
             .fill(Color.white.opacity(0.8))
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.black, lineWidth: 2)
+                Rectangle()
+                    .stroke(Color.black, lineWidth: 3)
             )
     }
 }
-

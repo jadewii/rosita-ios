@@ -24,6 +24,7 @@ class AudioEngine: ObservableObject {
     
     // Pattern storage
     @Published var patterns: [Pattern] = Array(repeating: Pattern(), count: 8)
+    @Published var currentPatternSlot: Int = 0
     
     // ADSR values
     @Published var attack: Double = 0.01
@@ -227,6 +228,21 @@ class AudioEngine: ObservableObject {
     func updateADSR() {
         // TODO: Implement ADSR when AudioKit is configured
         print("ADSR updated: A:\(attack) D:\(decay) S:\(sustain) R:\(release)")
+    }
+    
+    // MARK: - Pattern Management
+    
+    func switchToPattern(_ slot: Int) {
+        guard slot >= 0 && slot < patterns.count else { return }
+        currentPatternSlot = slot
+        currentPattern = slot
+    }
+    
+    func duplicateCurrentPattern() {
+        guard currentPatternSlot < patterns.count - 1 else { return }
+        let nextSlot = currentPatternSlot + 1
+        patterns[nextSlot] = patterns[currentPatternSlot]
+        switchToPattern(nextSlot)
     }
 }
 

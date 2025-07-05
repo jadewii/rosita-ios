@@ -4,16 +4,17 @@ struct ArpeggiatorView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     
     var body: some View {
-        VStack(spacing: 16) {
+        // Main box with title and buttons - matching instrument selector exactly
+        VStack(spacing: 4) {
             // Title
-            Text("Arpeggiator")
-                .font(.system(size: 18, weight: .bold))
+            Text("ARPEGGIATOR")
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
             
-            // Arpeggiator buttons
-            HStack(spacing: 12) {
+            // Arpeggiator buttons - retro style
+            HStack(spacing: 6) {
                 ForEach(0..<3) { index in
-                    ArpButton(
+                    RetroArpButton(
                         number: index + 1,
                         isSelected: audioEngine.arpeggiatorMode == index,
                         color: getArpColor(index: index)
@@ -22,23 +23,13 @@ struct ArpeggiatorView: View {
                     }
                 }
             }
-            
-            // Pattern dots display
-            HStack(spacing: 8) {
-                ForEach(0..<3) { index in
-                    PatternDots(
-                        isActive: audioEngine.arpeggiatorMode == index,
-                        pattern: getPatternDots(index: index)
-                    )
-                }
-            }
         }
-        .padding()
+        .padding(8)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.8))
+            Rectangle()
+                .fill(Color.white)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    Rectangle()
                         .stroke(Color.black, lineWidth: 2)
                 )
         )
@@ -46,10 +37,10 @@ struct ArpeggiatorView: View {
     
     private func getArpColor(index: Int) -> Color {
         switch index {
-        case 0: return .pink
-        case 1: return .gray
-        case 2: return .pink
-        default: return .gray
+        case 0: return Color(hex: "FF69B4")
+        case 1: return Color(hex: "808080")
+        case 2: return Color(hex: "FF69B4")
+        default: return Color(hex: "808080")
         }
     }
     
@@ -63,33 +54,73 @@ struct ArpeggiatorView: View {
     }
 }
 
-struct ArpButton: View {
+struct RetroArpButton: View {
     let number: Int
     let isSelected: Bool
     let color: Color
     let action: () -> Void
     
+    @State private var isDown = false
+    
     var body: some View {
         Button(action: {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(.easeInOut(duration: 0.1)) {
                 action()
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
         }) {
             Text("\(number)")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.black)
-                .frame(width: 50, height: 40)
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .foregroundColor(isSelected ? .black : .white)
+                .frame(width: 40, height: 32)
                 .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? color : color.opacity(0.6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.black, lineWidth: isSelected ? 3 : 1)
-                        )
+                    ZStack {
+                        Rectangle()
+                            .fill(isSelected ? color : Color.black)
+                        
+                        // 3D bevel effect
+                        if !isDown && isSelected {
+                            // Top and left highlight
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 2)
+                                Spacer()
+                            }
+                            
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(width: 2)
+                                Spacer()
+                            }
+                            
+                            // Bottom and right shadow
+                            VStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.5))
+                                    .frame(height: 2)
+                            }
+                            
+                            HStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.5))
+                                    .frame(width: 2)
+                            }
+                        }
+                    }
                 )
-                .scaleEffect(isSelected ? 1.1 : 1.0)
+                .overlay(
+                    Rectangle()
+                        .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                )
+                .offset(y: isDown ? 1 : 0)
         }
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
+            isDown = pressing
+        }, perform: {})
     }
 }
 
@@ -100,11 +131,11 @@ struct PatternDots: View {
     var body: some View {
         HStack(spacing: 4) {
             ForEach(0..<pattern.count, id: \.self) { index in
-                Circle()
+                Rectangle()
                     .fill(pattern[index] && isActive ? Color.black : Color.gray.opacity(0.3))
-                    .frame(width: 8, height: 8)
+                    .frame(width: 6, height: 6)
             }
         }
-        .frame(width: 50, height: 20)
+        .frame(width: 40, height: 16)
     }
 }

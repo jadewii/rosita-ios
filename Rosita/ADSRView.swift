@@ -6,8 +6,8 @@ struct ADSRView: View {
     var body: some View {
         VStack(spacing: 8) {
             // Title
-            Text("ADSR Envelope")
-                .font(.system(size: 14, weight: .bold))
+            Text("ADSR ENVELOPE")
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
             
             // ADSR Sliders - beautiful custom sliders like original
@@ -24,13 +24,12 @@ struct ADSRView: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            Rectangle()
                 .fill(Color.white.opacity(0.8))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.black, lineWidth: 2)
+                    Rectangle()
+                        .stroke(Color.black, lineWidth: 3)
                 )
         )
     }
 }
-

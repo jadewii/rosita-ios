@@ -6,121 +6,85 @@ struct TransportControlsView: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            // Top row: Transport buttons
+            // Top row: Transport buttons with retro style
             HStack(spacing: 12) {
                 // Play button
-                Button(action: {
-                    audioEngine.togglePlayback()
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                }) {
-                    Image(systemName: audioEngine.isPlaying ? "stop.fill" : "play.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.white)
-                        .frame(width: 40, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(audioEngine.isPlaying ? Color.red : Color.green)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                        )
-                }
+                RetroButton(
+                    title: audioEngine.isPlaying ? "STOP" : "PLAY",
+                    color: audioEngine.isPlaying ? Color(hex: "FF0000") : Color(hex: "00FF00"),
+                    textColor: .black,
+                    action: {
+                        audioEngine.togglePlayback()
+                    },
+                    width: 65,
+                    height: 42,
+                    fontSize: 14
+                )
                 
                 // Stop button
-                Button(action: {
-                    audioEngine.stop()
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                }) {
-                    Text("Stop")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(width: 50, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                        )
-                }
+                RetroButton(
+                    title: "STOP",
+                    color: audioEngine.isPlaying ? Color(hex: "808080") : Color.gray,
+                    textColor: .white,
+                    action: {
+                        audioEngine.stop()
+                    },
+                    width: 65,
+                    height: 42,
+                    fontSize: 14
+                )
                 
                 // Random button
-                Button(action: {
-                    audioEngine.randomizePattern()
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                }) {
-                    Text("Random")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(width: 60, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.orange)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                        )
-                }
+                RetroButton(
+                    title: "RANDOM",
+                    color: false ? Color(hex: "FFFF00") : Color.gray, // Always inactive for now
+                    textColor: false ? .black : .white,
+                    action: {
+                        audioEngine.randomizePattern()
+                    },
+                    width: 75,
+                    height: 42,
+                    fontSize: 13
+                )
                 
                 // Clear button
-                Button(action: {
-                    audioEngine.clearPattern()
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                }) {
-                    Text("Clear")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(width: 50, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.blue)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                        )
-                }
+                RetroButton(
+                    title: "CLEAR",
+                    color: false ? Color(hex: "00FFFF") : Color.gray, // Always inactive for now
+                    textColor: false ? .black : .white,
+                    action: {
+                        audioEngine.clearPattern()
+                    },
+                    width: 65,
+                    height: 42,
+                    fontSize: 14
+                )
                 
                 // Clear All button
-                Button(action: {
-                    audioEngine.clearAllPatterns()
-                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-                }) {
-                    Text("Clear All")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(width: 70, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.red)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                        )
-                }
+                RetroButton(
+                    title: "CLR ALL",
+                    color: false ? Color(hex: "FF0000") : Color.gray, // Always inactive for now
+                    textColor: false ? .white : .white,
+                    action: {
+                        audioEngine.clearAllPatterns()
+                    },
+                    width: 75,
+                    height: 42,
+                    fontSize: 13
+                )
                 
                 // Mixer button
-                Button(action: {
-                    // Mixer functionality
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                }) {
-                    Text("Mixer")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(width: 50, height: 32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                        )
-                }
+                RetroButton(
+                    title: "MIXER",
+                    color: false ? Color(hex: "FF00FF") : Color.gray, // Always inactive for now
+                    textColor: false ? .black : .white,
+                    action: {
+                        // Mixer functionality
+                    },
+                    width: 65,
+                    height: 42,
+                    fontSize: 14
+                )
             }
         }
     }

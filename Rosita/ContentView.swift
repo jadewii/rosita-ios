@@ -17,119 +17,120 @@ struct ContentView: View {
                     )
                     .ignoresSafeArea(.all)
                 
-                // Main layout - no overlapping, efficient use of space
-                VStack(spacing: 4) {
-                    // Top section with all controls
-                    HStack(alignment: .top, spacing: 8) {
-                        // Left column - Instruments, Arp, ADSR, Effects
-                        VStack(spacing: 6) {
-                            // Instruments row
-                            InstrumentSelectorView()
-                                .frame(height: 60)
+                // Main layout - matching the reference image structure
+                VStack(spacing: 6) {
+                    // TOP SECTION - Reorganized layout
+                    VStack(spacing: 8) {
+                        // First row: Transport controls, control buttons, BPM, Instrument and Arpeggiator
+                        HStack(spacing: 8) {
+                            // Transport controls
+                            TransportControlsView()
                             
-                            // Arpeggiator 
-                            ArpeggiatorView()
-                                .frame(height: 70)
-                            
-                            // ADSR Envelope
-                            ADSRView()
-                                .frame(height: 110)
-                            
-                            // Control buttons
+                            // Control buttons (ADSR, Major, Octave) next to MIXER
                             HStack(spacing: 6) {
-                                Button(action: {}) {
-                                    Text("ADSR")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundColor(.black)
-                                        .frame(width: 48, height: 24)
-                                        .background(Color.white)
-                                        .cornerRadius(4)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .stroke(Color.black, lineWidth: 1)
-                                        )
-                                }
+                                RetroButton(
+                                    title: "ADSR",
+                                    color: Color(hex: "00FFFF"),
+                                    textColor: .black,
+                                    action: {},
+                                    width: 70,
+                                    height: 42,
+                                    fontSize: 14
+                                )
                                 
-                                Button(action: {}) {
-                                    Text("Major")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundColor(.black)
-                                        .frame(width: 48, height: 24)
-                                        .background(Color.white)
-                                        .cornerRadius(4)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .stroke(Color.black, lineWidth: 1)
-                                        )
-                                }
+                                RetroButton(
+                                    title: "MAJOR",
+                                    color: Color(hex: "FFFF00"),
+                                    textColor: .black,
+                                    action: {},
+                                    width: 70,
+                                    height: 42,
+                                    fontSize: 14
+                                )
                                 
-                                Button(action: {}) {
-                                    Text("Octave")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundColor(.black)
-                                        .frame(width: 48, height: 24)
-                                        .background(Color.white)
-                                        .cornerRadius(4)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .stroke(Color.black, lineWidth: 1)
-                                        )
-                                }
+                                RetroButton(
+                                    title: "OCTAVE",
+                                    color: Color(hex: "FF00FF"),
+                                    textColor: .black,
+                                    action: {},
+                                    width: 70,
+                                    height: 42,
+                                    fontSize: 14
+                                )
                             }
                             
-                            // Effects
+                            // BPM display
+                            HStack(spacing: 3) {
+                                Text("BPM:")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.black)
+                                
+                                Text("\(Int(audioEngine.bpm))")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 36, height: 42)
+                                    .background(
+                                        Rectangle()
+                                            .fill(Color.pink)
+                                            .overlay(
+                                                Rectangle()
+                                                    .stroke(Color.black, lineWidth: 2)
+                                            )
+                                    )
+                            }
+                            
+                            // Instrument and Arpeggiator in one row
+                            HStack(spacing: 8) {
+                                InstrumentSelectorView()
+                                    .frame(width: 200, height: 60)
+                                
+                                ArpeggiatorView()
+                                    .frame(width: 200, height: 60)
+                            }
+                        }
+                        .frame(height: 60)
+                        
+                        // Pink space between sections
+                        Spacer()
+                            .frame(height: 12)
+                        
+                        // Second row: Just pattern slots centered with more space
+                        HStack {
+                            Spacer()
+                            PatternSlotsView()
+                                .frame(height: 56)
+                            Spacer()
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    
+                    // MAIN CONTENT AREA
+                    HStack(alignment: .top, spacing: 8) {
+                        // LEFT COLUMN - ADSR and Effects with proper spacing
+                        VStack(spacing: 8) {
+                            // ADSR Envelope - lowered position
+                            ADSRView()
+                                .frame(height: 140)
+                            
+                            // Effects - aligned with grid end
                             EffectsView()
                                 .frame(maxHeight: .infinity)
                         }
-                        .frame(width: geometry.size.width * 0.35)
+                        .frame(width: 200) // Fixed width for left column
                         
-                        // Right column - Transport, Pattern, Grid
-                        VStack(spacing: 4) {
-                            // Transport controls with BPM
-                            HStack(spacing: 6) {
-                                TransportControlsView()
-                                
-                                Spacer()
-                                
-                                // BPM control
-                                HStack(spacing: 3) {
-                                    Text("BPM:")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundColor(.black)
-                                    
-                                    Text("\(Int(audioEngine.bpm))")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundColor(.black)
-                                        .frame(width: 36, height: 24)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .fill(Color.pink)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 4)
-                                                        .stroke(Color.black, lineWidth: 1)
-                                                )
-                                        )
-                                }
-                            }
-                            .frame(height: 32)
-                            
-                            // Pattern slots
-                            PatternSlotsView()
-                                .frame(height: 32)
-                            
-                            // Main sequencer grid - takes all available space
-                            GridSequencerView()
-                                .frame(maxHeight: .infinity)
-                        }
-                        .frame(width: geometry.size.width * 0.63)
+                        // CENTER AND RIGHT AREA - Just the sequencer grid
+                        GridSequencerView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    .frame(height: geometry.size.height * 0.72)
+                    .frame(maxHeight: .infinity)
+                    .padding(.horizontal, 8)
                     
-                    // Piano keyboard at bottom
+                    // BOTTOM - Piano keyboard
                     PianoKeyboardView()
-                        .frame(height: geometry.size.height * 0.26)
+                        .frame(height: max(120, geometry.size.height * 0.18))
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 4)
                 }
-                .padding(.horizontal, 8)
                 .padding(.vertical, 4)
             }
         }
