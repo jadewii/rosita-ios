@@ -2,7 +2,6 @@ import SwiftUI
 
 struct GridSequencerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
-    @State private var currentPlayingStep = -1
     
     // Get instrument colors from InstrumentType
     private func getInstrumentColor(for instrumentIndex: Int) -> Color {
@@ -51,15 +50,15 @@ struct GridSequencerView: View {
                     HStack(spacing: 2) {
                         ForEach(0..<16) { step in
                             GridCell(
-                                track: track,
-                                step: step,
-                                isActive: audioEngine.getGridCellForCurrentInstrument(track: track, step: step),
-                                isPlaying: audioEngine.isPlaying && step == currentPlayingStep,
+                                row: track,
+                                col: step,
+                                isActive: audioEngine.getGridCell(row: track, col: step),
+                                isPlaying: audioEngine.isPlaying && step == audioEngine.currentPlayingStep,
                                 selectedInstrument: audioEngine.selectedInstrument,
                                 instrumentColor: getInstrumentColor(for: audioEngine.selectedInstrument),
                                 darkerColor: getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument))
                             ) {
-                                audioEngine.toggleGridCell(track: track, step: step)
+                                audioEngine.toggleGridCell(row: track, col: step)
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             }
                         }
@@ -75,20 +74,13 @@ struct GridSequencerView: View {
                             .stroke(getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument)), lineWidth: 1)
                     )
             )
-            .onReceive(Timer.publish(every: 60.0 / audioEngine.bpm / 4.0, on: .main, in: .common).autoconnect()) { _ in
-                if audioEngine.isPlaying {
-                    currentPlayingStep = (currentPlayingStep + 1) % 16
-                } else {
-                    currentPlayingStep = -1
-                }
-            }
         }
     }
 }
 
 struct GridCell: View {
-    let track: Int
-    let step: Int
+    let row: Int
+    let col: Int
     let isActive: Bool
     let isPlaying: Bool
     let selectedInstrument: Int
@@ -114,7 +106,7 @@ struct GridCell: View {
                     Rectangle()
                         .stroke(isPlaying ? Color.white : Color.clear, lineWidth: 2)
                 )
-                .aspectRatio(1.2, contentMode: .fit)
+                .aspectRatio(1.0, contentMode: .fit)
                 .scaleEffect(isPlaying ? 1.02 : 1.0)
                 .animation(.easeInOut(duration: 0.1), value: isPlaying)
         }
@@ -125,17 +117,27 @@ struct GridCell: View {
         // Special handling for drums (instrument 4 = index 3)
         if selectedInstrument == 3 { // Drums
             if isActive {
-                // Different colors for different drum sounds based on track
-                switch track {
+                // Different colors for different drum sounds based on row
+                switch row {
                 case 0: return Color(hex: "FF4500") // Kick - Orange Red
-                case 1: return Color(hex: "1E90FF") // Snare - Blue
+                case 1: return Color(hex: "1E90FF") // Snare - Blue  
                 case 2: return Color(hex: "32CD32") // Hi-hat - Green
                 case 3: return Color(hex: "FF1493") // Percussion - Pink
                 default: return darkerColor
                 }
             } else {
-                // Lighter shade of the current instrument color for inactive drum cells
-                return instrumentColor.opacity(0.3)
+                // Show drum row colors faintly when inactive for drums
+                if row < 4 {
+                    switch row {
+                    case 0: return Color(hex: "FF4500").opacity(0.2) // Kick
+                    case 1: return Color(hex: "1E90FF").opacity(0.2) // Snare
+                    case 2: return Color(hex: "32CD32").opacity(0.2) // Hi-hat
+                    case 3: return Color(hex: "FF1493").opacity(0.2) // Percussion
+                    default: return instrumentColor.opacity(0.3)
+                    }
+                } else {
+                    return Color.gray.opacity(0.1) // Empty rows for drums
+                }
             }
         } else {
             // All other instruments: use the selected instrument's color scheme

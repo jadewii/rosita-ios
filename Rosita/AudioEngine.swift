@@ -17,18 +17,14 @@ class AudioEngine: ObservableObject {
     // Published properties
     @Published var isPlaying = false
     @Published var bpm: Double = 120
-    @Published var selectedInstrument = 0 {
-        didSet {
-            // When instrument changes, migrate any unassigned steps to current instrument
-            migrateExistingPatterns()
-        }
-    }
+    @Published var selectedInstrument = 0
     @Published var transpose = 0
     @Published var arpeggiatorMode = 0
     @Published var currentPattern = 0
+    @Published var currentPlayingStep = -1 // Track current step for UI
     
     // Pattern storage
-    @Published var patterns: [Pattern] = Array(repeating: Pattern(), count: 8)
+    @Published var patterns: [Pattern] = (0..<8).map { _ in Pattern() }
     @Published var currentPatternSlot: Int = 0
     
     // ADSR values
@@ -61,9 +57,6 @@ class AudioEngine: ObservableObject {
         }
         
         print("Audio engine setup complete with \(instruments.count) instruments and mixer node")
-        
-        // Migrate any existing patterns that don't have instrument assignments
-        migrateExistingPatterns()
     }
     
     private func startAudioEngineIfNeeded() {
@@ -102,6 +95,8 @@ class AudioEngine: ObservableObject {
     
     func stop() {
         isPlaying = false
+        currentStep = 0
+        currentPlayingStep = -1
         sequencerTimer?.invalidate()
         sequencerTimer = nil
         stopAllNotes()
@@ -115,15 +110,57 @@ class AudioEngine: ObservableObject {
     }
     
     private func processStep() {
-        let pattern = patterns[currentPattern]
+        // Update UI with current step
+        DispatchQueue.main.async {
+            self.currentPlayingStep = self.currentStep
+        }
         
-        for (trackIndex, track) in pattern.tracks.enumerated() {
-            if track.steps[currentStep] {
-                playNote(instrument: trackIndex, note: track.notes[currentStep])
+        // Play notes for all instruments at current step
+        for instrument in 0..<4 {
+            for row in 0..<8 {
+                let key = "\(instrument)_\(row)_\(currentStep)"
+                if instrumentSteps[key] == true {
+                    if instrument == 3 {
+                        // Drums
+                        let drumNote = drumRowToNote(row: row)
+                        playDrumSound(drumType: drumNote)
+                    } else {
+                        // Melodic instruments
+                        let note = rowToNote(row: row, instrument: instrument)
+                        playNote(instrument: instrument, note: note)
+                    }
+                }
             }
         }
         
         currentStep = (currentStep + 1) % 16
+    }
+    
+    private func rowToNote(row: Int, instrument: Int) -> Int {
+        // Map grid row to MIDI note (8 rows)
+        // Row 0 is at the top (highest note), Row 7 is at the bottom (lowest note)
+        let scaleNotes = [0, 2, 4, 5, 7, 9, 11, 12] // C major scale intervals
+        let noteOffset = scaleNotes[7 - row] // Invert row for bottom-to-top
+        
+        let baseNote: Int
+        switch instrument {
+        case 0: baseNote = 60 // C4 for synth
+        case 1: baseNote = 36 // C2 for bass  
+        case 2: baseNote = 48 // C3 for keys
+        default: baseNote = 60
+        }
+        
+        return baseNote + noteOffset
+    }
+    
+    private func drumRowToNote(row: Int) -> Int {
+        switch row {
+        case 0: return 36 // Kick
+        case 1: return 38 // Snare
+        case 2: return 42 // Hi-hat closed
+        case 3: return 46 // Hi-hat open
+        default: return 36
+        }
     }
     
     // MARK: - Note Playing
@@ -131,13 +168,40 @@ class AudioEngine: ObservableObject {
     func playNote(instrument: Int, note: Int) {
         guard instrument < instruments.count else { return }
         
-        let adjustedNote = note + transpose
-        instruments[instrument].play(note: adjustedNote, velocity: 127)
-        
-        // Schedule note off
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.instruments[instrument].stop(note: adjustedNote)
+        // Special handling for drums
+        if instrument == 3 {
+            // For drums, the note determines which drum sound to play
+            playDrumSound(drumType: note)
+        } else {
+            // Regular instruments play notes normally
+            let adjustedNote = note + transpose
+            instruments[instrument].play(note: adjustedNote, velocity: 127)
+            
+            // Schedule note off
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.instruments[instrument].stop(note: adjustedNote)
+            }
         }
+    }
+    
+    // Play specific drum sounds based on the note/track
+    private func playDrumSound(drumType: Int) {
+        // Map MIDI notes to drum sounds
+        let drumSound: Int
+        switch drumType {
+        case 36: drumSound = 0 // Kick
+        case 38: drumSound = 1 // Snare
+        case 42: drumSound = 2 // Hi-hat closed
+        case 46: drumSound = 3 // Hi-hat open
+        case 49: drumSound = 4 // Crash
+        case 51: drumSound = 5 // Ride
+        case 47: drumSound = 6 // Mid tom
+        case 43: drumSound = 7 // High tom
+        default: drumSound = drumType % 8
+        }
+        
+        // Play the drum using the drums instrument
+        instruments[3].playDrum(sound: drumSound)
     }
     
     func noteOn(note: Int) {
@@ -160,113 +224,123 @@ class AudioEngine: ObservableObject {
     // MARK: - Pattern Management
     
     func clearPattern() {
-        patterns[currentPattern] = Pattern()
+        clearGrid()
     }
     
     func clearAllPatterns() {
-        patterns = Array(repeating: Pattern(), count: 8)
+        patterns = (0..<8).map { _ in Pattern() }
     }
     
-    // Fix existing patterns that don't have instrument assignments
-    func migrateExistingPatterns() {
-        for patternIndex in 0..<patterns.count {
-            for trackIndex in 0..<patterns[patternIndex].tracks.count {
-                for stepIndex in 0..<patterns[patternIndex].tracks[trackIndex].steps.count {
-                    // If step is active but has no instrument assigned, assign it to the currently selected instrument
-                    if patterns[patternIndex].tracks[trackIndex].steps[stepIndex] && 
-                       patterns[patternIndex].tracks[trackIndex].instruments[stepIndex] == -1 {
-                        patterns[patternIndex].tracks[trackIndex].instruments[stepIndex] = selectedInstrument
-                    }
-                }
-            }
-        }
-    }
     
     func randomizePattern() {
-        // Randomize all 8 tracks with DIFFERENT patterns for each track
-        var currentPatternCopy = patterns[currentPattern]
-        let instrumentIndex = selectedInstrument
+        // Clear current instrument's pattern first
+        clearGrid()
         
-        // Clear ALL tracks first
-        for track in 0..<8 {
-            for step in 0..<16 {
-                currentPatternCopy.tracks[track].steps[step] = false
-                currentPatternCopy.tracks[track].instruments[step] = -1
-            }
+        if selectedInstrument == 3 {
+            // Generate classic drum patterns
+            generateClassicDrumPattern()
+        } else {
+            // Generate melodic pattern for current instrument only
+            generateMelodicPattern()
+        }
+    }
+    
+    private func generateClassicDrumPattern() {
+        // Classic drum patterns from web version
+        let classicPatterns = [
+            // Basic Rock Pattern
+            (kick: [0, 4, 8, 12], snare: [4, 12], hat1: [0, 2, 4, 6, 8, 10, 12, 14], hat2: [1, 3, 5, 7, 9, 11, 13, 15]),
+            // Funk Pattern  
+            (kick: [0, 3, 6, 10], snare: [4, 12], hat1: [2, 6, 10, 14], hat2: [0, 4, 8, 12]),
+            // Disco Pattern
+            (kick: [0, 4, 8, 12], snare: [4, 12], hat1: [2, 6, 10, 14], hat2: Array(0..<16)),
+            // Breakbeat Pattern
+            (kick: [0, 10], snare: [4, 7, 12], hat1: [0, 2, 8, 14], hat2: [0, 4, 8, 12])
+        ]
+        
+        // Select a random pattern
+        let selectedPattern = classicPatterns.randomElement()!
+        
+        // Apply kick pattern (row 0)
+        for step in selectedPattern.kick {
+            let key = "3_0_\(step)"
+            instrumentSteps[key] = true
         }
         
-        // Generate DIFFERENT random patterns for each track (about 20% density for musicality)
-        for track in 0..<8 {
-            for step in 0..<16 {
-                // Each track gets its own random roll - this is the key fix!
-                if Double.random(in: 0...1) < 0.20 {
-                    currentPatternCopy.tracks[track].steps[step] = true
-                    currentPatternCopy.tracks[track].instruments[step] = instrumentIndex
-                    
-                    // Use appropriate note range based on instrument and track
-                    let noteRange: ClosedRange<Int>
-                    switch instrumentIndex {
-                    case 1: // Bass
-                        noteRange = (36 + track * 2)...(48 + track * 2) // Spread bass notes across tracks
-                    case 3: // Drums
-                        // Different drum sounds per track
-                        switch track {
-                        case 0: noteRange = 36...39 // Kick
-                        case 1: noteRange = 40...43 // Snare
-                        case 2: noteRange = 44...47 // Hi-hat
-                        case 3: noteRange = 48...51 // Percussion
-                        default: noteRange = 36...51
-                        }
-                    default: // Melody instruments (Synth, Keys)
-                        noteRange = (48 + track * 3)...(72 + track * 2) // Spread melody notes across tracks
-                    }
-                    currentPatternCopy.tracks[track].notes[step] = Int.random(in: noteRange)
-                }
-            }
+        // Apply snare pattern (row 1)
+        for step in selectedPattern.snare {
+            let key = "3_1_\(step)"
+            instrumentSteps[key] = true
         }
         
-        patterns[currentPattern] = currentPatternCopy
+        // Apply hat1 pattern (row 2)
+        for step in selectedPattern.hat1 {
+            let key = "3_2_\(step)"
+            instrumentSteps[key] = true
+        }
+        
+        // Apply hat2 pattern (row 3)
+        for step in selectedPattern.hat2 {
+            let key = "3_3_\(step)"
+            instrumentSteps[key] = true
+        }
+    }
+    
+    private func generateMelodicPattern() {
+        // Musical scales
+        let majorScale = [0, 2, 4, 5, 7]
+        let minorScale = [0, 2, 3, 5, 7]
+        let scale = Bool.random() ? majorScale : minorScale
+        
+        // Generate a melodic pattern
+        for step in 0..<16 {
+            if Double.random(in: 0...1) < 0.3 { // 30% density
+                // Pick a random row from the scale
+                let row = scale.randomElement()!
+                let key = "\(selectedInstrument)_\(row)_\(step)"
+                instrumentSteps[key] = true
+            }
+        }
     }
     
     func duplicatePattern() {
         let nextPattern = (currentPattern + 1) % 8
-        patterns[nextPattern] = patterns[currentPattern]
+        patterns[nextPattern] = Pattern(copying: patterns[currentPattern])
     }
     
-    // MARK: - Grid Management
+    // MARK: - Grid Management (Simple Per-Instrument View)
     
-    func toggleGridCell(track: Int, step: Int, note: Int = 60) {
-        guard track < patterns[currentPattern].tracks.count,
-              step < patterns[currentPattern].tracks[track].steps.count else {
-            return
-        }
-        patterns[currentPattern].tracks[track].steps[step].toggle()
-        if patterns[currentPattern].tracks[track].steps[step] {
-            patterns[currentPattern].tracks[track].notes[step] = note
-            patterns[currentPattern].tracks[track].instruments[step] = selectedInstrument
+    func toggleGridCell(row: Int, col: Int) {
+        guard row >= 0 && row < 8 && col >= 0 && col < 16 else { return }
+        
+        // For the simplified version, we'll use the row/col directly
+        // but store per instrument
+        let key = "\(selectedInstrument)_\(row)_\(col)"
+        if instrumentSteps[key] == nil {
+            instrumentSteps[key] = true
         } else {
-            patterns[currentPattern].tracks[track].instruments[step] = -1
+            instrumentSteps[key] = nil
         }
     }
     
-    func getGridCell(track: Int, step: Int) -> Bool {
-        guard track < patterns[currentPattern].tracks.count,
-              step < patterns[currentPattern].tracks[track].steps.count else {
-            return false
-        }
-        return patterns[currentPattern].tracks[track].steps[step]
+    func getGridCell(row: Int, col: Int) -> Bool {
+        guard row >= 0 && row < 8 && col >= 0 && col < 16 else { return false }
+        
+        // Only show steps for current instrument
+        let key = "\(selectedInstrument)_\(row)_\(col)"
+        return instrumentSteps[key] ?? false
     }
     
-    // New function: Only return true for steps belonging to the currently selected instrument
-    func getGridCellForCurrentInstrument(track: Int, step: Int) -> Bool {
-        guard track < patterns[currentPattern].tracks.count,
-              step < patterns[currentPattern].tracks[track].steps.count else {
-            return false
+    func clearGrid() {
+        // Clear only current instrument's steps
+        let keysToRemove = instrumentSteps.keys.filter { $0.hasPrefix("\(selectedInstrument)_") }
+        for key in keysToRemove {
+            instrumentSteps.removeValue(forKey: key)
         }
-        let isActive = patterns[currentPattern].tracks[track].steps[step]
-        let belongsToCurrentInstrument = patterns[currentPattern].tracks[track].instruments[step] == selectedInstrument
-        return isActive && belongsToCurrentInstrument
     }
+    
+    // Simple storage for instrument steps
+    @Published private var instrumentSteps: [String: Bool] = [:]
     
     // MARK: - Effects Control
     
@@ -343,8 +417,44 @@ enum InstrumentType: Int {
     }
 }
 
-struct Pattern {
-    var tracks: [Track] = Array(repeating: Track(), count: 8)
+class Pattern {
+    // Each instrument has its own 12x8 grid (12 rows, 8 steps)
+    var synthGrid: [[Bool]] = Array(repeating: Array(repeating: false, count: 8), count: 12)
+    var bassGrid: [[Bool]] = Array(repeating: Array(repeating: false, count: 8), count: 12)
+    var keysGrid: [[Bool]] = Array(repeating: Array(repeating: false, count: 8), count: 12)
+    var drumsGrid: [[Bool]] = Array(repeating: Array(repeating: false, count: 8), count: 12)
+    
+    init() {}
+    
+    // Copy constructor for pattern duplication
+    init(copying other: Pattern) {
+        self.synthGrid = other.synthGrid
+        self.bassGrid = other.bassGrid
+        self.keysGrid = other.keysGrid
+        self.drumsGrid = other.drumsGrid
+    }
+    
+    // Get grid for specific instrument
+    func getGrid(for instrument: Int) -> [[Bool]] {
+        switch instrument {
+        case 0: return synthGrid
+        case 1: return bassGrid
+        case 2: return keysGrid
+        case 3: return drumsGrid
+        default: return synthGrid
+        }
+    }
+    
+    // Set grid for specific instrument
+    func setGrid(for instrument: Int, grid: [[Bool]]) {
+        switch instrument {
+        case 0: synthGrid = grid
+        case 1: bassGrid = grid
+        case 2: keysGrid = grid
+        case 3: drumsGrid = grid
+        default: break
+        }
+    }
 }
 
 struct Track {
@@ -406,25 +516,56 @@ class SimpleInstrument {
             let time = Double(i) / sampleRate
             let amplitude = Float(0.3 * pow(Double(velocity) / 127.0, 0.5)) // Velocity scaling
             
-            // Different waveforms for different instruments
+            // Different waveforms and characteristics for different instruments
             let value: Float
             switch type {
             case .synth:
-                // Sawtooth wave
-                value = amplitude * Float(2.0 * (time * frequency).truncatingRemainder(dividingBy: 1.0) - 1.0)
+                // Sawtooth wave with slight detuning for richness
+                let detune = 1.002
+                let saw1 = Float(2.0 * (time * frequency).truncatingRemainder(dividingBy: 1.0) - 1.0)
+                let saw2 = Float(2.0 * (time * frequency * detune).truncatingRemainder(dividingBy: 1.0) - 1.0)
+                value = amplitude * (saw1 + saw2 * 0.5) / 1.5
+                
             case .bass:
-                // Square wave
-                value = amplitude * Float(sin(time * frequency * 2 * .pi) > 0 ? 1.0 : -1.0)
+                // Square wave with sub-oscillator
+                let fundamental = Float(sin(time * frequency * 2 * .pi) > 0 ? 1.0 : -1.0)
+                let subOsc = Float(sin(time * frequency * 0.5 * 2 * .pi)) * 0.3 // Sub oscillator
+                value = amplitude * (fundamental + subOsc) * 0.8
+                
             case .keys:
-                // Sine wave
-                value = amplitude * Float(sin(time * frequency * 2 * .pi))
+                // Electric piano-like sound (multiple harmonics)
+                let fundamental = Float(sin(time * frequency * 2 * .pi))
+                let harmonic2 = Float(sin(time * frequency * 2 * 2 * .pi)) * 0.5
+                let harmonic3 = Float(sin(time * frequency * 3 * 2 * .pi)) * 0.25
+                value = amplitude * (fundamental + harmonic2 + harmonic3) / 1.75
+                
             case .drums:
                 // Noise with envelope for drums
                 let envelope = Float(exp(-time * 5)) // Quick decay
                 value = amplitude * envelope * Float.random(in: -1...1)
             }
             
-            data[i] = value
+            // Apply simple envelope (ADSR-like)
+            let attack = 0.01
+            let decay = 0.1
+            let sustain: Float = 0.7
+            let release = 0.2
+            
+            let envelope: Float
+            if time < attack {
+                envelope = Float(time / attack)
+            } else if time < attack + decay {
+                let decayTime = time - attack
+                let sustainDiff = 1.0 - Double(sustain)
+                envelope = Float(1.0 - (sustainDiff * decayTime / decay))
+            } else if time < duration - release {
+                envelope = sustain
+            } else {
+                let releaseTime = time - (duration - release)
+                envelope = sustain * Float(1.0 - releaseTime / release)
+            }
+            
+            data[i] = value * envelope
         }
         
         oscillatorNodes[note] = playerNode
@@ -449,7 +590,7 @@ class SimpleInstrument {
     }
     
     func stopAll() {
-        for (note, playerNode) in oscillatorNodes {
+        for (_, playerNode) in oscillatorNodes {
             playerNode.stop()
             audioEngine.detach(playerNode)
         }
@@ -463,5 +604,140 @@ class SimpleInstrument {
     
     private func noteToFrequency(_ note: Int) -> Double {
         return 440.0 * pow(2.0, Double(note - 69) / 12.0)
+    }
+    
+    // Sample buffers cache
+    private var drumSamples: [Int: AVAudioPCMBuffer] = [:]
+    
+    private func loadDrumSamples() {
+        // Map sound indices to sample filenames
+        let sampleFiles = [
+            0: "FB Kick 1",    // Kick
+            1: "FB Snare 6",   // Snare
+            2: "FB Hat 1",     // Hi-hat closed
+            3: "FB Hat 5"      // Hi-hat open
+        ]
+        
+        for (index, filename) in sampleFiles {
+            if let url = Bundle.main.url(forResource: filename, withExtension: "wav", subdirectory: "Samples") {
+                do {
+                    let file = try AVAudioFile(forReading: url)
+                    let format = file.processingFormat
+                    let frameCount = AVAudioFrameCount(file.length)
+                    
+                    if let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) {
+                        try file.read(into: buffer)
+                        drumSamples[index] = buffer
+                    }
+                } catch {
+                    print("Failed to load drum sample \(filename): \(error)")
+                }
+            }
+        }
+    }
+    
+    // Play drum sounds (for drums instrument only)
+    func playDrum(sound: Int) {
+        guard type == .drums else { return }
+        setupMixerIfNeeded()
+        
+        // Load samples if not already loaded
+        if drumSamples.isEmpty {
+            loadDrumSamples()
+        }
+        
+        let playerNode = AVAudioPlayerNode()
+        audioEngine.attach(playerNode)
+        
+        // Use sample if available, otherwise fall back to synthesis
+        if let sampleBuffer = drumSamples[sound] {
+            // Play the actual sample
+            let format = sampleBuffer.format
+            audioEngine.connect(playerNode, to: mixer, format: format)
+            playerNode.scheduleBuffer(sampleBuffer, at: nil, options: .interrupts, completionHandler: nil)
+            playerNode.play()
+            
+            // Clean up after sample finishes
+            let duration = Double(sampleBuffer.frameLength) / format.sampleRate
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) {
+                playerNode.stop()
+                self.audioEngine.detach(playerNode)
+            }
+        } else {
+            // Fall back to synthesis for sounds without samples
+            let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
+            audioEngine.connect(playerNode, to: mixer, format: format)
+            
+            // Generate different drum sounds based on the sound parameter
+            let sampleRate = 44100.0
+            let duration: Double
+            let frequency: Double
+            let noiseAmount: Double
+            
+            switch sound {
+            case 0: // Kick
+                duration = 0.2
+                frequency = 60.0
+                noiseAmount = 0.1
+            case 1: // Snare
+                duration = 0.15
+                frequency = 200.0
+                noiseAmount = 0.8
+            case 2: // Hi-hat closed
+                duration = 0.05
+                frequency = 8000.0
+                noiseAmount = 0.9
+            case 3: // Hi-hat open
+                duration = 0.2
+                frequency = 8000.0
+                noiseAmount = 0.9
+            case 4: // Crash
+                duration = 0.5
+                frequency = 5000.0
+                noiseAmount = 0.95
+            case 5: // Ride
+                duration = 0.3
+                frequency = 6000.0
+                noiseAmount = 0.7
+            case 6, 7: // Toms
+                duration = 0.15
+                frequency = 100.0 + Double(sound - 6) * 50.0
+                noiseAmount = 0.2
+            default:
+                duration = 0.1
+                frequency = 1000.0
+                noiseAmount = 0.5
+            }
+            
+            let frameCount = AVAudioFrameCount(sampleRate * duration)
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return }
+            
+            buffer.frameLength = frameCount
+            let data = buffer.floatChannelData![0]
+            
+            // Generate drum sound (combination of tone and noise)
+            for i in 0..<Int(frameCount) {
+                let time = Double(i) / sampleRate
+                let envelope = exp(-time * 10.0) // Exponential decay
+                
+                // Tone component
+                let tone = sin(2.0 * Double.pi * frequency * time) * (1.0 - noiseAmount)
+                
+                // Noise component
+                let noise = (Double.random(in: -1...1)) * noiseAmount
+                
+                // Combine and apply envelope
+                data[i] = Float((tone + noise) * envelope * 0.5)
+            }
+            
+            playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts, completionHandler: nil)
+            playerNode.play()
+            
+            // Clean up after a delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) {
+                playerNode.stop()
+                self.audioEngine.detach(playerNode)
+            }
+        }
     }
 }
