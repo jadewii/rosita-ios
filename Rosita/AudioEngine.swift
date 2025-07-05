@@ -157,11 +157,6 @@ class AudioEngine: ObservableObject {
         
         // Play notes for all instruments at current step
         for instrument in 0..<4 {
-            // Skip playing notes for the instrument being recorded in free form mode
-            if isRecording && recordingMode == .freeForm && instrument == selectedInstrument {
-                continue
-            }
-            
             for row in 0..<8 {
                 let key = "\(instrument)_\(row)_\(currentStep)"
                 if instrumentSteps[key] == true {
