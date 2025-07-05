@@ -7,32 +7,50 @@ struct TransportControlsView: View {
     var body: some View {
         VStack(spacing: 8) {
             // Top row: Transport buttons with retro style
-            HStack(spacing: 12) {
-                // Play button
+            HStack(spacing: 6) {
+                // Play/Pause button
                 RetroButton(
-                    title: audioEngine.isPlaying ? "STOP" : "PLAY",
-                    color: audioEngine.isPlaying ? Color(hex: "FF0000") : Color(hex: "00FF00"),
-                    textColor: .black,
+                    title: audioEngine.isPlaying ? "II" : "PLAY",
+                    color: audioEngine.isPlaying ? Color(hex: "9370DB") : Color(hex: "00FF00"),
+                    textColor: audioEngine.isPlaying ? .white : .black,
                     action: {
                         audioEngine.togglePlayback()
                     },
-                    width: 65,
+                    width: 50,
                     height: 42,
-                    fontSize: 14
+                    fontSize: audioEngine.isPlaying ? 16 : 13
                 )
                 
                 // Stop button
                 RetroButton(
                     title: "STOP",
-                    color: audioEngine.isPlaying ? Color(hex: "808080") : Color.gray,
+                    color: Color(hex: "FF0000"),
                     textColor: .white,
                     action: {
                         audioEngine.stop()
                     },
-                    width: 65,
+                    width: 50,
                     height: 42,
-                    fontSize: 14
+                    fontSize: 13
                 )
+                
+                // REC button - changes appearance based on mode
+                RetroButton(
+                    title: audioEngine.recordingMode == .trStyle ? "TR" : "REC",
+                    color: audioEngine.isRecording ? 
+                        (audioEngine.recordingMode == .trStyle ? Color(hex: "8B0000") : Color(hex: "FF0000")) : 
+                        Color.gray,
+                    textColor: audioEngine.isRecording ? .white : .white,
+                    action: {
+                        audioEngine.toggleRecording()
+                    },
+                    width: 45,
+                    height: 42,
+                    fontSize: 13
+                )
+                .onLongPressGesture {
+                    audioEngine.toggleRecordingMode()
+                }
                 
                 // Random button
                 RetroButton(
@@ -42,9 +60,9 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.randomizePattern()
                     },
-                    width: 75,
+                    width: 65,
                     height: 42,
-                    fontSize: 13
+                    fontSize: 11
                 )
                 
                 // Clear button
@@ -55,9 +73,9 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.clearPattern()
                     },
-                    width: 65,
+                    width: 55,
                     height: 42,
-                    fontSize: 14
+                    fontSize: 12
                 )
                 
                 // Clear All button
@@ -68,9 +86,9 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.clearAllPatterns()
                     },
-                    width: 75,
+                    width: 65,
                     height: 42,
-                    fontSize: 13
+                    fontSize: 11
                 )
                 
                 // Mixer button
@@ -81,9 +99,9 @@ struct TransportControlsView: View {
                     action: {
                         // Mixer functionality
                     },
-                    width: 65,
+                    width: 55,
                     height: 42,
-                    fontSize: 14
+                    fontSize: 12
                 )
             }
         }

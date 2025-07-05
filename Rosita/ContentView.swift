@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var audioEngine: AudioEngine
+    @State private var showHelp = false
+    @State private var showExportAlert = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -79,13 +81,40 @@ struct ContentView: View {
                                     )
                             }
                             
-                            // Instrument and Arpeggiator in one row
+                            // Instrument, Arpeggiator, and utility buttons in one row
                             HStack(spacing: 8) {
                                 InstrumentSelectorView()
                                     .frame(width: 200, height: 60)
                                 
                                 ArpeggiatorView()
                                     .frame(width: 200, height: 60)
+                                
+                                // Help and Export buttons
+                                VStack(spacing: 4) {
+                                    RetroButton(
+                                        title: "?",
+                                        color: Color(hex: "87CEEB"),
+                                        textColor: .black,
+                                        action: {
+                                            showHelp = true
+                                        },
+                                        width: 44,
+                                        height: 28,
+                                        fontSize: 16
+                                    )
+                                    
+                                    RetroButton(
+                                        title: "WAV",
+                                        color: Color(hex: "90EE90"),
+                                        textColor: .black,
+                                        action: {
+                                            exportWAV()
+                                        },
+                                        width: 44,
+                                        height: 28,
+                                        fontSize: 10
+                                    )
+                                }
                             }
                         }
                         .frame(height: 60)
@@ -132,12 +161,110 @@ struct ContentView: View {
                         .padding(.bottom, 4)
                 }
                 .padding(.vertical, 4)
+                
+                // Help modal overlay
+                if showHelp {
+                    ZStack {
+                        // Semi-transparent background
+                        Color.black.opacity(0.6)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                showHelp = false
+                            }
+                        
+                        // Help modal
+                        VStack(spacing: 0) {
+                            // Header
+                            HStack {
+                                Text("ROSITA HELP")
+                                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                
+                                Spacer()
+                                
+                                Button("✕") {
+                                    showHelp = false
+                                }
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.black)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color(hex: "FFB6C1"))
+                            
+                            // Help content
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Group {
+                                        Text("🎵 BASIC CONTROLS")
+                                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("• PLAY/STOP - Start and stop the sequencer\n• REC - Record in real-time (looper mode)\n• TR - Step recording mode (shows instead of REC)\n• Long press REC/TR to switch modes\n• CLEAR - Clear current instrument pattern\n• CLR ALL - Clear all instrument patterns\n• RANDOM - Generate random pattern")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("🎙️ RECORDING MODES")
+                                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("• REC (red) - Real-time recording, plays notes as you press them\n• TR (dark red) - Step recording, each key press advances to next step")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("🎹 INSTRUMENTS")
+                                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("• Buttons 1,2,3,4 - Select instrument track\n• Tap again - Cycle waveforms: Square→Saw→Triangle→Sine→Reverse Saw\n• Colors: Pink=Square, Green=Saw, Blue=Triangle, Gold=Sine, Orange=Reverse Saw")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("🎯 SEQUENCER GRID")
+                                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("• Grid cells - Tap to activate/deactivate steps\n• 8 rows - Different notes/drums per row\n• 16 columns - 16 step sequence\n• White highlight - Shows current playing step")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("🎼 PIANO & EFFECTS")
+                                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("• Piano keys - Play notes for selected instrument\n• ADSR - Attack, Decay, Sustain, Release envelope\n• Effects - Delay, Reverb, Distortion, Chorus\n• WAV - Export your composition as audio file")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.black)
+                                    }
+                                }
+                                .padding(16)
+                            }
+                            .background(Color.white)
+                        }
+                        .frame(maxWidth: 600, maxHeight: 400)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.black, lineWidth: 2)
+                        )
+                    }
+                }
             }
         }
         .onAppear {
             UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
             AppDelegate.orientationLock = .landscape
         }
+        .alert("WAV Export", isPresented: $showExportAlert) {
+            Button("OK") { }
+        } message: {
+            Text("WAV export functionality coming soon!")
+        }
+    }
+    
+    private func exportWAV() {
+        // TODO: Implement WAV export functionality
+        showExportAlert = true
     }
 }
 

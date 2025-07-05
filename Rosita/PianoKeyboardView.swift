@@ -48,7 +48,15 @@ struct PianoKeyboardView: View {
                                 .onChanged { _ in
                                     if !pressedKeys.contains(whiteKeys[index]) {
                                         pressedKeys.insert(whiteKeys[index])
+                                        
+                                        // Always play the note sound
                                         audioEngine.noteOn(note: whiteKeys[index])
+                                        
+                                        // Record if in recording mode
+                                        if audioEngine.isRecording {
+                                            audioEngine.recordNoteToStep(note: whiteKeys[index])
+                                        }
+                                        
                                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                     }
                                 }
@@ -76,7 +84,15 @@ struct PianoKeyboardView: View {
                             .onChanged { _ in
                                 if !pressedKeys.contains(blackKey.note) {
                                     pressedKeys.insert(blackKey.note)
+                                    
+                                    // Always play the note sound
                                     audioEngine.noteOn(note: blackKey.note)
+                                    
+                                    // Record if in recording mode
+                                    if audioEngine.isRecording {
+                                        audioEngine.recordNoteToStep(note: blackKey.note)
+                                    }
+                                    
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 }
                             }

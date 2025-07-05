@@ -29,19 +29,45 @@ class AudioEngine: ObservableObject {
     @Published var currentPattern = 0
     @Published var currentPlayingStep = -1 // Track current step for UI
     
+    // Track waveform/kit for each instrument
+    @Published var instrumentWaveforms = [0, 0, 0, 0] // 0=square, 1=saw, 2=triangle, 3=sine, 4=reverse saw
+    
     // Pattern storage
     @Published var patterns: [Pattern] = (0..<8).map { _ in Pattern() }
     @Published var currentPatternSlot: Int = 0
     
-    // ADSR values
-    @Published var attack: Double = 0.01
-    @Published var decay: Double = 0.1
-    @Published var sustain: Double = 0.8
-    @Published var release: Double = 0.3
+    // ADSR values per track
+    @Published var trackADSR: [[Double]] = [
+        [0.01, 0.1, 0.8, 0.3], // Track 0: [attack, decay, sustain, release]
+        [0.01, 0.1, 0.8, 0.3], // Track 1
+        [0.01, 0.1, 0.8, 0.3], // Track 2
+        [0.01, 0.1, 0.0, 0.1]  // Track 3 (drums - shorter envelope)
+    ]
     
-    // Effects parameters
-    @Published var effectsEnabled = [true, true, true, true]
-    @Published var effectAmounts: [Double] = [0.3, 0.3, 0.2, 0.3]
+    // Effects parameters per track
+    @Published var trackEffectsEnabled: [[Bool]] = [
+        [true, true, true, true],  // Track 0: [delay, reverb, distortion, chorus]
+        [true, true, true, true],  // Track 1
+        [true, true, true, true],  // Track 2
+        [true, true, true, true]   // Track 3
+    ]
+    @Published var trackEffectAmounts: [[Double]] = [
+        [0.3, 0.3, 0.2, 0.3], // Track 0
+        [0.3, 0.3, 0.2, 0.3], // Track 1
+        [0.3, 0.3, 0.2, 0.3], // Track 2
+        [0.3, 0.3, 0.2, 0.3]  // Track 3
+    ]
+    
+    // Step recording
+    @Published var isRecording = false
+    @Published var currentRecordingStep = 0
+    @Published var recordingMode: RecordingMode = .freeForm
+    
+    
+    enum RecordingMode: String {
+        case freeForm = "FREE"
+        case trStyle = "TR"
+    }
     
     init() {
         setupAudio()
@@ -65,7 +91,7 @@ class AudioEngine: ObservableObject {
             instruments.append(instrument)
         }
         
-        print("Audio engine setup complete with \(instruments.count) instruments and effects")
+        // print("Audio engine setup complete with \(instruments.count) instruments and effects")
     }
     
     private func startAudioEngineIfNeeded() {
@@ -79,9 +105,9 @@ class AudioEngine: ObservableObject {
             
             audioEngine.prepare()
             try audioEngine.start()
-            print("AVAudioEngine started successfully")
+            // print("AVAudioEngine started successfully")
         } catch {
-            print("Failed to start audio engine: \(error)")
+            // print("Failed to start audio engine: \(error)")
         }
     }
     
@@ -113,9 +139,14 @@ class AudioEngine: ObservableObject {
     
     private func startSequencer() {
         let interval = 60.0 / bpm / 4.0 // 16th notes
-        sequencerTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            self.processStep()
+        
+        // Use CADisplayLink for better timing accuracy
+        sequencerTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.processStep()
         }
+        
+        // Set timer tolerance for better performance
+        sequencerTimer?.tolerance = interval * 0.1
     }
     
     private func processStep() {
@@ -126,6 +157,11 @@ class AudioEngine: ObservableObject {
         
         // Play notes for all instruments at current step
         for instrument in 0..<4 {
+            // Skip playing notes for the instrument being recorded in free form mode
+            if isRecording && recordingMode == .freeForm && instrument == selectedInstrument {
+                continue
+            }
+            
             for row in 0..<8 {
                 let key = "\(instrument)_\(row)_\(currentStep)"
                 if instrumentSteps[key] == true {
@@ -395,8 +431,13 @@ class AudioEngine: ObservableObject {
         }
     }
     
-    func updateEffects() {
-        // Update effect parameters based on slider values
+    func updateTrackEffects(track: Int) {
+        guard track >= 0 && track < 4 else { return }
+        
+        let effectsEnabled = trackEffectsEnabled[track]
+        let effectAmounts = trackEffectAmounts[track]
+        
+        // Update effect parameters based on slider values for the specific track
         // Effect A: Delay
         if effectsEnabled[0], let delay = delayNode {
             delay.wetDryMix = Float(effectAmounts[0] * 50) // 0-50% wet
@@ -425,11 +466,146 @@ class AudioEngine: ObservableObject {
         }
     }
     
+    func updateTrackEffect(track: Int, effect: Int, enabled: Bool, amount: Double) {
+        guard track >= 0 && track < 4 && effect >= 0 && effect < 4 else { return }
+        trackEffectsEnabled[track][effect] = enabled
+        trackEffectAmounts[track][effect] = amount
+        updateTrackEffects(track: track)
+    }
+    
     // MARK: - ADSR Control
     
-    func updateADSR() {
-        // TODO: Implement ADSR when AudioKit is configured
-        print("ADSR updated: A:\(attack) D:\(decay) S:\(sustain) R:\(release)")
+    func updateTrackADSR(track: Int, attack: Double, decay: Double, sustain: Double, release: Double) {
+        guard track >= 0 && track < 4 else { return }
+        trackADSR[track] = [attack, decay, sustain, release]
+        // print("Track \(track) ADSR updated: A:\(attack) D:\(decay) S:\(sustain) R:\(release)")
+    }
+    
+    func getTrackADSR(track: Int) -> [Double] {
+        guard track >= 0 && track < 4 else { return [0.01, 0.1, 0.8, 0.3] }
+        return trackADSR[track]
+    }
+    
+    // MARK: - Instrument Waveform Control
+    
+    func cycleInstrumentWaveform(_ instrument: Int) {
+        guard instrument >= 0 && instrument < 4 else { return }
+        
+        if instrument == 3 {
+            // Cycle through 4 drum kits
+            instrumentWaveforms[instrument] = (instrumentWaveforms[instrument] + 1) % 4
+        } else {
+            // Cycle through 5 waveforms for melodic instruments
+            instrumentWaveforms[instrument] = (instrumentWaveforms[instrument] + 1) % 5
+        }
+        
+        // Update the actual instrument waveform
+        if instrument < instruments.count {
+            // let waveformNames = ["square", "sine", "sawtooth", "triangle"]
+            // let drumKitNames = ["kit1", "kit2", "kit3", "kit4"]
+            
+            if instrument == 3 {
+                // For drums, switch between kits
+                // print("Switched drums to \(drumKitNames[instrumentWaveforms[instrument]])")
+            } else {
+                // For melodic instruments, switch waveforms
+                // print("Switched \(InstrumentType(rawValue: instrument)?.name ?? "instrument") to \(waveformNames[instrumentWaveforms[instrument]])")
+            }
+        }
+    }
+    
+    // MARK: - Step Recording
+    
+    func toggleRecording() {
+        isRecording.toggle()
+        if isRecording {
+            // Don't clear the grid - keep existing steps
+            
+            if recordingMode == .trStyle {
+                // TR style - step by step
+                currentRecordingStep = 0
+            } else {
+                // Free form - real time recording
+                // If not playing, start playback for free form recording
+                if !isPlaying {
+                    play()
+                }
+            }
+        }
+    }
+    
+    func toggleRecordingMode() {
+        recordingMode = recordingMode == .freeForm ? .trStyle : .freeForm
+        // Stop recording when switching modes
+        if isRecording {
+            isRecording = false
+        }
+    }
+    
+    
+    func recordNoteToStep(note: Int) {
+        guard isRecording else { return }
+        
+        if recordingMode == .trStyle {
+            // TR-style step recording
+            guard currentRecordingStep < 16 else { return }
+            
+            // Convert MIDI note to grid row for the selected instrument
+            let row = noteToGridRow(note: note, instrument: selectedInstrument)
+            
+            // Set the step in the grid
+            let key = "\(selectedInstrument)_\(row)_\(currentRecordingStep)"
+            instrumentSteps[key] = true
+            
+            // Move to next step
+            currentRecordingStep += 1
+            
+            // Stop recording when we reach step 16
+            if currentRecordingStep >= 16 {
+                isRecording = false
+                currentRecordingStep = 0
+            }
+        } else {
+            // Free form recording - add note immediately to current playing step
+            if isPlaying {
+                let row = noteToGridRow(note: note, instrument: selectedInstrument)
+                let key = "\(selectedInstrument)_\(row)_\(currentPlayingStep)"
+                instrumentSteps[key] = true
+            }
+        }
+    }
+    
+    private func noteToGridRow(note: Int, instrument: Int) -> Int {
+        if instrument == 3 {
+            // For drums, map notes to specific drum sounds (0-3 for basic kit)
+            switch note {
+            case 36, 48, 60, 72: return 0 // Kick (C notes)
+            case 38, 50, 62, 74: return 1 // Snare (D notes)
+            case 42, 54, 66, 78: return 2 // Hi-hat closed (F# notes)
+            case 46, 58, 70, 82: return 3 // Hi-hat open (A# notes)
+            default: return note % 4 // Map other notes to available drum sounds
+            }
+        } else {
+            // For melodic instruments, use the C major scale
+            let scaleNotes = [0, 2, 4, 5, 7, 9, 11, 12] // C major scale intervals
+            // let octave = (note - 60) / 12
+            let noteInOctave = (note - 60) % 12
+            
+            // Find closest note in scale
+            var closestScaleIndex = 0
+            var minDistance = 12
+            for (index, scaleNote) in scaleNotes.enumerated() {
+                let distance = abs(noteInOctave - scaleNote)
+                if distance < minDistance {
+                    minDistance = distance
+                    closestScaleIndex = index
+                }
+            }
+            
+            // Map to row (0-7, with 0 at top)
+            let row = 7 - closestScaleIndex
+            return max(0, min(7, row))
+        }
     }
     
     // MARK: - Pattern Management
@@ -548,13 +724,17 @@ class SimpleInstrument {
     private let mixer: AVAudioMixerNode
     private weak var parentEngine: AudioEngine?
     
+    // Pre-computed buffer cache
+    private var bufferCache: [String: AVAudioPCMBuffer] = [:]
+    private let bufferCacheQueue = DispatchQueue(label: "buffer.cache.queue", attributes: .concurrent)
+    
     init(type: InstrumentType, audioEngine: AVAudioEngine, parentEngine: AudioEngine? = nil) {
         self.type = type
         self.audioEngine = audioEngine
         self.mixer = AVAudioMixerNode()
         self.parentEngine = parentEngine
         
-        print("Created \(type.name) instrument with \(type.waveformType) waveform")
+        // print("Created \(type.name) instrument with \(type.waveformType) waveform")
     }
     
     private func setupMixerIfNeeded() {
@@ -573,9 +753,50 @@ class SimpleInstrument {
         }
     }
     
+    private func getOrCreateBuffer(note: Int, velocity: Int, waveformIndex: Int) -> AVAudioPCMBuffer? {
+        let cacheKey = "\(type.rawValue)_\(note)_\(velocity)_\(waveformIndex)"
+        
+        // Check cache first
+        if let cachedBuffer = bufferCacheQueue.sync(execute: { bufferCache[cacheKey] }) {
+            return cachedBuffer
+        }
+        
+        // Create buffer
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
+        let sampleRate = 44100.0
+        let duration = 0.2 // Shorter buffer for less lag
+        let frameCount = AVAudioFrameCount(sampleRate * duration)
+        
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return nil }
+        buffer.frameLength = frameCount
+        
+        let frequency = noteToFrequency(note)
+        let data = buffer.floatChannelData![0]
+        let amplitude = Float(0.3 * pow(Double(velocity) / 127.0, 0.5))
+        
+        // Generate waveform in background
+        generateWaveform(data: data, frameCount: Int(frameCount), frequency: frequency, amplitude: amplitude, waveformIndex: waveformIndex, sampleRate: sampleRate, duration: duration)
+        
+        // Cache the buffer
+        bufferCacheQueue.async(flags: .barrier) {
+            self.bufferCache[cacheKey] = buffer
+            // Limit cache size
+            if self.bufferCache.count > 100 {
+                self.bufferCache.removeAll()
+            }
+        }
+        
+        return buffer
+    }
+    
     func play(note: Int, velocity: Int) {
         setupMixerIfNeeded()
-        let frequency = noteToFrequency(note)
+        
+        // Get waveform index from parent engine
+        let waveformIndex = parentEngine?.instrumentWaveforms[type.rawValue] ?? 0
+        
+        // Get or create buffer from cache
+        guard let buffer = getOrCreateBuffer(note: note, velocity: velocity, waveformIndex: waveformIndex) else { return }
         
         // Create a simple tone using AVAudioPlayerNode and AVAudioPCMBuffer
         let playerNode = AVAudioPlayerNode()
@@ -586,54 +807,74 @@ class SimpleInstrument {
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)!
         audioEngine.connect(playerNode, to: mixer, format: format)
         
-        // Generate a simple sine wave tone
-        let sampleRate = 44100.0
-        let duration = 0.5 // Half second note
-        let frameCount = AVAudioFrameCount(sampleRate * duration)
+        // Store player node reference and play
+        oscillatorNodes[note] = playerNode
+        playerNode.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
+        playerNode.play()
         
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return }
+        // Auto-stop after duration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.stop(note: note)
+        }
         
-        buffer.frameLength = frameCount
-        
-        let data = buffer.floatChannelData![0]
-        for i in 0..<Int(frameCount) {
+        // print("Playing \(type.name): note \(note), frequency \(String(format: "%.1f", frequency))Hz")
+    }
+    
+    private func generateWaveform(data: UnsafeMutablePointer<Float>, frameCount: Int, frequency: Double, amplitude: Float, waveformIndex: Int, sampleRate: Double, duration: Double) {
+        for i in 0..<frameCount {
             let time = Double(i) / sampleRate
-            let amplitude = Float(0.3 * pow(Double(velocity) / 127.0, 0.5)) // Velocity scaling
             
             // Different waveforms and characteristics for different instruments
             let value: Float
+            
             switch type {
-            case .synth:
-                // Sawtooth wave with slight detuning for richness
-                let detune = 1.002
-                let saw1 = Float(2.0 * (time * frequency).truncatingRemainder(dividingBy: 1.0) - 1.0)
-                let saw2 = Float(2.0 * (time * frequency * detune).truncatingRemainder(dividingBy: 1.0) - 1.0)
-                value = amplitude * (saw1 + saw2 * 0.5) / 1.5
-                
-            case .bass:
-                // Square wave with sub-oscillator
-                let fundamental = Float(sin(time * frequency * 2 * .pi) > 0 ? 1.0 : -1.0)
-                let subOsc = Float(sin(time * frequency * 0.5 * 2 * .pi)) * 0.3 // Sub oscillator
-                value = amplitude * (fundamental + subOsc) * 0.8
-                
-            case .keys:
-                // Electric piano-like sound (multiple harmonics)
-                let fundamental = Float(sin(time * frequency * 2 * .pi))
-                let harmonic2 = Float(sin(time * frequency * 2 * 2 * .pi)) * 0.5
-                let harmonic3 = Float(sin(time * frequency * 3 * 2 * .pi)) * 0.25
-                value = amplitude * (fundamental + harmonic2 + harmonic3) / 1.75
+            case .synth, .bass, .keys:
+                // Generate waveform based on selected type
+                switch waveformIndex {
+                case 0: // Square wave
+                    value = amplitude * Float(sin(time * frequency * 2 * .pi) > 0 ? 1.0 : -1.0)
+                case 1: // Sawtooth wave
+                    value = amplitude * Float(2.0 * (time * frequency).truncatingRemainder(dividingBy: 1.0) - 1.0)
+                case 2: // Triangle wave
+                    let phase = (time * frequency).truncatingRemainder(dividingBy: 1.0)
+                    value = amplitude * Float(phase < 0.5 ? 4.0 * phase - 1.0 : 3.0 - 4.0 * phase)
+                case 3: // Sine wave
+                    value = amplitude * Float(sin(time * frequency * 2 * .pi))
+                case 4: // Reverse sawtooth wave
+                    value = amplitude * Float(1.0 - 2.0 * (time * frequency).truncatingRemainder(dividingBy: 1.0))
+                default:
+                    value = amplitude * Float(sin(time * frequency * 2 * .pi))
+                }
                 
             case .drums:
-                // Noise with envelope for drums
-                let envelope = Float(exp(-time * 5)) // Quick decay
-                value = amplitude * envelope * Float.random(in: -1...1)
+                // Different drum synthesis based on kit
+                switch waveformIndex {
+                case 0: // Kit 1 - Classic
+                    let envelope = Float(exp(-time * 5))
+                    value = amplitude * envelope * Float.random(in: -1...1)
+                case 1: // Kit 2 - Punchy
+                    let envelope = Float(exp(-time * 8))
+                    let tone = Float(sin(time * frequency * 0.5 * 2 * .pi))
+                    value = amplitude * envelope * (tone * 0.3 + Float.random(in: -1...1) * 0.7)
+                case 2: // Kit 3 - Electronic
+                    let envelope = Float(exp(-time * 10))
+                    let tone = Float(sin(time * frequency * 2 * .pi) > 0 ? 1.0 : -1.0)
+                    value = amplitude * envelope * tone
+                case 3: // Kit 4 - Soft
+                    let envelope = Float(exp(-time * 3))
+                    value = amplitude * envelope * Float(sin(time * frequency * 2 * .pi)) * 0.8
+                default:
+                    let envelope = Float(exp(-time * 5))
+                    value = amplitude * envelope * Float.random(in: -1...1)
+                }
             }
             
-            // Apply ADSR envelope from the parent audio engine
-            let attack = parentEngine?.attack ?? 0.01
-            let decay = parentEngine?.decay ?? 0.1
-            let sustain = Float(parentEngine?.sustain ?? 0.8)
-            let release = parentEngine?.release ?? 0.3
+            // Apply ADSR envelope from the parent audio engine (per-track)
+            let trackADSR = parentEngine?.getTrackADSR(track: type.rawValue) ?? [0.01, 0.1, 0.8, 0.3]
+            let attack = trackADSR[0]
+            let decay = trackADSR[1]
+            let sustain = Float(trackADSR[2])
+            let release = trackADSR[3]
             
             let envelope: Float
             if time < attack {
@@ -651,17 +892,6 @@ class SimpleInstrument {
             
             data[i] = value * envelope
         }
-        
-        oscillatorNodes[note] = playerNode
-        playerNode.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
-        playerNode.play()
-        
-        // Auto-stop after duration
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-            self.stop(note: note)
-        }
-        
-        print("Playing \(type.name): note \(note), frequency \(String(format: "%.1f", frequency))Hz")
     }
     
     func stop(note: Int) {
@@ -670,7 +900,7 @@ class SimpleInstrument {
             audioEngine.detach(playerNode)
             oscillatorNodes.removeValue(forKey: note)
         }
-        print("Stopping \(type.name): note \(note)")
+        // print("Stopping \(type.name): note \(note)")
     }
     
     func stopAll() {
@@ -679,11 +909,11 @@ class SimpleInstrument {
             audioEngine.detach(playerNode)
         }
         oscillatorNodes.removeAll()
-        print("Stopping all notes for \(type.name)")
+        // print("Stopping all notes for \(type.name)")
     }
     
     func updateEnvelope(attack: Double, decay: Double, sustain: Double, release: Double) {
-        print("Updated \(type.name) envelope: A:\(attack) D:\(decay) S:\(sustain) R:\(release)")
+        // print("Updated \(type.name) envelope: A:\(attack) D:\(decay) S:\(sustain) R:\(release)")
     }
     
     private func noteToFrequency(_ note: Int) -> Double {
@@ -714,7 +944,7 @@ class SimpleInstrument {
                         drumSamples[index] = buffer
                     }
                 } catch {
-                    print("Failed to load drum sample \(filename): \(error)")
+                    // print("Failed to load drum sample \(filename): \(error)")
                 }
             }
         }
@@ -732,6 +962,10 @@ class SimpleInstrument {
         
         let playerNode = AVAudioPlayerNode()
         audioEngine.attach(playerNode)
+        
+        // Get the kit index from parent engine  
+        // let kitIndex = parentEngine?.instrumentWaveforms[3] ?? 0
+        // TODO: Use different drum samples based on kit selection
         
         // Use sample if available, otherwise fall back to synthesis
         if let sampleBuffer = drumSamples[sound] {
