@@ -14,6 +14,7 @@ class AudioEngine: ObservableObject {
     private var delayNode: AVAudioUnitDelay?
     private var reverbNode: AVAudioUnitReverb?
     private var distortionNode: AVAudioUnitDistortion?
+    private var eqNode: AVAudioUnitEQ?
     var effectsMixer = AVAudioMixerNode() // Made accessible to instruments
     
     // Sequencer
@@ -453,20 +454,46 @@ class AudioEngine: ObservableObject {
             reverb.wetDryMix = 0  // Start with 0% wet
         }
         
-        // Create and attach distortion
+        // Create and attach distortion - warm saturation
         distortionNode = AVAudioUnitDistortion()
         if let distortion = distortionNode {
             audioEngine.attach(distortion)
-            distortion.loadFactoryPreset(.drumsBitBrush)
+            distortion.loadFactoryPreset(.multiEcho1) // Warmer, more musical distortion
+            distortion.preGain = -6.0 // Reduce input to prevent harshness
             distortion.wetDryMix = 0  // Start with 0% wet
+        }
+        
+        // Create and attach EQ for tonal shaping
+        eqNode = AVAudioUnitEQ(numberOfBands: 3)
+        if let eq = eqNode {
+            audioEngine.attach(eq)
+            // Low shelf for bass
+            eq.bands[0].filterType = .lowShelf
+            eq.bands[0].frequency = 200
+            eq.bands[0].gain = 0
+            eq.bands[0].bypass = false
+            
+            // Mid peak for presence
+            eq.bands[1].filterType = .parametric
+            eq.bands[1].frequency = 2000
+            eq.bands[1].bandwidth = 0.5
+            eq.bands[1].gain = 0
+            eq.bands[1].bypass = false
+            
+            // High shelf for air
+            eq.bands[2].filterType = .highShelf
+            eq.bands[2].frequency = 8000
+            eq.bands[2].gain = 0
+            eq.bands[2].bypass = false
         }
         
         // Connect effects chain
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)
         
-        // Effects mixer -> Delay -> Reverb -> Distortion -> Main output
-        if let delay = delayNode, let reverb = reverbNode, let distortion = distortionNode {
-            audioEngine.connect(effectsMixer, to: delay, format: format)
+        // Effects mixer -> EQ -> Delay -> Reverb -> Distortion -> Main output
+        if let eq = eqNode, let delay = delayNode, let reverb = reverbNode, let distortion = distortionNode {
+            audioEngine.connect(effectsMixer, to: eq, format: format)
+            audioEngine.connect(eq, to: delay, format: format)
             audioEngine.connect(delay, to: reverb, format: format)
             audioEngine.connect(reverb, to: distortion, format: format)
             audioEngine.connect(distortion, to: audioEngine.mainMixerNode, format: format)
@@ -480,31 +507,53 @@ class AudioEngine: ObservableObject {
         let effectAmounts = trackEffectAmounts[track]
         
         // Update effect parameters based on slider values for the specific track
-        // Effect A: Delay
+        // Effect A: Tempo-synced Delay
         if effectsEnabled[0], let delay = delayNode {
-            delay.wetDryMix = Float(effectAmounts[0] * 50) // 0-50% wet
+            // Musical delay synced to tempo
+            let tempo = bpm / 60.0 // beats per second
+            let delayBeats = 0.375 + (effectAmounts[0] * 0.125) // Dotted eighth to half note
+            delay.delayTime = delayBeats / tempo
+            delay.feedback = Float(35 + effectAmounts[0] * 40) // 35-75% feedback
+            delay.wetDryMix = Float(effectAmounts[0] * 40) // 0-40% wet
+            delay.lowPassCutoff = Float(1000 + effectAmounts[0] * 3000) // 1-4kHz filter
         } else {
             delayNode?.wetDryMix = 0
         }
         
-        // Effect B: Reverb
+        // Effect B: Lush Reverb
         if effectsEnabled[1], let reverb = reverbNode {
-            reverb.wetDryMix = Float(effectAmounts[1] * 50) // 0-50% wet
+            reverb.wetDryMix = Float(effectAmounts[1] * 60) // 0-60% wet for spaciousness
         } else {
             reverbNode?.wetDryMix = 0
         }
         
-        // Effect C: Distortion
+        // Effect C: Warm Saturation/Distortion
         if effectsEnabled[2], let distortion = distortionNode {
-            distortion.wetDryMix = Float(effectAmounts[2] * 30) // 0-30% wet (distortion is intense)
+            distortion.preGain = Float(-10 + effectAmounts[2] * 15) // -10 to +5 dB
+            distortion.wetDryMix = Float(effectAmounts[2] * 80) // 0-80% for warm saturation
         } else {
             distortionNode?.wetDryMix = 0
         }
         
-        // Effect D: Chorus (using delay with modulation for simple chorus)
-        if effectsEnabled[3], let delay = delayNode {
-            delay.delayTime = 0.02 + (effectAmounts[3] * 0.03) // 20-50ms for chorus effect
-            delay.feedback = Float(effectAmounts[3] * 20) // 0-20% feedback
+        // Effect D: Tone Shaping/Character (using EQ)
+        if effectsEnabled[3], let eq = eqNode {
+            // Create movement and character with EQ
+            let amount = Float(effectAmounts[3])
+            
+            // Bass boost/cut
+            eq.bands[0].gain = amount * 6 - 3 // -3 to +3 dB
+            
+            // Mid scoop/boost for character
+            eq.bands[1].gain = amount * 8 - 4 // -4 to +4 dB
+            eq.bands[1].frequency = 800 + amount * 1200 // 800-2000 Hz sweep
+            
+            // High frequency sparkle
+            eq.bands[2].gain = amount * 4 - 2 // -2 to +2 dB
+        } else if let eq = eqNode {
+            // Reset EQ when disabled
+            eq.bands[0].gain = 0
+            eq.bands[1].gain = 0
+            eq.bands[2].gain = 0
         }
     }
     
@@ -798,6 +847,18 @@ class SimpleInstrument {
         guard !audioEngine.attachedNodes.contains(mixer) else { return }
         
         audioEngine.attach(mixer)
+        
+        // Set instrument-specific mix levels for better balance
+        switch type {
+        case .synth:
+            mixer.volume = 0.8  // Slightly quieter for lead
+        case .bass:
+            mixer.volume = 0.9  // Strong bass presence
+        case .keys:
+            mixer.volume = 0.7  // Softer for pads
+        case .drums:
+            mixer.volume = 1.0  // Full volume for punch
+        }
         
         // Use a proper audio format
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)

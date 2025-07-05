@@ -6,7 +6,7 @@ struct EffectsView: View {
     @State private var effectsEnabled: [Bool] = [true, true, true, true]
     
     let effectNames = ["A", "B", "C", "D"]
-    let effectFullNames = ["Delay", "Reverb", "Distortion", "Chorus"]
+    let effectFullNames = ["Echo", "Space", "Warmth", "Phase"]
     
     var body: some View {
         VStack(spacing: 8) {
