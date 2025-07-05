@@ -24,7 +24,8 @@ class AudioEngine: ObservableObject {
     @Published var isPlaying = false
     @Published var bpm: Double = 120
     @Published var selectedInstrument = 0
-    @Published var transpose = 0
+    @Published var transpose = 0  // Keyboard transpose
+    @Published var gridTranspose = 0  // Grid transpose
     @Published var arpeggiatorMode = 0
     @Published var currentPattern = 0
     @Published var currentPlayingStep = -1 // Track current step for UI
@@ -176,7 +177,7 @@ class AudioEngine: ObservableObject {
                     } else {
                         // Melodic instruments - use stored note or default
                         let note = instrumentNotes[key] ?? rowToNote(row: row, instrument: instrument)
-                        playNote(instrument: instrument, note: note)
+                        playNote(instrument: instrument, note: note + gridTranspose)
                     }
                 }
             }

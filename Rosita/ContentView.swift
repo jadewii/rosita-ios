@@ -112,30 +112,77 @@ struct ContentView: View {
                             PatternSlotsView()
                                 .frame(height: 56)
                             
-                            // BPM control with slider
-                            VStack(spacing: 4) {
-                                HStack(spacing: 4) {
-                                    Text("BPM")
+                            // BPM and Grid Octave controls
+                            HStack(spacing: 16) {
+                                // BPM control with custom slider
+                                VStack(spacing: 4) {
+                                    HStack(spacing: 4) {
+                                        Text("BPM")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.black)
+                                        
+                                        Text("\(Int(audioEngine.bpm))")
+                                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                            .foregroundColor(.black)
+                                            .frame(width: 36, height: 20)
+                                            .background(
+                                                Rectangle()
+                                                    .fill(Color.white)
+                                                    .overlay(
+                                                        Rectangle()
+                                                            .stroke(Color.black, lineWidth: 1)
+                                                    )
+                                            )
+                                    }
+                                    
+                                    CustomSlider(
+                                        value: $audioEngine.bpm,
+                                        range: 60...200,
+                                        trackColor: Color(hex: "FF1493"),
+                                        label: ""
+                                    )
+                                    .frame(width: 120, height: 40)
+                                }
+                                
+                                // Grid Octave controls
+                                HStack(spacing: 6) {
+                                    Text("GRID OCT")
                                         .font(.system(size: 10, weight: .bold))
                                         .foregroundColor(.black)
                                     
-                                    Text("\(Int(audioEngine.bpm))")
+                                    RetroButton(
+                                        title: "-",
+                                        color: Color(hex: "87CEEB"),
+                                        textColor: .black,
+                                        action: {
+                                            if audioEngine.gridTranspose > -24 {
+                                                audioEngine.gridTranspose -= 12
+                                            }
+                                        },
+                                        width: 28,
+                                        height: 28,
+                                        fontSize: 16
+                                    )
+                                    
+                                    Text("\(audioEngine.gridTranspose / 12)")
                                         .font(.system(size: 11, weight: .bold, design: .monospaced))
                                         .foregroundColor(.black)
-                                        .frame(width: 36, height: 20)
-                                        .background(
-                                            Rectangle()
-                                                .fill(Color.white)
-                                                .overlay(
-                                                    Rectangle()
-                                                        .stroke(Color.black, lineWidth: 1)
-                                                )
-                                        )
+                                        .frame(width: 24)
+                                    
+                                    RetroButton(
+                                        title: "+",
+                                        color: Color(hex: "87CEEB"),
+                                        textColor: .black,
+                                        action: {
+                                            if audioEngine.gridTranspose < 24 {
+                                                audioEngine.gridTranspose += 12
+                                            }
+                                        },
+                                        width: 28,
+                                        height: 28,
+                                        fontSize: 16
+                                    )
                                 }
-                                
-                                Slider(value: $audioEngine.bpm, in: 60...200, step: 1)
-                                    .frame(width: 120)
-                                    .accentColor(Color(hex: "FF1493"))
                             }
                             
                             Spacer()
@@ -155,9 +202,9 @@ struct ContentView: View {
                             EffectsView()
                                 .frame(maxHeight: .infinity)
                             
-                            // Octave controls
+                            // Keyboard Octave controls
                             HStack(spacing: 8) {
-                                Text("OCTAVE")
+                                Text("KB OCTAVE")
                                     .font(.system(size: 11, weight: .bold))
                                     .foregroundColor(.black)
                                 
