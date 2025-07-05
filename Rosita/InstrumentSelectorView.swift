@@ -50,11 +50,11 @@ struct RetroInstrumentButton: View {
         }) {
             Text(type.displayNumber)
                 .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundColor(isSelected ? .black : .white)
+                .foregroundColor(isSelected ? .black : Color.white.opacity(0.8))
                 .frame(width: 36, height: 36)
                 .background(
                     Rectangle()
-                        .fill(isSelected ? type.color : Color.black)
+                        .fill(isSelected ? type.color : type.color.opacity(0.3))
                         .overlay(
                             ZStack {
                                 // 3D bevel effect

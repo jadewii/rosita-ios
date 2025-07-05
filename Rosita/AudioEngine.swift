@@ -10,6 +10,12 @@ class AudioEngine: ObservableObject {
     private var audioEngine = AVAudioEngine()
     private var instruments: [SimpleInstrument] = []
     
+    // Effects nodes
+    private var delayNode: AVAudioUnitDelay?
+    private var reverbNode: AVAudioUnitReverb?
+    private var distortionNode: AVAudioUnitDistortion?
+    var effectsMixer = AVAudioMixerNode() // Made accessible to instruments
+    
     // Sequencer
     private var sequencerTimer: Timer?
     private var currentStep = 0
@@ -46,17 +52,20 @@ class AudioEngine: ObservableObject {
         let mixerNode = AVAudioMixerNode()
         audioEngine.attach(mixerNode)
         
-        // Connect mixer to main mixer to output - this ensures proper node graph
+        // Set up effects chain
+        setupEffects()
+        
+        // Connect mixer to effects mixer
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)
-        audioEngine.connect(mixerNode, to: audioEngine.mainMixerNode, format: format)
+        audioEngine.connect(mixerNode, to: effectsMixer, format: format)
         
         // Create instruments without starting the audio engine immediately
         for i in 0..<4 {
-            let instrument = SimpleInstrument(type: InstrumentType(rawValue: i) ?? .synth, audioEngine: audioEngine)
+            let instrument = SimpleInstrument(type: InstrumentType(rawValue: i) ?? .synth, audioEngine: audioEngine, parentEngine: self)
             instruments.append(instrument)
         }
         
-        print("Audio engine setup complete with \(instruments.count) instruments and mixer node")
+        print("Audio engine setup complete with \(instruments.count) instruments and effects")
     }
     
     private func startAudioEngineIfNeeded() {
@@ -228,7 +237,8 @@ class AudioEngine: ObservableObject {
     }
     
     func clearAllPatterns() {
-        patterns = (0..<8).map { _ in Pattern() }
+        // Clear all instrument steps
+        instrumentSteps.removeAll()
     }
     
     
@@ -344,9 +354,75 @@ class AudioEngine: ObservableObject {
     
     // MARK: - Effects Control
     
+    private func setupEffects() {
+        // Attach effects mixer
+        audioEngine.attach(effectsMixer)
+        
+        // Create and attach delay
+        delayNode = AVAudioUnitDelay()
+        if let delay = delayNode {
+            audioEngine.attach(delay)
+            delay.delayTime = 0.2 // 200ms delay
+            delay.feedback = 30    // 30% feedback
+            delay.wetDryMix = 0   // Start with 0% wet
+        }
+        
+        // Create and attach reverb
+        reverbNode = AVAudioUnitReverb()
+        if let reverb = reverbNode {
+            audioEngine.attach(reverb)
+            reverb.loadFactoryPreset(.mediumHall)
+            reverb.wetDryMix = 0  // Start with 0% wet
+        }
+        
+        // Create and attach distortion
+        distortionNode = AVAudioUnitDistortion()
+        if let distortion = distortionNode {
+            audioEngine.attach(distortion)
+            distortion.loadFactoryPreset(.drumsBitBrush)
+            distortion.wetDryMix = 0  // Start with 0% wet
+        }
+        
+        // Connect effects chain
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)
+        
+        // Effects mixer -> Delay -> Reverb -> Distortion -> Main output
+        if let delay = delayNode, let reverb = reverbNode, let distortion = distortionNode {
+            audioEngine.connect(effectsMixer, to: delay, format: format)
+            audioEngine.connect(delay, to: reverb, format: format)
+            audioEngine.connect(reverb, to: distortion, format: format)
+            audioEngine.connect(distortion, to: audioEngine.mainMixerNode, format: format)
+        }
+    }
+    
     func updateEffects() {
-        // TODO: Implement effects when AudioKit is configured
-        print("Effects updated: \(effectAmounts)")
+        // Update effect parameters based on slider values
+        // Effect A: Delay
+        if effectsEnabled[0], let delay = delayNode {
+            delay.wetDryMix = Float(effectAmounts[0] * 50) // 0-50% wet
+        } else {
+            delayNode?.wetDryMix = 0
+        }
+        
+        // Effect B: Reverb
+        if effectsEnabled[1], let reverb = reverbNode {
+            reverb.wetDryMix = Float(effectAmounts[1] * 50) // 0-50% wet
+        } else {
+            reverbNode?.wetDryMix = 0
+        }
+        
+        // Effect C: Distortion
+        if effectsEnabled[2], let distortion = distortionNode {
+            distortion.wetDryMix = Float(effectAmounts[2] * 30) // 0-30% wet (distortion is intense)
+        } else {
+            distortionNode?.wetDryMix = 0
+        }
+        
+        // Effect D: Chorus (using delay with modulation for simple chorus)
+        if effectsEnabled[3], let delay = delayNode {
+            delay.delayTime = 0.02 + (effectAmounts[3] * 0.03) // 20-50ms for chorus effect
+            delay.feedback = Float(effectAmounts[3] * 20) // 0-20% feedback
+        }
     }
     
     // MARK: - ADSR Control
@@ -470,11 +546,13 @@ class SimpleInstrument {
     private var oscillatorNodes: [Int: AVAudioPlayerNode] = [:]
     private let audioEngine: AVAudioEngine
     private let mixer: AVAudioMixerNode
+    private weak var parentEngine: AudioEngine?
     
-    init(type: InstrumentType, audioEngine: AVAudioEngine) {
+    init(type: InstrumentType, audioEngine: AVAudioEngine, parentEngine: AudioEngine? = nil) {
         self.type = type
         self.audioEngine = audioEngine
         self.mixer = AVAudioMixerNode()
+        self.parentEngine = parentEngine
         
         print("Created \(type.name) instrument with \(type.waveformType) waveform")
     }
@@ -486,7 +564,13 @@ class SimpleInstrument {
         
         // Use a proper audio format
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1)
-        audioEngine.connect(mixer, to: audioEngine.mainMixerNode, format: format)
+        
+        // Connect to effects mixer if available, otherwise main mixer
+        if let parent = parentEngine {
+            audioEngine.connect(mixer, to: parent.effectsMixer, format: format)
+        } else {
+            audioEngine.connect(mixer, to: audioEngine.mainMixerNode, format: format)
+        }
     }
     
     func play(note: Int, velocity: Int) {
@@ -545,11 +629,11 @@ class SimpleInstrument {
                 value = amplitude * envelope * Float.random(in: -1...1)
             }
             
-            // Apply simple envelope (ADSR-like)
-            let attack = 0.01
-            let decay = 0.1
-            let sustain: Float = 0.7
-            let release = 0.2
+            // Apply ADSR envelope from the parent audio engine
+            let attack = parentEngine?.attack ?? 0.01
+            let decay = parentEngine?.decay ?? 0.1
+            let sustain = Float(parentEngine?.sustain ?? 0.8)
+            let release = parentEngine?.release ?? 0.3
             
             let envelope: Float
             if time < attack {
