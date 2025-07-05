@@ -4,10 +4,10 @@ struct ADSRView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
             // Title
             Text("ADSR Envelope")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.black)
             
             // ADSR Sliders - beautiful custom sliders like original

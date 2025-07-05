@@ -4,14 +4,14 @@ struct InstrumentSelectorView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 4) {
             // Title
             Text("Instrument")
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 12, weight: .bold))
                 .foregroundColor(.white)
             
             // Instrument buttons in a single row
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 ForEach(0..<4) { index in
                     InstrumentButton(
                         index: index,
@@ -23,7 +23,7 @@ struct InstrumentSelectorView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(8)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color.white.opacity(0.15))
@@ -49,9 +49,9 @@ struct InstrumentButton: View {
             }
         }) {
             Text(type.displayNumber)
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.white)
-                .frame(width: 40, height: 40)
+                .frame(width: 36, height: 36)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
                         .fill(isSelected ? type.color.opacity(0.8) : Color.white.opacity(0.2))

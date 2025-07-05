@@ -17,121 +17,120 @@ struct ContentView: View {
                     )
                     .ignoresSafeArea(.all)
                 
-                // Main layout with better spacing
-                VStack(spacing: 8) {
-                    // Top control panel
-                    HStack(alignment: .top, spacing: 10) {
-                        // Left side controls
-                        VStack(spacing: 8) {
-                            // Instruments and Arpeggiator side by side
-                            HStack(spacing: 8) {
-                                InstrumentSelectorView()
-                                    .frame(maxWidth: .infinity)
-                                ArpeggiatorView()
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .frame(height: 80)
+                // Main layout - no overlapping, efficient use of space
+                VStack(spacing: 4) {
+                    // Top section with all controls
+                    HStack(alignment: .top, spacing: 8) {
+                        // Left column - Instruments, Arp, ADSR, Effects
+                        VStack(spacing: 6) {
+                            // Instruments row
+                            InstrumentSelectorView()
+                                .frame(height: 60)
+                            
+                            // Arpeggiator 
+                            ArpeggiatorView()
+                                .frame(height: 70)
                             
                             // ADSR Envelope
                             ADSRView()
-                                .frame(height: 120)
+                                .frame(height: 110)
                             
-                            // Control buttons between ADSR and Effects
-                            HStack(spacing: 8) {
+                            // Control buttons
+                            HStack(spacing: 6) {
                                 Button(action: {}) {
                                     Text("ADSR")
-                                        .font(.system(size: 12, weight: .bold))
+                                        .font(.system(size: 11, weight: .bold))
                                         .foregroundColor(.black)
-                                        .frame(width: 55, height: 28)
+                                        .frame(width: 48, height: 24)
                                         .background(Color.white)
-                                        .cornerRadius(6)
+                                        .cornerRadius(4)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 6)
+                                            RoundedRectangle(cornerRadius: 4)
                                                 .stroke(Color.black, lineWidth: 1)
                                         )
                                 }
                                 
                                 Button(action: {}) {
                                     Text("Major")
-                                        .font(.system(size: 12, weight: .bold))
+                                        .font(.system(size: 11, weight: .bold))
                                         .foregroundColor(.black)
-                                        .frame(width: 55, height: 28)
+                                        .frame(width: 48, height: 24)
                                         .background(Color.white)
-                                        .cornerRadius(6)
+                                        .cornerRadius(4)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 6)
+                                            RoundedRectangle(cornerRadius: 4)
                                                 .stroke(Color.black, lineWidth: 1)
                                         )
                                 }
                                 
                                 Button(action: {}) {
                                     Text("Octave")
-                                        .font(.system(size: 12, weight: .bold))
+                                        .font(.system(size: 11, weight: .bold))
                                         .foregroundColor(.black)
-                                        .frame(width: 55, height: 28)
+                                        .frame(width: 48, height: 24)
                                         .background(Color.white)
-                                        .cornerRadius(6)
+                                        .cornerRadius(4)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 6)
+                                            RoundedRectangle(cornerRadius: 4)
                                                 .stroke(Color.black, lineWidth: 1)
                                         )
                                 }
                             }
-                            .frame(height: 30)
                             
                             // Effects
                             EffectsView()
                                 .frame(maxHeight: .infinity)
                         }
-                        .frame(width: geometry.size.width * 0.4)
+                        .frame(width: geometry.size.width * 0.35)
                         
-                        // Right side - Sequencer section
-                        VStack(spacing: 6) {
-                            // Transport controls and pattern buttons
-                            HStack(spacing: 8) {
+                        // Right column - Transport, Pattern, Grid
+                        VStack(spacing: 4) {
+                            // Transport controls with BPM
+                            HStack(spacing: 6) {
                                 TransportControlsView()
-                                    .frame(maxWidth: .infinity)
+                                
+                                Spacer()
                                 
                                 // BPM control
-                                HStack(spacing: 4) {
+                                HStack(spacing: 3) {
                                     Text("BPM:")
-                                        .font(.system(size: 12, weight: .bold))
+                                        .font(.system(size: 11, weight: .bold))
                                         .foregroundColor(.black)
                                     
                                     Text("\(Int(audioEngine.bpm))")
-                                        .font(.system(size: 12, weight: .bold))
+                                        .font(.system(size: 11, weight: .bold))
                                         .foregroundColor(.black)
-                                        .frame(width: 40, height: 28)
+                                        .frame(width: 36, height: 24)
                                         .background(
-                                            RoundedRectangle(cornerRadius: 6)
+                                            RoundedRectangle(cornerRadius: 4)
                                                 .fill(Color.pink)
                                                 .overlay(
-                                                    RoundedRectangle(cornerRadius: 6)
+                                                    RoundedRectangle(cornerRadius: 4)
                                                         .stroke(Color.black, lineWidth: 1)
                                                 )
                                         )
                                 }
                             }
-                            .frame(height: 40)
+                            .frame(height: 32)
                             
+                            // Pattern slots
                             PatternSlotsView()
-                                .frame(height: 35)
+                                .frame(height: 32)
                             
-                            // Main sequencer grid
+                            // Main sequencer grid - takes all available space
                             GridSequencerView()
                                 .frame(maxHeight: .infinity)
                         }
-                        .frame(width: geometry.size.width * 0.6)
+                        .frame(width: geometry.size.width * 0.63)
                     }
-                    .frame(height: geometry.size.height * 0.68)
+                    .frame(height: geometry.size.height * 0.72)
                     
-                    // Bottom piano keyboard  
+                    // Piano keyboard at bottom
                     PianoKeyboardView()
-                        .frame(height: geometry.size.height * 0.28)
+                        .frame(height: geometry.size.height * 0.26)
                 }
-                .padding(.horizontal, 10)
-                .padding(.top, 8)
-                .padding(.bottom, 4)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
             }
         }
         .onAppear {

@@ -7,7 +7,7 @@ struct EffectsView: View {
     let effectFullNames = ["Delay", "Reverb", "Distortion", "Chorus"]
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
             titleView
             effectControlsView
         }
@@ -17,7 +17,7 @@ struct EffectsView: View {
     
     private var titleView: some View {
         Text("Effects")
-            .font(.system(size: 18, weight: .bold))
+            .font(.system(size: 14, weight: .bold))
             .foregroundColor(.black)
     }
     
