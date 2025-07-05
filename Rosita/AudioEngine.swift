@@ -17,7 +17,12 @@ class AudioEngine: ObservableObject {
     // Published properties
     @Published var isPlaying = false
     @Published var bpm: Double = 120
-    @Published var selectedInstrument = 0
+    @Published var selectedInstrument = 0 {
+        didSet {
+            // When instrument changes, migrate any unassigned steps to current instrument
+            migrateExistingPatterns()
+        }
+    }
     @Published var transpose = 0
     @Published var arpeggiatorMode = 0
     @Published var currentPattern = 0
@@ -56,6 +61,9 @@ class AudioEngine: ObservableObject {
         }
         
         print("Audio engine setup complete with \(instruments.count) instruments and mixer node")
+        
+        // Migrate any existing patterns that don't have instrument assignments
+        migrateExistingPatterns()
     }
     
     private func startAudioEngineIfNeeded() {
@@ -159,31 +167,61 @@ class AudioEngine: ObservableObject {
         patterns = Array(repeating: Pattern(), count: 8)
     }
     
+    // Fix existing patterns that don't have instrument assignments
+    func migrateExistingPatterns() {
+        for patternIndex in 0..<patterns.count {
+            for trackIndex in 0..<patterns[patternIndex].tracks.count {
+                for stepIndex in 0..<patterns[patternIndex].tracks[trackIndex].steps.count {
+                    // If step is active but has no instrument assigned, assign it to the currently selected instrument
+                    if patterns[patternIndex].tracks[trackIndex].steps[stepIndex] && 
+                       patterns[patternIndex].tracks[trackIndex].instruments[stepIndex] == -1 {
+                        patterns[patternIndex].tracks[trackIndex].instruments[stepIndex] = selectedInstrument
+                    }
+                }
+            }
+        }
+    }
+    
     func randomizePattern() {
-        // Only randomize the selected track
+        // Randomize all 8 tracks with DIFFERENT patterns for each track
         var currentPatternCopy = patterns[currentPattern]
-        let trackIndex = selectedInstrument
+        let instrumentIndex = selectedInstrument
         
-        // Clear existing steps for this track
-        for step in 0..<16 {
-            currentPatternCopy.tracks[trackIndex].steps[step] = false
+        // Clear ALL tracks first
+        for track in 0..<8 {
+            for step in 0..<16 {
+                currentPatternCopy.tracks[track].steps[step] = false
+                currentPatternCopy.tracks[track].instruments[step] = -1
+            }
         }
         
-        // Add random steps (about 25% density for musicality)
-        for step in 0..<16 {
-            if Double.random(in: 0...1) < 0.25 {
-                currentPatternCopy.tracks[trackIndex].steps[step] = true
-                // Use appropriate note range based on instrument
-                let noteRange: ClosedRange<Int>
-                switch trackIndex {
-                case 1: // Bass
-                    noteRange = 36...48
-                case 3: // Drums
-                    noteRange = 36...51  // Standard drum kit range
-                default: // Melody instruments
-                    noteRange = 48...72
+        // Generate DIFFERENT random patterns for each track (about 20% density for musicality)
+        for track in 0..<8 {
+            for step in 0..<16 {
+                // Each track gets its own random roll - this is the key fix!
+                if Double.random(in: 0...1) < 0.20 {
+                    currentPatternCopy.tracks[track].steps[step] = true
+                    currentPatternCopy.tracks[track].instruments[step] = instrumentIndex
+                    
+                    // Use appropriate note range based on instrument and track
+                    let noteRange: ClosedRange<Int>
+                    switch instrumentIndex {
+                    case 1: // Bass
+                        noteRange = (36 + track * 2)...(48 + track * 2) // Spread bass notes across tracks
+                    case 3: // Drums
+                        // Different drum sounds per track
+                        switch track {
+                        case 0: noteRange = 36...39 // Kick
+                        case 1: noteRange = 40...43 // Snare
+                        case 2: noteRange = 44...47 // Hi-hat
+                        case 3: noteRange = 48...51 // Percussion
+                        default: noteRange = 36...51
+                        }
+                    default: // Melody instruments (Synth, Keys)
+                        noteRange = (48 + track * 3)...(72 + track * 2) // Spread melody notes across tracks
+                    }
+                    currentPatternCopy.tracks[track].notes[step] = Int.random(in: noteRange)
                 }
-                currentPatternCopy.tracks[trackIndex].notes[step] = Int.random(in: noteRange)
             }
         }
         
@@ -205,6 +243,9 @@ class AudioEngine: ObservableObject {
         patterns[currentPattern].tracks[track].steps[step].toggle()
         if patterns[currentPattern].tracks[track].steps[step] {
             patterns[currentPattern].tracks[track].notes[step] = note
+            patterns[currentPattern].tracks[track].instruments[step] = selectedInstrument
+        } else {
+            patterns[currentPattern].tracks[track].instruments[step] = -1
         }
     }
     
@@ -214,6 +255,17 @@ class AudioEngine: ObservableObject {
             return false
         }
         return patterns[currentPattern].tracks[track].steps[step]
+    }
+    
+    // New function: Only return true for steps belonging to the currently selected instrument
+    func getGridCellForCurrentInstrument(track: Int, step: Int) -> Bool {
+        guard track < patterns[currentPattern].tracks.count,
+              step < patterns[currentPattern].tracks[track].steps.count else {
+            return false
+        }
+        let isActive = patterns[currentPattern].tracks[track].steps[step]
+        let belongsToCurrentInstrument = patterns[currentPattern].tracks[track].instruments[step] == selectedInstrument
+        return isActive && belongsToCurrentInstrument
     }
     
     // MARK: - Effects Control
@@ -298,6 +350,7 @@ struct Pattern {
 struct Track {
     var steps: [Bool] = Array(repeating: false, count: 16)
     var notes: [Int] = Array(repeating: 60, count: 16)
+    var instruments: [Int] = Array(repeating: -1, count: 16) // -1 means no instrument assigned
 }
 
 // MARK: - Simplified Instrument Class for UI Testing

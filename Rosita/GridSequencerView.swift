@@ -4,17 +4,25 @@ struct GridSequencerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @State private var currentPlayingStep = -1
     
-    // Track colors that match the instrument colors from the target image
-    let trackColors: [Color] = [
-        .orange,    // Track 0 (drums)
-        .cyan,      // Track 1
-        .green,     // Track 2
-        .pink,      // Track 3
-        .purple,    // Track 4
-        .yellow,    // Track 5
-        .mint,      // Track 6
-        .blue       // Track 7
-    ]
+    // Get instrument colors from InstrumentType
+    private func getInstrumentColor(for instrumentIndex: Int) -> Color {
+        guard let instrumentType = InstrumentType(rawValue: instrumentIndex) else {
+            return Color.gray
+        }
+        return instrumentType.color
+    }
+    
+    // Get darker shade for active steps
+    private func getDarkerShade(of color: Color) -> Color {
+        // Convert to darker version for active steps
+        switch color {
+        case Color(hex: "FFB6C1"): return Color(hex: "FF1493") // Pink -> Deep Pink
+        case Color(hex: "87CEEB"): return Color(hex: "1E90FF") // Sky Blue -> Dodger Blue
+        case Color(hex: "DDA0DD"): return Color(hex: "9370DB") // Plum -> Medium Purple
+        case Color(hex: "FFD700"): return Color(hex: "FFA500") // Gold -> Orange
+        default: return color.opacity(0.7)
+        }
+    }
     
     var body: some View {
         VStack(spacing: 4) {
@@ -45,9 +53,11 @@ struct GridSequencerView: View {
                             GridCell(
                                 track: track,
                                 step: step,
-                                isActive: audioEngine.getGridCell(track: track, step: step),
+                                isActive: audioEngine.getGridCellForCurrentInstrument(track: track, step: step),
                                 isPlaying: audioEngine.isPlaying && step == currentPlayingStep,
-                                color: trackColors[track]
+                                selectedInstrument: audioEngine.selectedInstrument,
+                                instrumentColor: getInstrumentColor(for: audioEngine.selectedInstrument),
+                                darkerColor: getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument))
                             ) {
                                 audioEngine.toggleGridCell(track: track, step: step)
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -58,11 +68,11 @@ struct GridSequencerView: View {
             }
             .padding(8)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(hex: "ff8c99"))
+                Rectangle()
+                    .fill(getInstrumentColor(for: audioEngine.selectedInstrument))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(hex: "d1477a"), lineWidth: 2)
+                        Rectangle()
+                            .stroke(getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument)), lineWidth: 1)
                     )
             )
             .onReceive(Timer.publish(every: 60.0 / audioEngine.bpm / 4.0, on: .main, in: .common).autoconnect()) { _ in
@@ -81,64 +91,55 @@ struct GridCell: View {
     let step: Int
     let isActive: Bool
     let isPlaying: Bool
-    let color: Color
+    let selectedInstrument: Int
+    let instrumentColor: Color
+    let darkerColor: Color
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            RoundedRectangle(cornerRadius: 3)
+            Rectangle()
                 .fill(cellColor)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 3)
-                        .stroke(Color.black, lineWidth: 1)
+                    Rectangle()
+                        .stroke(Color.gray.opacity(0.6), lineWidth: 0.5)
                 )
                 .overlay(
-                    // Playing indicator
-                    RoundedRectangle(cornerRadius: 3)
-                        .stroke(isPlaying ? Color.white : Color.clear, lineWidth: 3)
+                    // Darker outline for active steps (like your reference images)
+                    Rectangle()
+                        .stroke(isActive ? darkerColor : Color.clear, lineWidth: 3)
+                )
+                .overlay(
+                    // Playing indicator - clean white border
+                    Rectangle()
+                        .stroke(isPlaying ? Color.white : Color.clear, lineWidth: 2)
                 )
                 .aspectRatio(1.2, contentMode: .fit)
-                .scaleEffect(isPlaying ? 1.05 : 1.0)
+                .scaleEffect(isPlaying ? 1.02 : 1.0)
                 .animation(.easeInOut(duration: 0.1), value: isPlaying)
         }
         .buttonStyle(PlainButtonStyle())
     }
     
     private var cellColor: Color {
-        // Track 4 (drums) has different colors per step, others have single track color
-        if track == 3 { // Track 4 - Drums
+        // Special handling for drums (instrument 4 = index 3)
+        if selectedInstrument == 3 { // Drums
             if isActive {
-                // Different colors for different drum sounds
-                switch step % 4 {
+                // Different colors for different drum sounds based on track
+                switch track {
                 case 0: return Color(hex: "FF4500") // Kick - Orange Red
                 case 1: return Color(hex: "1E90FF") // Snare - Blue
                 case 2: return Color(hex: "32CD32") // Hi-hat - Green
                 case 3: return Color(hex: "FF1493") // Percussion - Pink
-                default: return Color(hex: "FFD700")
+                default: return darkerColor
                 }
             } else {
-                return Color(hex: "FFA500") // Orange background for drums
+                // Lighter shade of the current instrument color for inactive drum cells
+                return instrumentColor.opacity(0.3)
             }
         } else {
-            // All other tracks have single color
-            switch track {
-            case 0: // Track 1 - Pink
-                return isActive ? Color(hex: "FF1493") : Color(hex: "FFB6C1")
-            case 1: // Track 2 - Blue
-                return isActive ? Color(hex: "1E90FF") : Color(hex: "87CEEB")
-            case 2: // Track 3 - Purple
-                return isActive ? Color(hex: "9370DB") : Color(hex: "DDA0DD")
-            case 4: // Track 5 - Green
-                return isActive ? Color(hex: "32CD32") : Color(hex: "98FB98")
-            case 5: // Track 6 - Orange
-                return isActive ? Color(hex: "FF8C00") : Color(hex: "FFDAB9")
-            case 6: // Track 7 - Cyan
-                return isActive ? Color(hex: "00CED1") : Color(hex: "E0FFFF")
-            case 7: // Track 8 - Red
-                return isActive ? Color(hex: "DC143C") : Color(hex: "FFA0A0")
-            default:
-                return isActive ? Color.gray : Color.gray.opacity(0.3)
-            }
+            // All other instruments: use the selected instrument's color scheme
+            return isActive ? darkerColor : instrumentColor.opacity(0.3)
         }
     }
 }
