@@ -218,6 +218,9 @@ class AudioEngine: ObservableObject {
     func playNote(instrument: Int, note: Int) {
         guard instrument < instruments.count else { return }
         
+        // Update effects for the instrument being played
+        updateTrackEffects(track: instrument)
+        
         // Special handling for drums
         if instrument == 3 {
             // For drums, the note determines which drum sound to play
@@ -227,8 +230,9 @@ class AudioEngine: ObservableObject {
             let adjustedNote = note + transpose
             instruments[instrument].play(note: adjustedNote, velocity: 127)
             
-            // Schedule note off
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // Schedule note off based on release time
+            let releaseTime = trackADSR[instrument][3] // Get release time for this track
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1 + releaseTime) {
                 self.instruments[instrument].stop(note: adjustedNote)
             }
         }
@@ -256,13 +260,26 @@ class AudioEngine: ObservableObject {
     
     func noteOn(note: Int) {
         startAudioEngineIfNeeded()
+        
+        // Update effects for the current instrument
+        updateTrackEffects(track: selectedInstrument)
+        
         let adjustedNote = note + transpose
         instruments[selectedInstrument].play(note: adjustedNote, velocity: 127)
     }
     
     func noteOff(note: Int) {
         let adjustedNote = note + transpose
-        instruments[selectedInstrument].stop(note: adjustedNote)
+        
+        // Add a small delay based on release time for smoother sound
+        let releaseTime = trackADSR[selectedInstrument][3]
+        if releaseTime > 0.05 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + releaseTime * 0.5) {
+                self.instruments[self.selectedInstrument].stop(note: adjustedNote)
+            }
+        } else {
+            instruments[selectedInstrument].stop(note: adjustedNote)
+        }
     }
     
     func stopAllNotes() {
@@ -503,6 +520,11 @@ class AudioEngine: ObservableObject {
     func updateTrackADSR(track: Int, attack: Double, decay: Double, sustain: Double, release: Double) {
         guard track >= 0 && track < 4 else { return }
         trackADSR[track] = [attack, decay, sustain, release]
+        
+        // Clear buffer cache for this instrument to regenerate with new ADSR
+        if track < instruments.count {
+            instruments[track].clearBufferCache()
+        }
         // print("Track \(track) ADSR updated: A:\(attack) D:\(decay) S:\(sustain) R:\(release)")
     }
     
@@ -945,6 +967,12 @@ class SimpleInstrument {
         }
         oscillatorNodes.removeAll()
         // print("Stopping all notes for \(type.name)")
+    }
+    
+    func clearBufferCache() {
+        bufferCacheQueue.async(flags: .barrier) {
+            self.bufferCache.removeAll()
+        }
     }
     
     func updateEnvelope(attack: Double, decay: Double, sustain: Double, release: Double) {
