@@ -72,6 +72,7 @@ class AudioEngine: ObservableObject {
     
     // Oscilloscope data
     @Published var oscilloscopeBuffer: [Float] = []
+    private var audioTap: AVAudioNodeTapBlock?
     
     
     enum RecordingMode: String {
@@ -119,6 +120,9 @@ class AudioEngine: ObservableObject {
             audioEngine.prepare()
             try audioEngine.start()
             // print("AVAudioEngine started successfully")
+            
+            // Set up audio tap for oscilloscope after engine is running
+            setupOscilloscopeTap()
         } catch {
             // print("Failed to start audio engine: \(error)")
         }
@@ -834,9 +838,47 @@ class AudioEngine: ObservableObject {
     
     // MARK: - Audio Buffer for Oscilloscope
     
+    private func setupOscilloscopeTap() {
+        // Remove any existing tap first
+        audioEngine.mainMixerNode.removeTap(onBus: 0)
+        
+        // Install tap on the main mixer to capture audio output
+        let bufferSize: AVAudioFrameCount = 1024
+        let format = audioEngine.mainMixerNode.outputFormat(forBus: 0)
+        
+        // Only install tap if format is valid
+        guard format.channelCount > 0 else { return }
+        
+        audioEngine.mainMixerNode.installTap(onBus: 0, bufferSize: bufferSize, format: format) { [weak self] buffer, _ in
+            guard let self = self else { return }
+            
+            // Extract audio data from buffer
+            if let channelData = buffer.floatChannelData {
+                let channelCount = Int(buffer.format.channelCount)
+                let frameLength = Int(buffer.frameLength)
+                
+                var samples: [Float] = []
+                
+                // Mix stereo to mono if needed
+                for frame in 0..<frameLength {
+                    var sum: Float = 0
+                    for channel in 0..<channelCount {
+                        sum += channelData[channel][frame]
+                    }
+                    samples.append(sum / Float(channelCount))
+                }
+                
+                // Update oscilloscope buffer on main thread
+                DispatchQueue.main.async {
+                    self.oscilloscopeBuffer = samples
+                }
+            }
+        }
+    }
+    
     func getAudioBuffer() -> [Float] {
-        // Use the existing generateOscilloscopeData method
-        return generateOscilloscopeData()
+        // Return the real audio buffer captured from the tap
+        return oscilloscopeBuffer
     }
 }
 

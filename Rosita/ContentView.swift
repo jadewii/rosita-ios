@@ -16,8 +16,8 @@ struct ContentView: View {
             // Calculate heights
             let screenHeight = geometry.size.height
             let keyboardHeight: CGFloat = isPhone ? 110 : 130
-            let topSectionHeight: CGFloat = 120 // Compact height for controls + pattern row
-            let middleSectionHeight = screenHeight - topSectionHeight - keyboardHeight
+            let topSectionHeight: CGFloat = 100 // Reduced height for controls + pattern row
+            let middleSectionHeight = screenHeight - topSectionHeight - keyboardHeight - 20 // Account for grid octave controls
             
             ZStack {
                 // Background gradient
@@ -100,7 +100,7 @@ struct ContentView: View {
                             )
                         }
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 4)
+                        .padding(.vertical, 2)
                         
                         // Pattern row
                         HStack(spacing: 16) {
@@ -150,10 +150,10 @@ struct ContentView: View {
                     // MIDDLE SECTION: Left Panel + Grid (Flexible height)
                     HStack(alignment: .top, spacing: 8) {
                         // Left sidebar (fixed width)
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 4) {
                             // Oscilloscope
                             OscilloscopeView()
-                                .frame(width: 220, height: 120)
+                                .frame(width: 220, height: 100)
                             
                             // ADSR section
                             VStack(spacing: 0) {
@@ -231,12 +231,12 @@ struct ContentView: View {
                             Spacer()
                         }
                         .padding(.leading, 12)
-                        .padding(.top, 8)
+                        .padding(.top, 4)
                         
                         // Sequencer grid (flexible width)
                         GridSequencerView()
                             .padding(.trailing, 12)
-                            .padding(.top, 8)
+                            .padding(.top, 4)
                     }
                     .frame(height: middleSectionHeight)
                     
@@ -293,13 +293,13 @@ struct ContentView: View {
                         )
                         Spacer()
                     }
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 4)
                     
                     // BOTTOM SECTION: Keyboard (Fixed height)
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
                         .padding(.horizontal, 20)
-                        .padding(.top, -40) // Negative padding to move keyboard up
+                        .padding(.top, -65) // Move keyboard up by half an inch more
                 }
                 
                 // Help Panel overlay

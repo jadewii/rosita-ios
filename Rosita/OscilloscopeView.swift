@@ -109,7 +109,7 @@ struct OscilloscopeView: View {
                     }
                 }
             }
-            .frame(height: 80)
+            .frame(height: 65)
             .cornerRadius(4)
         }
         .background(
@@ -136,7 +136,7 @@ struct OscilloscopeView: View {
         }
         
         // Convert buffer data to display points
-        let pointCount = min(bufferData.count, 256) // More points for smoother waveform
+        let pointCount = min(bufferData.count, 512) // More points for smoother waveform
         let step = max(1, bufferData.count / pointCount)
         
         waveformPoints = []
@@ -145,7 +145,9 @@ struct OscilloscopeView: View {
             if index < bufferData.count {
                 let sample = bufferData[index]
                 let x = (CGFloat(i) / CGFloat(pointCount - 1)) * size.width
-                let y = (1.0 - CGFloat(sample + 1.0) / 2.0) * size.height // Convert from [-1, 1] to [0, height]
+                // Clamp sample value to prevent overflow
+                let clampedSample = max(-1.0, min(1.0, sample))
+                let y = (1.0 - CGFloat(clampedSample + 1.0) / 2.0) * size.height // Convert from [-1, 1] to [0, height]
                 waveformPoints.append(CGPoint(x: x, y: y))
             }
         }

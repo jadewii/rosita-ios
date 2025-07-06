@@ -36,31 +36,6 @@ struct GridSequencerView: View {
     
     var body: some View {
         VStack(spacing: 4) {
-            // Step numbers like the web version with recording indicator
-            HStack(spacing: 2) {
-                ForEach(1...16, id: \.self) { step in
-                    let stepIndex = step - 1
-                    let isCurrentRecordingStep = audioEngine.isRecording && 
-                                               audioEngine.recordingMode == .trStyle && 
-                                               stepIndex == audioEngine.currentRecordingStep
-                    
-                    Text("\(step)")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(isCurrentRecordingStep ? .white : .black)
-                        .frame(maxWidth: .infinity, minHeight: 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(isCurrentRecordingStep ? Color.red : Color.white.opacity(0.8))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .stroke(isCurrentRecordingStep ? Color.white : Color.black, lineWidth: isCurrentRecordingStep ? 1 : 0.5)
-                                )
-                        )
-                        .animation(.easeInOut(duration: 0.2), value: isCurrentRecordingStep)
-                }
-            }
-            .padding(.horizontal, 8)
-            
             // Main sequencer grid - 8 tracks x 16 steps
             VStack(spacing: 2) {
                     ForEach(0..<8) { track in
