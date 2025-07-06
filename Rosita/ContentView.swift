@@ -139,7 +139,44 @@ struct ContentView: View {
                                 .frame(width: 120, height: 30)
                             }
                             
-                            // Grid octave controls moved to between grid and keyboard
+                            HStack(spacing: 6) {
+                                Text("GRID OCT")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.black)
+                                
+                                RetroButton(
+                                    title: "-",
+                                    color: Color(hex: "87CEEB"),
+                                    textColor: .black,
+                                    action: {
+                                        if audioEngine.gridTranspose > -24 {
+                                            audioEngine.gridTranspose -= 12
+                                        }
+                                    },
+                                    width: 28,
+                                    height: 28,
+                                    fontSize: 16
+                                )
+                                
+                                Text("\(audioEngine.gridTranspose / 12)")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 24)
+                                
+                                RetroButton(
+                                    title: "+",
+                                    color: Color(hex: "87CEEB"),
+                                    textColor: .black,
+                                    action: {
+                                        if audioEngine.gridTranspose < 24 {
+                                            audioEngine.gridTranspose += 12
+                                        }
+                                    },
+                                    width: 28,
+                                    height: 28,
+                                    fontSize: 16
+                                )
+                            }
                             
                             Spacer()
                         }
@@ -238,66 +275,11 @@ struct ContentView: View {
                     }
                     .frame(height: middleSectionHeight)
                     
-                    // Grid Octave controls - between grid and keyboard
-                    HStack {
-                        Spacer()
-                        HStack(spacing: 6) {
-                            Text("GRID OCT")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.black)
-                            
-                            RetroButton(
-                                title: "-",
-                                color: Color(hex: "87CEEB"),
-                                textColor: .black,
-                                action: {
-                                    if audioEngine.gridTranspose > -24 {
-                                        audioEngine.gridTranspose -= 12
-                                    }
-                                },
-                                width: 28,
-                                height: 28,
-                                fontSize: 16
-                            )
-                            
-                            Text("\(audioEngine.gridTranspose / 12)")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(.black)
-                                .frame(width: 24)
-                            
-                            RetroButton(
-                                title: "+",
-                                color: Color(hex: "87CEEB"),
-                                textColor: .black,
-                                action: {
-                                    if audioEngine.gridTranspose < 24 {
-                                        audioEngine.gridTranspose += 12
-                                    }
-                                },
-                                width: 28,
-                                height: 28,
-                                fontSize: 16
-                            )
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            Rectangle()
-                                .fill(Color(hex: "FFB6C1").opacity(0.5))
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.black, lineWidth: 2)
-                                )
-                        )
-                        Spacer()
-                    }
-                    .padding(.vertical, 2)
-                    
-                    // BOTTOM SECTION: Keyboard (Fixed height)
+                    // BOTTOM SECTION: Keyboard (Fixed height) - NO GAP!
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
                         .padding(.horizontal, 20)
-                        .padding(.top, -90) // Move keyboard very close to grid
+                        .offset(y: -140) // Force keyboard right up against the grid
                 }
                 
                 // Help Panel overlay
