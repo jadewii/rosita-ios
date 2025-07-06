@@ -35,44 +35,34 @@ struct GridSequencerView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Main sequencer grid - 8 tracks x 16 steps
-            VStack(spacing: 2) {
-                    ForEach(0..<8) { track in
-                        HStack(spacing: 2) {
-                            ForEach(0..<16) { step in
-                                let isBeatMarker = (step % 4 == 0)
-                                GridCell(
-                                    row: track,
-                                    col: step,
-                                    isActive: audioEngine.getGridCell(row: track, col: step),
-                                    isPlaying: audioEngine.isPlaying && step == audioEngine.currentPlayingStep,
-                                    selectedInstrument: audioEngine.selectedInstrument,
-                                    instrumentColor: getInstrumentColor(for: audioEngine.selectedInstrument),
-                                    darkerColor: getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument)),
-                                    octave: audioEngine.getGridCellOctave(row: track, col: step),
-                                    velocity: audioEngine.getGridCellVelocity(row: track, col: step),
-                                    isBeatMarker: isBeatMarker
-                                ) {
-                                    audioEngine.toggleGridCell(row: track, col: step)
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                } longPressAction: {
-                                    audioEngine.showVelocityEditor(row: track, col: step)
-                                }
-                            }
+        // Main sequencer grid - 8 tracks x 16 steps
+        VStack(spacing: 2) {
+            ForEach(0..<8) { track in
+                HStack(spacing: 2) {
+                    ForEach(0..<16) { step in
+                        let isBeatMarker = (step % 4 == 0)
+                        GridCell(
+                            row: track,
+                            col: step,
+                            isActive: audioEngine.getGridCell(row: track, col: step),
+                            isPlaying: audioEngine.isPlaying && step == audioEngine.currentPlayingStep,
+                            selectedInstrument: audioEngine.selectedInstrument,
+                            instrumentColor: getInstrumentColor(for: audioEngine.selectedInstrument),
+                            darkerColor: getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument)),
+                            octave: audioEngine.getGridCellOctave(row: track, col: step),
+                            velocity: audioEngine.getGridCellVelocity(row: track, col: step),
+                            isBeatMarker: isBeatMarker
+                        ) {
+                            audioEngine.toggleGridCell(row: track, col: step)
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        } longPressAction: {
+                            audioEngine.showVelocityEditor(row: track, col: step)
                         }
                     }
                 }
-            .padding(8)
-            .background(
-                Rectangle()
-                    .fill(getInstrumentColor(for: audioEngine.selectedInstrument))
-                    .overlay(
-                        Rectangle()
-                            .stroke(getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument)), lineWidth: 1)
-                    )
-            )
+            }
         }
+        .padding(EdgeInsets(top: 0, leading: 8, bottom: 8, trailing: 8))
     }
 }
 
@@ -126,8 +116,6 @@ struct GridCell: View {
                 )
                 .aspectRatio(1.0, contentMode: .fit)
                 .scaleEffect(isPlaying ? 1.08 : 1.0)
-                .animation(.easeInOut(duration: 0.08), value: isPlaying)
-                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isActive)
         }
         .buttonStyle(PlainButtonStyle())
         .onLongPressGesture(minimumDuration: 0.5) {
