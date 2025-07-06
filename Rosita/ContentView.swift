@@ -14,16 +14,17 @@ struct ContentView: View {
             let scaleFactor = isPhone ? 0.7 : (isCompact ? 0.85 : 1.0)
             
             VStack(spacing: 0) {
+                // Add small pink space at top
+                Spacer()
+                    .frame(height: 8)
+                
                 // 🔝 Top Controls - FIXED HEIGHT
                 VStack(spacing: 0) {
                     // Transport controls row
                     HStack(spacing: 8) {
-                        HStack {
-                            // Empty space for oscilloscope
-                        }
-                        .frame(width: 220)
-                        
                         TransportControlsView()
+                        
+                        Spacer()
                         
                         HStack(spacing: 6) {
                             RetroButton(
@@ -57,13 +58,19 @@ struct ContentView: View {
                             )
                         }
                         
+                        Spacer()
+                        
                         InstrumentSelectorView()
                             .frame(width: 180, height: 70)
                             .padding(.top, 4)
                         
+                        Spacer()
+                        
                         ArpeggiatorView()
                             .frame(width: 160, height: 70)
                             .padding(.top, 4)
+                        
+                        Spacer()
                         
                         RetroButton(
                             title: "WAV",
@@ -87,45 +94,16 @@ struct ContentView: View {
                         )
                         .padding(.top, 4)
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 0)  // Edge to edge!
                     
                     // Pattern row
                     HStack(spacing: 16) {
                         HStack {
-                            // Empty space for oscilloscope  
+                            // Empty space for left panel
                         }
                         .frame(width: 220)
                         
                         PatternSlotsView()
-                        
-                        VStack(spacing: 2) {
-                            HStack(spacing: 4) {
-                                Text("BPM")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.black)
-                                
-                                Text("\(Int(audioEngine.bpm))")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.black)
-                                    .frame(width: 36, height: 20)
-                                    .background(
-                                        Rectangle()
-                                            .fill(Color.white)
-                                            .overlay(
-                                                Rectangle()
-                                                    .stroke(Color.black, lineWidth: 1)
-                                            )
-                                    )
-                            }
-                            
-                            CustomSlider(
-                                value: $audioEngine.bpm,
-                                range: 60...200,
-                                trackColor: Color(hex: "FF1493"),
-                                label: ""
-                            )
-                            .frame(width: 120, height: 30)
-                        }
                         
                         HStack(spacing: 6) {
                             Text("GRID OCT")
@@ -180,7 +158,37 @@ struct ContentView: View {
                 HStack(alignment: .top, spacing: 0) {
                     // Left Sidebar - START AT TOP
                     VStack(alignment: .leading, spacing: 12) {
-                        // Oscilloscope at top
+                        // BPM controls at top of left panel
+                        VStack(spacing: 2) {
+                            HStack(spacing: 4) {
+                                Text("BPM")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.black)
+                                
+                                Text("\(Int(audioEngine.bpm))")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 36, height: 20)
+                                    .background(
+                                        Rectangle()
+                                            .fill(Color.white)
+                                            .overlay(
+                                                Rectangle()
+                                                    .stroke(Color.black, lineWidth: 1)
+                                            )
+                                    )
+                            }
+                            
+                            CustomSlider(
+                                value: $audioEngine.bpm,
+                                range: 60...200,
+                                trackColor: Color(hex: "FF1493"),
+                                label: ""
+                            )
+                            .frame(width: 180, height: 30)
+                        }
+                        
+                        // Oscilloscope after BPM
                         OscilloscopeView()
                             .frame(height: 80)
 
@@ -259,6 +267,7 @@ struct ContentView: View {
                         )
                     }
                     .frame(width: 220)
+                    .offset(y: -95)  // Move entire left panel up even more (-20)
                     
                     // Grid Area 
                     GridSequencerView()
@@ -275,7 +284,7 @@ struct ContentView: View {
                 Spacer()
                     .frame(height: 15)  // Small pink margin at bottom
             }
-            .padding(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
+            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))  // True edge to edge!
             .background(Color(hex: "FFB6C1"))
             .overlay(
                 // Help Panel overlay
@@ -286,7 +295,7 @@ struct ContentView: View {
                 }
             )
         }
-        .ignoresSafeArea(.all, edges: .bottom)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
             // Force landscape orientation
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
