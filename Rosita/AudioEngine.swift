@@ -95,11 +95,14 @@ class AudioEngine: ObservableObject {
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)
         audioEngine.connect(mixerNode, to: effectsMixer, format: format)
         
-        // Create instruments without starting the audio engine immediately
+        // Create instruments
         for i in 0..<4 {
             let instrument = SimpleInstrument(type: InstrumentType(rawValue: i) ?? .synth, audioEngine: audioEngine, parentEngine: self)
             instruments.append(instrument)
         }
+        
+        // Start audio engine immediately
+        startAudioEngineIfNeeded()
         
         // print("Audio engine setup complete with \(instruments.count) instruments and effects")
     }

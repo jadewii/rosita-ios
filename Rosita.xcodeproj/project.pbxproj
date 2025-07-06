@@ -21,6 +21,8 @@
 		A1A1A1AB2B000001 /* PatternSlotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B00000B /* PatternSlotsView.swift */; };
 		A1A1A1AC2B000001 /* CustomSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B00000C /* CustomSlider.swift */; };
 		A1A1A1AD2B000001 /* RetroButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B00000D /* RetroButton.swift */; };
+		A1A1A1AE2B000001 /* HelpPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B00000E /* HelpPanel.swift */; };
+		A1A1A1AF2B000001 /* HelpPanelPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B00000G /* HelpPanelPopup.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,7 +65,9 @@
 		A1A1A1A02B00000B /* PatternSlotsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternSlotsView.swift; sourceTree = "<group>"; };
 		A1A1A1A02B00000C /* CustomSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomSlider.swift; sourceTree = "<group>"; };
 		A1A1A1A02B00000D /* RetroButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroButton.swift; sourceTree = "<group>"; };
-		A1A1A1A02B00000E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1A1A1A02B00000E /* HelpPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpPanel.swift; sourceTree = "<group>"; };
+		A1A1A1A02B00000F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1A1A1A02B00000G /* HelpPanelPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpPanelPopup.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -125,7 +129,9 @@
 				A1A1A1A02B00000B /* PatternSlotsView.swift */,
 				A1A1A1A02B00000C /* CustomSlider.swift */,
 				A1A1A1A02B00000D /* RetroButton.swift */,
-				A1A1A1A02B00000E /* Info.plist */,
+				A1A1A1A02B00000E /* HelpPanel.swift */,
+				A1A1A1A02B00000G /* HelpPanelPopup.swift */,
+				A1A1A1A02B00000F /* Info.plist */,
 			);
 			path = Rosita;
 			sourceTree = "<group>";
@@ -254,6 +260,8 @@
 				A1A1A1AB2B000001 /* PatternSlotsView.swift in Sources */,
 				A1A1A1AC2B000001 /* CustomSlider.swift in Sources */,
 				A1A1A1AD2B000001 /* RetroButton.swift in Sources */,
+				A1A1A1AE2B000001 /* HelpPanel.swift in Sources */,
+				A1A1A1AF2B000001 /* HelpPanelPopup.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
