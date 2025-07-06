@@ -150,7 +150,7 @@ struct ContentView: View {
                     // MIDDLE SECTION: Left Panel + Grid (Flexible height)
                     HStack(alignment: .top, spacing: 8) {
                         // Left sidebar (fixed width)
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 2) {
                             // Oscilloscope
                             OscilloscopeView()
                                 .frame(width: 220, height: 100)
@@ -231,12 +231,10 @@ struct ContentView: View {
                             Spacer()
                         }
                         .padding(.leading, 12)
-                        .padding(.top, 4)
                         
                         // Sequencer grid (flexible width)
                         GridSequencerView()
                             .padding(.trailing, 12)
-                            .padding(.top, 4)
                     }
                     .frame(height: middleSectionHeight)
                     
@@ -293,13 +291,13 @@ struct ContentView: View {
                         )
                         Spacer()
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 2)
                     
                     // BOTTOM SECTION: Keyboard (Fixed height)
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
                         .padding(.horizontal, 20)
-                        .padding(.top, -65) // Move keyboard up by half an inch more
+                        .padding(.top, -90) // Move keyboard very close to grid
                 }
                 
                 // Help Panel overlay
