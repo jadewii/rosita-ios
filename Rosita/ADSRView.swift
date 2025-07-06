@@ -9,11 +9,6 @@ struct ADSRView: View {
     
     var body: some View {
         VStack(spacing: 4) {
-            // Title with selected track indicator
-            Text("ADSR (TRACK \(audioEngine.selectedInstrument + 1))")
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .foregroundColor(.black)
-            
             // Visual ADSR Envelope Display
             ADSREnvelopeView(attack: attack, decay: decay, sustain: sustain, release: release)
                 .frame(height: 60)
@@ -57,14 +52,6 @@ struct ADSRView: View {
             }
         }
         .padding(8)
-        .background(
-            Rectangle()
-                .fill(Color.white.opacity(0.8))
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.black, lineWidth: 3)
-                )
-        )
     }
 }
 

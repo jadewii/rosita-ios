@@ -8,7 +8,7 @@ struct ArpeggiatorView: View {
         VStack(spacing: 2) {
             // Title
             Text("ARPEGGIATOR")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
             
             // Arpeggiator buttons - retro style
@@ -24,7 +24,7 @@ struct ArpeggiatorView: View {
                 }
             }
         }
-        .padding(6)
+        .padding(8)
         .background(
             Rectangle()
                 .fill(Color.white)
@@ -70,9 +70,9 @@ struct RetroArpButton: View {
             }
         }) {
             Text("\(number)")
-                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .font(.system(size: 20, weight: .bold, design: .monospaced))
                 .foregroundColor(isSelected ? .black : .white)
-                .frame(width: 38, height: 28)
+                .frame(width: 46, height: 36)
                 .background(
                     ZStack {
                         Rectangle()

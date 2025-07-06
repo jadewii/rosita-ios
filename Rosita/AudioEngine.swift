@@ -1285,4 +1285,11 @@ class SimpleInstrument {
             }
         }
     }
+    
+    // MARK: - Audio Buffer for Oscilloscope
+    
+    func getAudioBuffer() -> [Float] {
+        // Use the existing generateOscilloscopeData method
+        return generateOscilloscopeData()
+    }
 }

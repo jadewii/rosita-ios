@@ -74,10 +74,10 @@ struct ContentView: View {
                             Spacer()
                             
                             InstrumentSelectorView()
-                                .frame(width: 140, height: 56)
+                                .frame(width: 180, height: 70)
                             
                             ArpeggiatorView()
-                                .frame(width: 140, height: 56)
+                                .frame(width: 160, height: 70)
                             
                             RetroButton(
                                 title: "WAV",
@@ -139,44 +139,7 @@ struct ContentView: View {
                                 .frame(width: 120, height: 30)
                             }
                             
-                            HStack(spacing: 6) {
-                                Text("GRID OCT")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.black)
-                                
-                                RetroButton(
-                                    title: "-",
-                                    color: Color(hex: "87CEEB"),
-                                    textColor: .black,
-                                    action: {
-                                        if audioEngine.gridTranspose > -24 {
-                                            audioEngine.gridTranspose -= 12
-                                        }
-                                    },
-                                    width: 28,
-                                    height: 28,
-                                    fontSize: 16
-                                )
-                                
-                                Text("\(audioEngine.gridTranspose / 12)")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.black)
-                                    .frame(width: 24)
-                                
-                                RetroButton(
-                                    title: "+",
-                                    color: Color(hex: "87CEEB"),
-                                    textColor: .black,
-                                    action: {
-                                        if audioEngine.gridTranspose < 24 {
-                                            audioEngine.gridTranspose += 12
-                                        }
-                                    },
-                                    width: 28,
-                                    height: 28,
-                                    fontSize: 16
-                                )
-                            }
+                            // Grid octave controls moved to between grid and keyboard
                             
                             Spacer()
                         }
@@ -188,7 +151,11 @@ struct ContentView: View {
                     HStack(alignment: .top, spacing: 8) {
                         // Left sidebar (fixed width)
                         VStack(alignment: .leading, spacing: 8) {
-                            // SCOPE - no title bar, integrated into design
+                            // Oscilloscope
+                            OscilloscopeView()
+                                .frame(width: 220, height: 120)
+                            
+                            // ADSR section
                             VStack(spacing: 0) {
                                 Text("ADSR (TRACK \(audioEngine.selectedInstrument + 1))")
                                     .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -272,6 +239,61 @@ struct ContentView: View {
                             .padding(.top, 8)
                     }
                     .frame(height: middleSectionHeight)
+                    
+                    // Grid Octave controls - between grid and keyboard
+                    HStack {
+                        Spacer()
+                        HStack(spacing: 6) {
+                            Text("GRID OCT")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.black)
+                            
+                            RetroButton(
+                                title: "-",
+                                color: Color(hex: "87CEEB"),
+                                textColor: .black,
+                                action: {
+                                    if audioEngine.gridTranspose > -24 {
+                                        audioEngine.gridTranspose -= 12
+                                    }
+                                },
+                                width: 28,
+                                height: 28,
+                                fontSize: 16
+                            )
+                            
+                            Text("\(audioEngine.gridTranspose / 12)")
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundColor(.black)
+                                .frame(width: 24)
+                            
+                            RetroButton(
+                                title: "+",
+                                color: Color(hex: "87CEEB"),
+                                textColor: .black,
+                                action: {
+                                    if audioEngine.gridTranspose < 24 {
+                                        audioEngine.gridTranspose += 12
+                                    }
+                                },
+                                width: 28,
+                                height: 28,
+                                fontSize: 16
+                            )
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            Rectangle()
+                                .fill(Color(hex: "FFB6C1").opacity(0.5))
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.black, lineWidth: 2)
+                                )
+                        )
+                        Spacer()
+                    }
+                    .padding(.vertical, 8)
                     
                     // BOTTOM SECTION: Keyboard (Fixed height)
                     PianoKeyboardView()
