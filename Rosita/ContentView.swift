@@ -17,8 +17,8 @@ struct ContentView: View {
             let keyboardHeight: CGFloat = isPhone ? 110 : 130
             
             VStack(spacing: 0) {
-                    // TOP SECTION: Controls + Pattern Row (Auto height)
-                    VStack(spacing: 2) {
+                // TOP SECTION: Controls + Pattern Row (LOCKED HEIGHT)
+                VStack(spacing: 2) {
                         // Transport controls row
                         HStack(spacing: 8) {
                             Spacer()
@@ -169,10 +169,10 @@ struct ContentView: View {
                         }
                         .padding(.horizontal, 12)
                     }
-                    // TOP SECTION ends - no fixed height, just auto-sized
+                    .frame(height: 100) // LOCKED HEIGHT for top section
                     
-                    // MAIN AREA: Left Panel + Grid (flex: 1 equivalent)
-                    HStack(alignment: .top, spacing: 8) {
+                    // MAIN AREA: Left Panel + Grid (maxHeight: .infinity is the magic)
+                    HStack(alignment: .top, spacing: 0) {
                         // Left sidebar (fixed width)
                         VStack(alignment: .leading, spacing: 2) {
                             // Oscilloscope
@@ -254,15 +254,16 @@ struct ContentView: View {
                             
                             Spacer()
                         }
-                        .padding(.leading, 12)
+                        .padding()
+                        .background(Color(hex: "FFB6C1").opacity(0.1))
                         
-                        // Sequencer grid (flexible width)
+                        // Sequencer grid (flexible width and height)
                         GridSequencerView()
-                            .padding(.trailing, 12)
+                            .padding()
                     }
-                    .frame(height: geometry.size.height - keyboardHeight - 130) // Account for top controls height
+                    .frame(maxHeight: .infinity) // THIS IS THE MAGIC - takes all remaining space
                     
-                    // KEYBOARD: Fixed height at bottom (flush)
+                    // KEYBOARD: Fixed height at bottom (LOCKED HEIGHT)
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
                 }
