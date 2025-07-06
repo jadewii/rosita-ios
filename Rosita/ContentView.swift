@@ -279,7 +279,7 @@ struct ContentView: View {
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
                         .padding(.horizontal, 20)
-                        .offset(y: -140) // Force keyboard right up against the grid
+                        .offset(y: -100) // Position keyboard just below grid without overlap
                 }
                 
                 // Help Panel overlay
