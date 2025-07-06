@@ -16,17 +16,7 @@ struct ContentView: View {
             // Only calculate keyboard height - everything else is flexbox
             let keyboardHeight: CGFloat = isPhone ? 110 : 130
             
-            ZStack {
-                // Background gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(hex: "FFB6C1"), Color(hex: "FF1493")]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
-                // FLEXBOX-STYLE LAYOUT
-                VStack(spacing: 0) {
+            VStack(spacing: 0) {
                     // TOP SECTION: Controls + Pattern Row (Auto height)
                     VStack(spacing: 2) {
                         // Transport controls row
@@ -270,18 +260,24 @@ struct ContentView: View {
                         GridSequencerView()
                             .padding(.trailing, 12)
                     }
-                    .frame(maxHeight: .infinity) // This is flex: 1 in SwiftUI
+                    .frame(height: geometry.size.height - keyboardHeight - 130) // Account for top controls height
                     
-                    // KEYBOARD: Fixed height at bottom
+                    // KEYBOARD: Fixed height at bottom (flush)
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
-                        .padding(.horizontal, 20)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(hex: "FFB6C1"), Color(hex: "FF1493")]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 
                 // Help Panel overlay
                 if showHelp {
                     HelpPanelPopup(isShowing: $showHelp)
-                }
             }
         }
         .ignoresSafeArea(.keyboard)
