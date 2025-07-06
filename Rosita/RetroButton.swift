@@ -20,13 +20,13 @@ struct RetroButton: View {
         }) {
             Text(title)
                 .font(.system(size: fontSize, weight: .bold, design: .monospaced))
-                .foregroundColor(isDown ? color : textColor)
+                .foregroundColor(isDown ? .white : textColor)
                 .frame(width: width, height: height)
                 .background(
                     ZStack {
                         // Main button color
                         Rectangle()
-                            .fill(isDown ? textColor : color)
+                            .fill(isDown ? Color.black.opacity(0.8) : color)
                         
                         // 3D bevel effect for retro look
                         if !isDown {
@@ -78,6 +78,7 @@ struct RetroButton: View {
 struct RetroPatternButton: View {
     let number: Int
     let isSelected: Bool
+    var isDupTarget: Bool = false
     let action: () -> Void
     
     var body: some View {
@@ -87,15 +88,16 @@ struct RetroPatternButton: View {
         }) {
             Text("\(number)")
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
-                .foregroundColor(isSelected ? .black : .white)
+                .foregroundColor(isSelected ? .black : (isDupTarget ? .yellow : .white))
                 .frame(width: 56, height: 56)
                 .background(
                     Rectangle()
                         .fill(isSelected ? Color.yellow : Color.black)
                         .overlay(
                             Rectangle()
-                                .stroke(Color.black, lineWidth: isSelected ? 3 : 2)
+                                .stroke(isDupTarget ? Color.yellow : Color.black, lineWidth: isSelected ? 3 : 2)
                         )
+                        .animation(.easeInOut(duration: 0.3), value: isDupTarget)
                 )
         }
     }

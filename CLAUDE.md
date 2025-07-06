@@ -6,6 +6,9 @@
 # claude "RositaIOS"
 ```
 
+## CRITICAL USER PREFERENCE
+**ALWAYS take the most aggressive approach that gets the job done. Time is the most important thing - NO WASTING TIME.**
+
 ## PROJECT OVERVIEW
 Beautiful iOS synthesizer app with retro aesthetic, piano keyboard, 8-track sequencer, ADSR controls, effects, and arpeggiator. Currently being refined with perfect layout and UI styling.
 
@@ -23,14 +26,13 @@ Beautiful iOS synthesizer app with retro aesthetic, piano keyboard, 8-track sequ
 - Transport controls (PLAY-OCTAVE) show gray when inactive
 - Audio engine working with lazy initialization
 - ADSR and Effects properly positioned
+- **AUv3 EXTENSION ADDED** - Currently has code signing issues with free developer account
 
-## RECENT WORK (July 4, 2025)
-- Fixed all overlapping UI elements
-- Implemented proper spacing between sections
-- Made all pattern buttons twice their original size
-- Fixed button colors (gray when inactive, colored when active)
-- Created beautiful horizontal layout for all controls
-- Resolved instrument/arpeggiator positioning
+## RECENT WORK (July 6, 2025)
+- Added AUv3 Audio Unit extension for GarageBand/Logic/Ableton support
+- Created RositaAUv3 target with audio processing and UI
+- Attempted multiple bundle ID changes to fix provisioning
+- Free developer account causing signing issues
 
 ## BUILD COMMANDS
 ```bash
@@ -68,6 +70,8 @@ git push origin main
 - `Rosita/TransportControlsView.swift` - Gray inactive button states
 - `Rosita/InstrumentSelectorView.swift` - White background styling
 - `Rosita/AudioEngine.swift` - Lazy initialization fix
+- `RositaAUv3/RositaAudioUnit.swift` - NEW: Audio Unit processing
+- `RositaAUv3/RositaAudioUnitViewController.swift` - NEW: AUv3 UI
 
 ## KNOWN WORKING FEATURES
 - ✅ Audio synthesis and playback
@@ -103,6 +107,7 @@ Bottom:
 - If audio doesn't work: Verify AVAudioSession permissions
 - If UI overlaps: Check frame sizes and spacing values
 - For any issues: Check git history for working versions
+- **AUv3 SIGNING**: Need paid developer account or remove extension from embed phase
 
 ## NEXT POTENTIAL FEATURES
 - Add more instrument types
@@ -110,6 +115,7 @@ Bottom:
 - Add tempo sync options
 - Create preset saving system
 - Add MIDI export functionality
+- Complete AUv3 support (requires $99 developer account)
 
 ## EMERGENCY RECOVERY
 ```bash
@@ -119,5 +125,5 @@ cd rosita-ios
 ```
 
 ---
-*Last updated: July 4, 2025*  
-*Status: Beautiful, functional, ready for final testing*
+*Last updated: July 6, 2025*  
+*Status: Beautiful, functional, AUv3 ready (pending developer account)*

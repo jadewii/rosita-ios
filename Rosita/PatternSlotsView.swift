@@ -9,8 +9,9 @@ struct PatternSlotsView: View {
                 RetroPatternButton(
                     number: slot + 1,
                     isSelected: audioEngine.currentPatternSlot == slot,
+                    isDupTarget: audioEngine.isDupMode,
                     action: {
-                        audioEngine.switchToPattern(slot)
+                        audioEngine.selectPattern(slot)
                     }
                 )
             }
@@ -18,10 +19,10 @@ struct PatternSlotsView: View {
             // Dup button - retro style (twice the size)
             RetroButton(
                 title: "DUP",
-                color: Color(hex: "FF00FF"),
+                color: Color(hex: "9370DB"),
                 textColor: .black,
                 action: {
-                    audioEngine.duplicateCurrentPattern()
+                    audioEngine.duplicatePattern()
                 },
                 width: 80,
                 height: 56,

@@ -161,10 +161,12 @@
 			buildPhases = (
 				A1A1A0FC2B000001 /* Sources */,
 				A1A1A0FE2B000001 /* Resources */,
+				070B85AC2E19F5C2001931A4 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				070B85AA2E19F5C2001931A4 /* PBXTargetDependency */,
 			);
 			name = Rosita;
 			packageProductDependencies = (

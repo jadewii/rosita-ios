@@ -230,6 +230,9 @@ struct Pattern {
 struct Track {
     var steps: [Bool] = Array(repeating: false, count: 16)
     var notes: [Int] = Array(repeating: 60, count: 16)
+    var velocities: [Float] = Array(repeating: 0.8, count: 16) // Default velocity 80%
+    var probabilities: [Float] = Array(repeating: 1.0, count: 16) // 100% probability
+    var stepLengths: [Float] = Array(repeating: 1.0, count: 16) // Full step length
 }
 
 // MARK: - Simplified Instrument Class for UI Testing

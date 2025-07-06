@@ -28,15 +28,17 @@ class AudioEngine: ObservableObject {
     @Published var transpose = 0  // Keyboard transpose
     @Published var gridTranspose = 0  // Grid transpose
     @Published var arpeggiatorMode = 0
-    @Published var currentPattern = 0
     @Published var currentPlayingStep = -1 // Track current step for UI
     
     // Track waveform/kit for each instrument
     @Published var instrumentWaveforms = [0, 0, 0, 0] // 0=square, 1=saw, 2=triangle, 3=sine, 4=reverse saw
     
-    // Pattern storage
-    @Published var patterns: [Pattern] = (0..<8).map { _ in Pattern() }
+    // Pattern storage - each pattern stores the complete state
+    @Published var patterns: [[String: Bool]] = Array(repeating: [:], count: 8)
+    @Published var patternNotes: [[String: Int]] = Array(repeating: [:], count: 8)
+    @Published var patternVelocities: [[String: Float]] = Array(repeating: [:], count: 8)
     @Published var currentPatternSlot: Int = 0
+    @Published var isDupMode: Bool = false
     
     // ADSR values per track
     @Published var trackADSR: [[Double]] = [
@@ -177,8 +179,9 @@ class AudioEngine: ObservableObject {
                         playDrumSound(drumType: drumNote)
                     } else {
                         // Melodic instruments - use stored note or default
-                        let note = instrumentNotes[key] ?? rowToNote(row: row, instrument: instrument)
-                        playNote(instrument: instrument, note: note + gridTranspose)
+                        let baseNote = instrumentNotes[key] ?? rowToNote(row: row, instrument: instrument)
+                        let note = baseNote + gridTranspose  // Apply grid transpose here
+                        playNote(instrument: instrument, note: note)
                     }
                 }
             }
@@ -227,14 +230,13 @@ class AudioEngine: ObservableObject {
             // For drums, the note determines which drum sound to play
             playDrumSound(drumType: note)
         } else {
-            // Regular instruments play notes normally
-            let adjustedNote = note + transpose
-            instruments[instrument].play(note: adjustedNote, velocity: 127)
+            // Regular instruments play notes normally (NO transpose here - it's already applied where needed)
+            instruments[instrument].play(note: note, velocity: 127)
             
             // Schedule note off based on release time
             let releaseTime = trackADSR[instrument][3] // Get release time for this track
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1 + releaseTime) {
-                self.instruments[instrument].stop(note: adjustedNote)
+                self.instruments[instrument].stop(note: note)
             }
         }
     }
@@ -372,9 +374,34 @@ class AudioEngine: ObservableObject {
         }
     }
     
+    func selectPattern(_ index: Int) {
+        guard index >= 0 && index < 8 else { return }
+        
+        if isDupMode {
+            // Duplicate current pattern to selected slot
+            patterns[index] = instrumentSteps
+            patternNotes[index] = instrumentNotes
+            patternVelocities[index] = instrumentVelocities
+            isDupMode = false
+            
+            // Now switch to the duplicated pattern
+            currentPatternSlot = index
+        } else {
+            // Save current pattern
+            patterns[currentPatternSlot] = instrumentSteps
+            patternNotes[currentPatternSlot] = instrumentNotes
+            patternVelocities[currentPatternSlot] = instrumentVelocities
+            
+            // Load selected pattern
+            currentPatternSlot = index
+            instrumentSteps = patterns[index]
+            instrumentNotes = patternNotes[index]
+            instrumentVelocities = patternVelocities[index]
+        }
+    }
+    
     func duplicatePattern() {
-        let nextPattern = (currentPattern + 1) % 8
-        patterns[nextPattern] = Pattern(copying: patterns[currentPattern])
+        isDupMode = true
     }
     
     // MARK: - Grid Management (Simple Per-Instrument View)
@@ -418,6 +445,33 @@ class AudioEngine: ObservableObject {
         return 0 // Default octave
     }
     
+    func getGridCellVelocity(row: Int, col: Int) -> Float {
+        guard row >= 0 && row < 8 && col >= 0 && col < 16 else { return 0.8 }
+        
+        let key = "\(selectedInstrument)_\(row)_\(col)_vel"
+        return instrumentVelocities[key] ?? 0.8 // Default velocity 80%
+    }
+    
+    func setGridCellVelocity(row: Int, col: Int, velocity: Float) {
+        guard row >= 0 && row < 8 && col >= 0 && col < 16 else { return }
+        
+        let key = "\(selectedInstrument)_\(row)_\(col)_vel"
+        instrumentVelocities[key] = velocity
+    }
+    
+    func showVelocityEditor(row: Int, col: Int) {
+        // Cycle through velocity values: 0.2, 0.4, 0.6, 0.8, 1.0
+        let currentVelocity = getGridCellVelocity(row: row, col: col)
+        let velocityLevels: [Float] = [0.2, 0.4, 0.6, 0.8, 1.0]
+        
+        if let currentIndex = velocityLevels.firstIndex(of: currentVelocity) {
+            let nextIndex = (currentIndex + 1) % velocityLevels.count
+            setGridCellVelocity(row: row, col: col, velocity: velocityLevels[nextIndex])
+        } else {
+            setGridCellVelocity(row: row, col: col, velocity: 0.8)
+        }
+    }
+    
     func clearGrid() {
         // Clear only current instrument's steps
         let keysToRemove = instrumentSteps.keys.filter { $0.hasPrefix("\(selectedInstrument)_") }
@@ -430,6 +484,8 @@ class AudioEngine: ObservableObject {
     @Published private var instrumentSteps: [String: Bool] = [:]
     // Store actual note values for each step
     private var instrumentNotes: [String: Int] = [:]
+    // Store velocity values for each step
+    private var instrumentVelocities: [String: Float] = [:]
     
     // MARK: - Effects Control
     
@@ -712,21 +768,6 @@ class AudioEngine: ObservableObject {
             let row = 7 - closestScaleIndex
             return max(0, min(7, row))
         }
-    }
-    
-    // MARK: - Pattern Management
-    
-    func switchToPattern(_ slot: Int) {
-        guard slot >= 0 && slot < patterns.count else { return }
-        currentPatternSlot = slot
-        currentPattern = slot
-    }
-    
-    func duplicateCurrentPattern() {
-        guard currentPatternSlot < patterns.count - 1 else { return }
-        let nextSlot = currentPatternSlot + 1
-        patterns[nextSlot] = patterns[currentPatternSlot]
-        switchToPattern(nextSlot)
     }
 }
 

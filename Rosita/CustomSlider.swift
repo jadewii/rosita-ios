@@ -11,36 +11,44 @@ struct CustomSlider: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(label)
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundColor(.black)
-                
-                Spacer()
-                
-                Text(String(format: "%.2f", value))
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                    .background(Color.white)
-                    .overlay(
-                        Rectangle()
-                            .stroke(Color.black, lineWidth: 2)
-                    )
-                    .frame(minWidth: 35)
+            if !label.isEmpty {
+                HStack {
+                    Text(label)
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(.black)
+                    
+                    Spacer()
+                    
+                    Text(String(format: "%.2f", value))
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.white)
+                        .overlay(
+                            Rectangle()
+                                .stroke(Color.black, lineWidth: 2)
+                        )
+                        .frame(minWidth: 35)
+                }
             }
             
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     // Track background
                     Rectangle()
-                        .fill(trackColor)
+                        .fill(Color.white)
                         .frame(height: 24)
                         .overlay(
                             Rectangle()
                                 .stroke(Color.black, lineWidth: 2)
                         )
+                    
+                    // Filled portion - ensure it doesn't exceed bounds
+                    Rectangle()
+                        .fill(trackColor)
+                        .frame(width: max(0, min(thumbPosition(in: geometry.size.width) + 10, geometry.size.width - 4)), height: 20)
+                        .offset(x: 2, y: 2)
                     
                     // Thumb
                     Rectangle()
@@ -72,13 +80,23 @@ struct CustomSlider: View {
     
     private func thumbPosition(in width: CGFloat) -> CGFloat {
         let normalizedValue = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
-        let availableWidth = width - 20 // Account for thumb width
-        return CGFloat(normalizedValue) * availableWidth
+        let thumbWidth: CGFloat = 20
+        let borderWidth: CGFloat = 2
+        let minX: CGFloat = borderWidth
+        let maxX: CGFloat = width - thumbWidth - borderWidth
+        let availableWidth = maxX - minX
+        let position = minX + CGFloat(normalizedValue) * availableWidth
+        return max(minX, min(position, maxX))
     }
     
     private func valueFromPosition(_ position: CGFloat, width: CGFloat) -> Double {
-        let availableWidth = width - 20 // Account for thumb width
-        let normalizedPosition = max(0, min(position - 10, availableWidth)) / availableWidth // Center on thumb
+        let thumbWidth: CGFloat = 20
+        let borderWidth: CGFloat = 2
+        let minX: CGFloat = borderWidth + thumbWidth/2
+        let maxX: CGFloat = width - thumbWidth/2 - borderWidth
+        let clampedX = max(minX, min(position, maxX))
+        let availableWidth = maxX - minX
+        let normalizedPosition = (clampedX - minX) / availableWidth
         return range.lowerBound + Double(normalizedPosition) * (range.upperBound - range.lowerBound)
     }
 }
@@ -103,12 +121,18 @@ struct CustomEffectSlider: View {
                     ZStack(alignment: .leading) {
                         // Track background
                         Rectangle()
-                            .fill(trackColor)
+                            .fill(Color.white)
                             .frame(height: 24)
                             .overlay(
                                 Rectangle()
                                     .stroke(Color.black, lineWidth: 2)
                             )
+                        
+                        // Filled portion - ensure it doesn't exceed bounds
+                        Rectangle()
+                            .fill(trackColor)
+                            .frame(width: max(0, min(thumbPosition(in: geometry.size.width) + 10, geometry.size.width - 4)), height: 20)
+                            .offset(x: 2, y: 2)
                         
                         // Thumb
                         Rectangle()
@@ -143,14 +167,24 @@ struct CustomEffectSlider: View {
     }
     
     private func thumbPosition(in width: CGFloat) -> CGFloat {
-        let availableWidth = width - 20 // Account for thumb width
-        return CGFloat(value) * availableWidth
+        let thumbWidth: CGFloat = 20
+        let borderWidth: CGFloat = 2
+        let minX: CGFloat = borderWidth
+        let maxX: CGFloat = width - thumbWidth - borderWidth
+        let availableWidth = maxX - minX
+        let position = minX + CGFloat(value) * availableWidth
+        return max(minX, min(position, maxX))
     }
     
     private func valueFromPosition(_ position: CGFloat, width: CGFloat) -> Double {
-        let availableWidth = width - 20 // Account for thumb width
-        let normalizedPosition = max(0, min(position - 10, availableWidth)) / availableWidth // Center on thumb
-        return Double(normalizedPosition)
+        let thumbWidth: CGFloat = 20
+        let borderWidth: CGFloat = 2
+        let minX: CGFloat = borderWidth + thumbWidth/2
+        let maxX: CGFloat = width - thumbWidth/2 - borderWidth
+        let clampedX = max(minX, min(position, maxX))
+        let availableWidth = maxX - minX
+        let normalizedPosition = (clampedX - minX) / availableWidth
+        return Double(max(0, min(1, normalizedPosition)))
     }
 }
 

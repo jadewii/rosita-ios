@@ -23,6 +23,17 @@ struct GridSequencerView: View {
         }
     }
     
+    // Get even darker shade for outlines
+    private func getOutlineColor(for color: Color) -> Color {
+        switch color {
+        case Color(hex: "FFB6C1"): return Color(hex: "C71585") // Pink -> Medium Violet Red
+        case Color(hex: "87CEEB"): return Color(hex: "4682B4") // Sky Blue -> Steel Blue
+        case Color(hex: "DDA0DD"): return Color(hex: "6A0DAD") // Plum -> Dark Purple
+        case Color(hex: "FFD700"): return Color(hex: "FF8C00") // Gold -> Dark Orange
+        default: return color.opacity(0.5)
+        }
+    }
+    
     var body: some View {
         VStack(spacing: 4) {
             // Step numbers like the web version with recording indicator
@@ -52,26 +63,31 @@ struct GridSequencerView: View {
             
             // Main sequencer grid - 8 tracks x 16 steps
             VStack(spacing: 2) {
-                ForEach(0..<8) { track in
-                    HStack(spacing: 2) {
-                        ForEach(0..<16) { step in
-                            GridCell(
-                                row: track,
-                                col: step,
-                                isActive: audioEngine.getGridCell(row: track, col: step),
-                                isPlaying: audioEngine.isPlaying && step == audioEngine.currentPlayingStep,
-                                selectedInstrument: audioEngine.selectedInstrument,
-                                instrumentColor: getInstrumentColor(for: audioEngine.selectedInstrument),
-                                darkerColor: getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument)),
-                                octave: audioEngine.getGridCellOctave(row: track, col: step)
-                            ) {
-                                audioEngine.toggleGridCell(row: track, col: step)
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    ForEach(0..<8) { track in
+                        HStack(spacing: 2) {
+                            ForEach(0..<16) { step in
+                                let isBeatMarker = (step % 4 == 0)
+                                GridCell(
+                                    row: track,
+                                    col: step,
+                                    isActive: audioEngine.getGridCell(row: track, col: step),
+                                    isPlaying: audioEngine.isPlaying && step == audioEngine.currentPlayingStep,
+                                    selectedInstrument: audioEngine.selectedInstrument,
+                                    instrumentColor: getInstrumentColor(for: audioEngine.selectedInstrument),
+                                    darkerColor: getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument)),
+                                    octave: audioEngine.getGridCellOctave(row: track, col: step),
+                                    velocity: audioEngine.getGridCellVelocity(row: track, col: step),
+                                    isBeatMarker: isBeatMarker
+                                ) {
+                                    audioEngine.toggleGridCell(row: track, col: step)
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                } longPressAction: {
+                                    audioEngine.showVelocityEditor(row: track, col: step)
+                                }
                             }
                         }
                     }
                 }
-            }
             .padding(8)
             .background(
                 Rectangle()
@@ -94,7 +110,10 @@ struct GridCell: View {
     let instrumentColor: Color
     let darkerColor: Color
     let octave: Int
+    let velocity: Float
+    var isBeatMarker: Bool = false
     let action: () -> Void
+    let longPressAction: () -> Void
     
     var body: some View {
         Button(action: action) {
@@ -102,23 +121,55 @@ struct GridCell: View {
                 .fill(cellColor)
                 .overlay(
                     Rectangle()
-                        .stroke(Color.gray.opacity(0.6), lineWidth: 0.5)
+                        .stroke(isActive ? getActiveOutlineColor() : darkerColor.opacity(0.4), lineWidth: isActive ? 3 : 1)
                 )
                 .overlay(
-                    // Darker outline for active steps (like your reference images)
-                    Rectangle()
-                        .stroke(isActive ? darkerColor : Color.clear, lineWidth: 3)
+                    // Velocity indicator - gradient based on velocity
+                    GeometryReader { geometry in
+                        if isActive {
+                            VStack {
+                                Spacer()
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [darkerColor.opacity(0.9), darkerColor.opacity(0.4)]),
+                                            startPoint: .bottom,
+                                            endPoint: .top
+                                        )
+                                    )
+                                    .frame(height: geometry.size.height * CGFloat(velocity))
+                            }
+                        }
+                    }
                 )
                 .overlay(
-                    // Playing indicator - clean white border
+                    // Playing indicator - clean white border with pulse
                     Rectangle()
                         .stroke(isPlaying ? Color.white : Color.clear, lineWidth: 2)
+                        .scaleEffect(isPlaying ? 1.05 : 1.0)
+                        .opacity(isPlaying ? 1.0 : 0.0)
                 )
                 .aspectRatio(1.0, contentMode: .fit)
-                .scaleEffect(isPlaying ? 1.02 : 1.0)
-                .animation(.easeInOut(duration: 0.1), value: isPlaying)
+                .scaleEffect(isPlaying ? 1.08 : 1.0)
+                .animation(.easeInOut(duration: 0.08), value: isPlaying)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isActive)
         }
         .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0.5) {
+            longPressAction()
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        }
+    }
+    
+    private func getActiveOutlineColor() -> Color {
+        // Return an even darker shade than the cell color for better contrast
+        switch instrumentColor {
+        case Color(hex: "FFB6C1"): return Color(hex: "C71585") // Pink -> Medium Violet Red
+        case Color(hex: "87CEEB"): return Color(hex: "4682B4") // Sky Blue -> Steel Blue
+        case Color(hex: "DDA0DD"): return Color(hex: "6A0DAD") // Plum -> Dark Purple
+        case Color(hex: "FFD700"): return Color(hex: "FF8C00") // Gold -> Dark Orange
+        default: return darkerColor.opacity(0.8)
+        }
     }
     
     private var cellColor: Color {
@@ -160,7 +211,12 @@ struct GridCell: View {
                 default: return darkerColor
                 }
             } else {
-                return instrumentColor.opacity(0.3)
+                // For beat markers (steps 4, 8, 12), use darker shade of instrument color
+                if isBeatMarker {
+                    return darkerColor.opacity(0.15)
+                } else {
+                    return instrumentColor.opacity(0.3)
+                }
             }
         }
     }

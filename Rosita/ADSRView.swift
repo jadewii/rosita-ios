@@ -14,6 +14,12 @@ struct ADSRView: View {
                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
             
+            // Visual ADSR Envelope Display
+            ADSREnvelopeView(attack: attack, decay: decay, sustain: sustain, release: release)
+                .frame(height: 80)
+                .background(Color.black)
+                .cornerRadius(4)
+            
             // ADSR Sliders - beautiful custom sliders like original
             VStack(spacing: 8) {
                 CustomSlider(value: $attack, range: 0...2, trackColor: Color(hex: "FFB6C1"), label: "A:")
@@ -59,5 +65,123 @@ struct ADSRView: View {
                         .stroke(Color.black, lineWidth: 3)
                 )
         )
+    }
+}
+
+struct ADSREnvelopeView: View {
+    let attack: Double
+    let decay: Double
+    let sustain: Double
+    let release: Double
+    
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let height = geometry.size.height
+            
+            // Calculate phase widths (proportional)
+            let totalTime = attack + decay + 1.0 + release // 1.0 is sustain hold time
+            let attackWidth = (attack / totalTime) * width * 0.6 // Leave room for padding
+            let decayWidth = (decay / totalTime) * width * 0.6
+            let sustainWidth = (1.0 / totalTime) * width * 0.6
+            let _ = (release / totalTime) * width * 0.6 // releaseWidth calculated but not used in layout
+            
+            let padding: CGFloat = width * 0.1
+            let drawWidth = width - (padding * 2)
+            
+            Path { path in
+                // Start at bottom left
+                path.move(to: CGPoint(x: padding, y: height))
+                
+                // Attack phase - rise to peak
+                path.addLine(to: CGPoint(
+                    x: padding + (attackWidth / (attack + decay + 1.0 + release)) * drawWidth,
+                    y: height * 0.1
+                ))
+                
+                // Decay phase - fall to sustain level
+                let decayX = padding + ((attackWidth + decayWidth) / (attack + decay + 1.0 + release)) * drawWidth
+                path.addLine(to: CGPoint(
+                    x: decayX,
+                    y: height * (1.0 - sustain) + height * 0.1
+                ))
+                
+                // Sustain phase - hold sustain level
+                let sustainX = padding + ((attackWidth + decayWidth + sustainWidth) / (attack + decay + 1.0 + release)) * drawWidth
+                path.addLine(to: CGPoint(
+                    x: sustainX,
+                    y: height * (1.0 - sustain) + height * 0.1
+                ))
+                
+                // Release phase - fall to zero
+                let releaseX = padding + drawWidth
+                path.addLine(to: CGPoint(
+                    x: releaseX,
+                    y: height
+                ))
+            }
+            .stroke(Color.green, lineWidth: 2)
+            .background(
+                // Fill under the envelope
+                Path { path in
+                    path.move(to: CGPoint(x: padding, y: height))
+                    
+                    // Same path as above but closed
+                    path.addLine(to: CGPoint(
+                        x: padding + (attackWidth / (attack + decay + 1.0 + release)) * drawWidth,
+                        y: height * 0.1
+                    ))
+                    
+                    let decayX = padding + ((attackWidth + decayWidth) / (attack + decay + 1.0 + release)) * drawWidth
+                    path.addLine(to: CGPoint(
+                        x: decayX,
+                        y: height * (1.0 - sustain) + height * 0.1
+                    ))
+                    
+                    let sustainX = padding + ((attackWidth + decayWidth + sustainWidth) / (attack + decay + 1.0 + release)) * drawWidth
+                    path.addLine(to: CGPoint(
+                        x: sustainX,
+                        y: height * (1.0 - sustain) + height * 0.1
+                    ))
+                    
+                    let releaseX = padding + drawWidth
+                    path.addLine(to: CGPoint(
+                        x: releaseX,
+                        y: height
+                    ))
+                    
+                    // Close the path
+                    path.addLine(to: CGPoint(x: padding, y: height))
+                }
+                .fill(Color.green.opacity(0.2))
+            )
+            .overlay(
+                // Phase labels
+                HStack {
+                    Text("A")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                    Text("D")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                    Text("S")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                    Text("R")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, padding),
+                alignment: .bottom
+            )
+        }
+        .animation(.easeInOut(duration: 0.2), value: attack)
+        .animation(.easeInOut(duration: 0.2), value: decay)
+        .animation(.easeInOut(duration: 0.2), value: sustain)
+        .animation(.easeInOut(duration: 0.2), value: release)
     }
 }

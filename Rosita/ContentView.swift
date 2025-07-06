@@ -9,6 +9,9 @@ struct ContentView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let isCompact = geometry.size.width < 1000 // iPad 11" vs 13"
+            let scaleFactor = isCompact ? 0.85 : 1.0
+            
             ZStack {
                 // Beautiful pink gradient background like the goal image
                 Rectangle()
@@ -21,8 +24,26 @@ struct ContentView: View {
                     )
                     .ignoresSafeArea(.all)
                 
-                // Main layout - matching the reference image structure
-                VStack(spacing: 6) {
+                // Main layout - responsive for different iPad sizes
+                VStack(spacing: isCompact ? 2 : 6) {
+                    // Help button in top right corner
+                    HStack {
+                        Spacer()
+                        RetroButton(
+                            title: "?",
+                            color: Color(hex: "87CEEB"),
+                            textColor: .black,
+                            action: {
+                                showHelp = true
+                            },
+                            width: 36,
+                            height: 36,
+                            fontSize: 20
+                        )
+                        .padding(.trailing, 8)
+                        .padding(.top, 4)
+                    }
+                    
                     // TOP SECTION - Reorganized layout
                     VStack(spacing: 8) {
                         // First row: Transport controls, control buttons, BPM, Instrument and Arpeggiator
@@ -37,9 +58,9 @@ struct ContentView: View {
                                     color: Color(hex: "00FFFF"),
                                     textColor: .black,
                                     action: {},
-                                    width: 70,
-                                    height: 42,
-                                    fontSize: 14
+                                    width: CGFloat(70 * scaleFactor),
+                                    height: CGFloat(42 * scaleFactor),
+                                    fontSize: CGFloat(14 * scaleFactor)
                                 )
                                 
                                 RetroButton(
@@ -47,19 +68,19 @@ struct ContentView: View {
                                     color: Color(hex: "FFFF00"),
                                     textColor: .black,
                                     action: {},
-                                    width: 70,
-                                    height: 42,
-                                    fontSize: 14
+                                    width: CGFloat(70 * scaleFactor),
+                                    height: CGFloat(42 * scaleFactor),
+                                    fontSize: CGFloat(14 * scaleFactor)
                                 )
                                 
                                 RetroButton(
                                     title: "OCTAVE",
-                                    color: Color(hex: "FF00FF"),
+                                    color: Color(hex: "9370DB"),
                                     textColor: .black,
                                     action: {},
-                                    width: 70,
-                                    height: 42,
-                                    fontSize: 14
+                                    width: CGFloat(70 * scaleFactor),
+                                    height: CGFloat(42 * scaleFactor),
+                                    fontSize: CGFloat(14 * scaleFactor)
                                 )
                             }
                             
@@ -71,32 +92,18 @@ struct ContentView: View {
                                 ArpeggiatorView()
                                     .frame(width: 200, height: 60)
                                 
-                                // Help and Export buttons
-                                VStack(spacing: 4) {
-                                    RetroButton(
-                                        title: "?",
-                                        color: Color(hex: "87CEEB"),
-                                        textColor: .black,
-                                        action: {
-                                            showHelp = true
-                                        },
-                                        width: 44,
-                                        height: 28,
-                                        fontSize: 16
-                                    )
-                                    
-                                    RetroButton(
-                                        title: "WAV",
-                                        color: Color(hex: "90EE90"),
-                                        textColor: .black,
-                                        action: {
-                                            exportWAV()
-                                        },
-                                        width: 44,
-                                        height: 28,
-                                        fontSize: 10
-                                    )
-                                }
+                                // Export button
+                                RetroButton(
+                                    title: "WAV",
+                                    color: Color(hex: "90EE90"),
+                                    textColor: .black,
+                                    action: {
+                                        exportWAV()
+                                    },
+                                    width: 44,
+                                    height: 60,
+                                    fontSize: 12
+                                )
                             }
                         }
                         .frame(height: 60)
@@ -190,19 +197,22 @@ struct ContentView: View {
                     }
                     .padding(.horizontal, 8)
                     
-                    // MAIN CONTENT AREA
-                    HStack(alignment: .top, spacing: 8) {
-                        // LEFT COLUMN - ADSR and Effects with proper spacing
+                    // MAIN CONTENT AREA - responsive sizing
+                    HStack(alignment: .top, spacing: isCompact ? 8 : 12) {
+                        // LEFT COLUMN - Scope, ADSR and Effects
                         VStack(spacing: 8) {
-                            // ADSR Envelope - lowered position
-                            ADSRView()
+                            // Waveform Scope
+                            WaveformScope()
                                 .frame(height: 140)
                             
-                            // Effects - aligned with grid end
-                            EffectsView()
-                                .frame(maxHeight: .infinity)
+                            // ADSR Envelope
+                            ADSRView()
                             
-                            // Keyboard Octave controls
+                            // Effects
+                            EffectsView()
+                            
+                            // Keyboard Octave controls at bottom
+                            Spacer()
                             HStack(spacing: 8) {
                                 Text("KB OCTAVE")
                                     .font(.system(size: 11, weight: .bold))
@@ -241,7 +251,7 @@ struct ContentView: View {
                                     fontSize: 18
                                 )
                             }
-                            .padding(.bottom, 4)
+                            .padding(.bottom, 16)
                         }
                         .frame(width: 200) // Fixed width for left column
                         
@@ -254,11 +264,12 @@ struct ContentView: View {
                     
                     // BOTTOM - Piano keyboard with adaptive height
                     PianoKeyboardView()
-                        .frame(height: horizontalSizeClass == .compact ? 100 : max(120, geometry.size.height * 0.18))
+                        .frame(height: isCompact ? 90 : 110)
                         .padding(.horizontal, 8)
-                        .padding(.bottom, 4)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? 0 : 4)
                 }
-                .padding(.vertical, 4)
+                .padding(.top, 4)
+                .padding(.bottom, 0)
                 
                 // Help modal overlay
                 if showHelp {
@@ -391,6 +402,128 @@ extension Color {
             blue:  Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+}
+
+// Oscilloscope view matching ADSR window style
+struct WaveformScope: View {
+    @EnvironmentObject var audioEngine: AudioEngine
+    @State private var waveformPoints: [CGPoint] = []
+    @State private var freeze: Bool = false
+    let timer = Timer.publish(every: 1.0/60.0, on: .main, in: .common).autoconnect()
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // Title matching ADSR style
+            Text("SCOPE (TRACK \(audioEngine.selectedInstrument + 1))")
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(.black)
+            
+            // Waveform display matching ADSR envelope display
+            GeometryReader { geometry in
+                ZStack {
+                    Rectangle()
+                        .fill(Color.black)
+                        .cornerRadius(4)
+                    
+                    // Waveform
+                    if !waveformPoints.isEmpty {
+                        Path { path in
+                            if let first = waveformPoints.first {
+                                path.move(to: first)
+                            }
+                            for point in waveformPoints.dropFirst() {
+                                path.addLine(to: point)
+                            }
+                        }
+                        .stroke(getWaveformColor(), lineWidth: 2)
+                    }
+                }
+            }
+            .frame(height: 80) // Same height as ADSR envelope
+            
+            // Freeze button
+            Button(action: { freeze.toggle() }) {
+                Text(freeze ? "RUN" : "FREEZE")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(freeze ? .white : .black)
+                    .frame(width: 80, height: 24)
+                    .background(freeze ? Color.red : Color(hex: "90EE90"))
+                    .overlay(Rectangle().stroke(Color.black, lineWidth: 1))
+            }
+        }
+        .padding()
+        .background(
+            Rectangle()
+                .fill(Color.white.opacity(0.8))
+                .overlay(
+                    Rectangle()
+                        .stroke(Color.black, lineWidth: 3)
+                )
+        )
+        .onReceive(timer) { _ in
+            if !freeze {
+                updateWaveform()
+            }
+        }
+    }
+    
+    private func getWaveformColor() -> Color {
+        // Match instrument colors
+        switch audioEngine.selectedInstrument {
+        case 0: return Color(hex: "FFB6C1") // Pink
+        case 1: return Color(hex: "87CEEB") // Sky Blue
+        case 2: return Color(hex: "DDA0DD") // Plum
+        case 3: return Color(hex: "FFD700") // Gold
+        default: return Color.green
+        }
+    }
+    
+    private func updateWaveform() {
+        // Generate waveform based on instrument type
+        DispatchQueue.main.async {
+            let width: CGFloat = 160 // Adjusted for padding
+            let height: CGFloat = 70
+            let samples = 100
+            var points: [CGPoint] = []
+            
+            if audioEngine.isPlaying {
+                let time = Date().timeIntervalSince1970
+                let baseFreq = 4.0
+                
+                for i in 0..<samples {
+                    let x = CGFloat(i) * width / CGFloat(samples - 1)
+                    let phase = Double(i) * 0.1 + time * baseFreq
+                    var y: CGFloat = height / 2
+                    
+                    // Different waveforms based on instrument
+                    switch audioEngine.selectedInstrument {
+                    case 0: // Square wave
+                        y = height / 2 + CGFloat(sin(phase) > 0 ? 0.3 : -0.3) * height / 2
+                    case 1: // Saw wave
+                        let sawValue = (phase.truncatingRemainder(dividingBy: 2 * .pi) / .pi) - 1
+                        y = height / 2 + CGFloat(sawValue * 0.3) * height / 2
+                    case 2: // Triangle wave
+                        let triValue = asin(sin(phase)) / (.pi / 2)
+                        y = height / 2 + CGFloat(triValue * 0.3) * height / 2
+                    case 3: // Sine wave (drums)
+                        y = height / 2 + CGFloat(sin(phase) * 0.3) * height / 2
+                    default:
+                        y = height / 2
+                    }
+                    
+                    points.append(CGPoint(x: x + 5, y: max(5, min(y, height - 5))))
+                }
+            } else {
+                // Flat line when not playing
+                for i in 0..<samples {
+                    let x = CGFloat(i) * width / CGFloat(samples - 1)
+                    points.append(CGPoint(x: x + 5, y: height / 2))
+                }
+            }
+            
+            waveformPoints = points
+        }
     }
 }
 
