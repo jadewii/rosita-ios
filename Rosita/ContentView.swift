@@ -65,7 +65,6 @@ struct ContentView: View {
                         )
                         .padding(.trailing, 8)
                     }
-                    .padding(.top, 2)
                     .frame(height: 60)
                     
                     // TOP SECTION - Transport and Pattern controls
@@ -195,19 +194,21 @@ struct ContentView: View {
                     
                     // MAIN CONTENT AREA
                     HStack(alignment: .top, spacing: 8) {
-                        // LEFT COLUMN - Scope, ADSR, Effects, and KB Octave
-                        VStack(spacing: 4) {
+                        // LEFT COLUMN - Properly spaced components
+                        VStack(alignment: .leading, spacing: 8) {
                             // Waveform Scope
                             WaveformScope()
-                                .frame(width: 200, height: 100)
+                                .frame(width: 200, height: 140)
                             
                             // ADSR Envelope
                             ADSRView()
-                                .frame(width: 200, height: 180)
+                                .frame(width: 200)
                             
                             // Effects
                             EffectsView()
-                                .frame(width: 200, height: 120)
+                                .frame(width: 200)
+                            
+                            Spacer()
                             
                             // Keyboard Octave controls at bottom
                             HStack(spacing: 4) {
@@ -251,6 +252,7 @@ struct ContentView: View {
                                     fontSize: 14
                                 )
                             }
+                            .padding(.bottom, 8)
                         }
                         .frame(width: 200)
                         
@@ -263,11 +265,9 @@ struct ContentView: View {
                     
                     // BOTTOM - Piano keyboard with adaptive height
                     PianoKeyboardView()
-                        .frame(height: isCompact ? 85 : 100)
+                        .frame(height: isCompact ? 100 : 120)
                         .padding(.horizontal, 8)
-                        .padding(.bottom, 0)
                 }
-                .edgesIgnoringSafeArea(.all)
                 
                 // Help modal overlay
                 if showHelp {
@@ -421,27 +421,33 @@ struct WaveformScope: View {
                 .foregroundColor(.black)
             
             // Waveform display matching ADSR envelope display
-            GeometryReader { geometry in
-                ZStack {
-                    Rectangle()
-                        .fill(Color.black)
-                        .cornerRadius(4)
-                    
-                    // Waveform
-                    if !waveformPoints.isEmpty {
-                        Path { path in
-                            if let first = waveformPoints.first {
-                                path.move(to: first)
-                            }
-                            for point in waveformPoints.dropFirst() {
-                                path.addLine(to: point)
-                            }
+            ZStack {
+                Rectangle()
+                    .fill(Color.black)
+                    .cornerRadius(4)
+                
+                // Grid lines
+                Path { path in
+                    // Horizontal center line
+                    path.move(to: CGPoint(x: 0, y: 40))
+                    path.addLine(to: CGPoint(x: 184, y: 40))
+                }
+                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                
+                // Waveform
+                if !waveformPoints.isEmpty {
+                    Path { path in
+                        if let first = waveformPoints.first {
+                            path.move(to: first)
                         }
-                        .stroke(getWaveformColor(), lineWidth: 2)
+                        for point in waveformPoints.dropFirst() {
+                            path.addLine(to: point)
+                        }
                     }
+                    .stroke(getWaveformColor(), lineWidth: 2)
                 }
             }
-            .frame(height: 60) // Compact height
+            .frame(height: 80)
             
             // Freeze button
             Button(action: { freeze.toggle() }) {
@@ -483,8 +489,8 @@ struct WaveformScope: View {
     private func updateWaveform() {
         // Get real waveform data from audio engine
         DispatchQueue.main.async {
-            let width: CGFloat = 160
-            let height: CGFloat = 70
+            let width: CGFloat = 184
+            let height: CGFloat = 80
             
             // Get actual audio buffer data
             let buffer = audioEngine.generateOscilloscopeData()
@@ -494,7 +500,7 @@ struct WaveformScope: View {
                 let x = CGFloat(i) * width / CGFloat(buffer.count - 1)
                 let y = height / 2 - CGFloat(sample) * height / 2 // Invert for proper display
                 let clampedY = max(5, min(y, height - 5))
-                points.append(CGPoint(x: x + 5, y: clampedY))
+                points.append(CGPoint(x: x, y: clampedY))
             }
             
             waveformPoints = points
