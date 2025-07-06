@@ -26,9 +26,33 @@ struct ContentView: View {
                 
                 // Main layout - responsive for different iPad sizes
                 VStack(spacing: 4) {
-                    // Help button in top right corner
+                    // Top buttons (?, WAV) and Instrument/Arpeggiator in top right corner
                     HStack {
                         Spacer()
+                        
+                        // Instrument and Arpeggiator sections
+                        VStack(spacing: 4) {
+                            InstrumentSelectorView()
+                                .frame(width: 200, height: 28)
+                            
+                            ArpeggiatorView()
+                                .frame(width: 200, height: 28)
+                        }
+                        
+                        // WAV button - same size as help button
+                        RetroButton(
+                            title: "WAV",
+                            color: Color(hex: "90EE90"),
+                            textColor: .black,
+                            action: {
+                                exportWAV()
+                            },
+                            width: 36,
+                            height: 36,
+                            fontSize: 12
+                        )
+                        
+                        // Help button
                         RetroButton(
                             title: "?",
                             color: Color(hex: "87CEEB"),
@@ -41,12 +65,12 @@ struct ContentView: View {
                             fontSize: 20
                         )
                         .padding(.trailing, 8)
-                        .padding(.top, 4)
                     }
+                    .padding(.top, 4)
                     
                     // TOP SECTION
                     VStack(spacing: 8) {
-                        // First row: Transport controls, buttons, Instrument and Arpeggiator
+                        // First row: Transport controls and control buttons
                         HStack(spacing: 8) {
                             // Transport controls
                             TransportControlsView()
@@ -81,28 +105,6 @@ struct ContentView: View {
                                     width: CGFloat(70 * scaleFactor),
                                     height: CGFloat(42 * scaleFactor),
                                     fontSize: CGFloat(14 * scaleFactor)
-                                )
-                            }
-                            
-                            // Instrument, Arpeggiator, and utility buttons
-                            HStack(spacing: 8) {
-                                InstrumentSelectorView()
-                                    .frame(width: 200, height: 60)
-                                
-                                ArpeggiatorView()
-                                    .frame(width: 200, height: 60)
-                                
-                                // Export button
-                                RetroButton(
-                                    title: "WAV",
-                                    color: Color(hex: "90EE90"),
-                                    textColor: .black,
-                                    action: {
-                                        exportWAV()
-                                    },
-                                    width: 44,
-                                    height: 60,
-                                    fontSize: 12
                                 )
                             }
                         }
@@ -473,46 +475,20 @@ struct WaveformScope: View {
     }
     
     private func updateWaveform() {
-        // Generate waveform based on instrument type
+        // Get real waveform data from audio engine
         DispatchQueue.main.async {
-            let width: CGFloat = 160 // Adjusted for padding
+            let width: CGFloat = 160
             let height: CGFloat = 70
-            let samples = 100
+            
+            // Get actual audio buffer data
+            let buffer = audioEngine.generateOscilloscopeData()
             var points: [CGPoint] = []
             
-            if audioEngine.isPlaying {
-                let time = Date().timeIntervalSince1970
-                let baseFreq = 4.0
-                
-                for i in 0..<samples {
-                    let x = CGFloat(i) * width / CGFloat(samples - 1)
-                    let phase = Double(i) * 0.1 + time * baseFreq
-                    var y: CGFloat = height / 2
-                    
-                    // Different waveforms based on instrument
-                    switch audioEngine.selectedInstrument {
-                    case 0: // Square wave
-                        y = height / 2 + CGFloat(sin(phase) > 0 ? 0.3 : -0.3) * height / 2
-                    case 1: // Saw wave
-                        let sawValue = (phase.truncatingRemainder(dividingBy: 2 * .pi) / .pi) - 1
-                        y = height / 2 + CGFloat(sawValue * 0.3) * height / 2
-                    case 2: // Triangle wave
-                        let triValue = asin(sin(phase)) / (.pi / 2)
-                        y = height / 2 + CGFloat(triValue * 0.3) * height / 2
-                    case 3: // Sine wave (drums)
-                        y = height / 2 + CGFloat(sin(phase) * 0.3) * height / 2
-                    default:
-                        y = height / 2
-                    }
-                    
-                    points.append(CGPoint(x: x + 5, y: max(5, min(y, height - 5))))
-                }
-            } else {
-                // Flat line when not playing
-                for i in 0..<samples {
-                    let x = CGFloat(i) * width / CGFloat(samples - 1)
-                    points.append(CGPoint(x: x + 5, y: height / 2))
-                }
+            for (i, sample) in buffer.enumerated() {
+                let x = CGFloat(i) * width / CGFloat(buffer.count - 1)
+                let y = height / 2 - CGFloat(sample) * height / 2 // Invert for proper display
+                let clampedY = max(5, min(y, height - 5))
+                points.append(CGPoint(x: x + 5, y: clampedY))
             }
             
             waveformPoints = points

@@ -70,6 +70,9 @@ class AudioEngine: ObservableObject {
     // Track recently recorded notes to prevent double triggering
     private var recentlyRecordedNotes: Set<String> = []
     
+    // Oscilloscope data
+    @Published var oscilloscopeBuffer: [Float] = []
+    
     
     enum RecordingMode: String {
         case freeForm = "FREE"
@@ -768,6 +771,62 @@ class AudioEngine: ObservableObject {
             let row = 7 - closestScaleIndex
             return max(0, min(7, row))
         }
+    }
+    
+    // MARK: - Oscilloscope Support
+    
+    func generateOscilloscopeData() -> [Float] {
+        var buffer: [Float] = []
+        let samples = 100
+        let waveformIndex = instrumentWaveforms[selectedInstrument]
+        
+        // Check if any notes are playing for the selected instrument
+        let hasActiveNotes = instrumentSteps.contains(where: { key, value in
+            let parts = key.split(separator: "_")
+            if parts.count == 2, let instrument = Int(parts[0]) {
+                return instrument == selectedInstrument && value
+            }
+            return false
+        })
+        
+        if isPlaying && hasActiveNotes && currentPlayingStep >= 0 {
+            // Generate waveform based on instrument type
+            for i in 0..<samples {
+                let phase = Double(i) * 0.15
+                var value: Float = 0
+                
+                switch selectedInstrument {
+                case 0, 1, 2: // Synth instruments
+                    switch waveformIndex {
+                    case 0: // Square wave
+                        value = Float(sin(phase) > 0 ? 0.4 : -0.4)
+                    case 1: // Sawtooth wave
+                        value = Float((phase.truncatingRemainder(dividingBy: 2 * .pi) / .pi) - 1) * 0.4
+                    case 2: // Triangle wave
+                        let phase2 = phase.truncatingRemainder(dividingBy: 2 * .pi) / (2 * .pi)
+                        value = Float(phase2 < 0.5 ? 4.0 * phase2 - 1.0 : 3.0 - 4.0 * phase2) * 0.4
+                    case 3: // Sine wave
+                        value = Float(sin(phase)) * 0.4
+                    case 4: // Reverse sawtooth
+                        value = Float(1.0 - 2.0 * (phase.truncatingRemainder(dividingBy: 2 * .pi) / (2 * .pi))) * 0.4
+                    default:
+                        value = Float(sin(phase)) * 0.4
+                    }
+                case 3: // Drums - percussive envelope
+                    let envelope = Float(exp(-Double(i) * 0.08))
+                    value = envelope * Float.random(in: -0.3...0.3)
+                default:
+                    value = 0
+                }
+                
+                buffer.append(value)
+            }
+        } else {
+            // Return flat line when not playing
+            buffer = Array(repeating: 0, count: samples)
+        }
+        
+        return buffer
     }
 }
 
