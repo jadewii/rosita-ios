@@ -35,10 +35,9 @@ struct GridSequencerView: View {
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                // Step numbers like the web version with recording indicator
-                HStack(spacing: 2) {
+        VStack(spacing: 4) {
+            // Step numbers like the web version with recording indicator
+            HStack(spacing: 2) {
                 ForEach(1...16, id: \.self) { step in
                     let stepIndex = step - 1
                     let isCurrentRecordingStep = audioEngine.isRecording && 
@@ -89,9 +88,7 @@ struct GridSequencerView: View {
                         }
                     }
                 }
-                .padding(4)
-                .frame(maxHeight: .infinity) // Make grid expand vertically
-            }
+            .padding(8)
             .background(
                 Rectangle()
                     .fill(getInstrumentColor(for: audioEngine.selectedInstrument))
