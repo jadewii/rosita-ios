@@ -25,19 +25,22 @@ struct ContentView: View {
                     .ignoresSafeArea(.all)
                 
                 // Main layout - responsive for different iPad sizes
-                VStack(spacing: 4) {
-                    // Top buttons (?, WAV) and Instrument/Arpeggiator in top right corner
+                VStack(spacing: 2) {
+                    // Top right buttons and controls
                     HStack {
                         Spacer()
                         
-                        // Instrument and Arpeggiator sections
-                        VStack(spacing: 4) {
-                            InstrumentSelectorView()
-                                .frame(width: 200, height: 28)
-                            
-                            ArpeggiatorView()
-                                .frame(width: 200, height: 28)
-                        }
+                        // Instrument selector
+                        InstrumentSelectorView()
+                            .frame(width: 200, height: 60)
+                        
+                        // Spacing between instrument and arpeggiator
+                        Spacer()
+                            .frame(width: 16)
+                        
+                        // Arpeggiator
+                        ArpeggiatorView()
+                            .frame(width: 200, height: 60)
                         
                         // WAV button - same size as help button
                         RetroButton(
@@ -66,153 +69,153 @@ struct ContentView: View {
                         )
                         .padding(.trailing, 8)
                     }
-                    .padding(.top, 4)
+                    .padding(.top, 2)
                     
-                    // TOP SECTION
-                    VStack(spacing: 8) {
-                        // First row: Transport controls and control buttons
-                        HStack(spacing: 8) {
-                            // Transport controls
-                            TransportControlsView()
-                            
-                            // Control buttons
-                            HStack(spacing: 6) {
-                                RetroButton(
-                                    title: "ADSR",
-                                    color: Color(hex: "00FFFF"),
-                                    textColor: .black,
-                                    action: {},
-                                    width: CGFloat(70 * scaleFactor),
-                                    height: CGFloat(42 * scaleFactor),
-                                    fontSize: CGFloat(14 * scaleFactor)
-                                )
-                                
-                                RetroButton(
-                                    title: "MAJOR",
-                                    color: Color(hex: "FFFF00"),
-                                    textColor: .black,
-                                    action: {},
-                                    width: CGFloat(70 * scaleFactor),
-                                    height: CGFloat(42 * scaleFactor),
-                                    fontSize: CGFloat(14 * scaleFactor)
-                                )
-                                
-                                RetroButton(
-                                    title: "OCTAVE",
-                                    color: Color(hex: "9370DB"),
-                                    textColor: .black,
-                                    action: {},
-                                    width: CGFloat(70 * scaleFactor),
-                                    height: CGFloat(42 * scaleFactor),
-                                    fontSize: CGFloat(14 * scaleFactor)
-                                )
-                            }
-                        }
-                        .frame(height: 60)
+                    // TOP SECTION - Transport and Pattern controls
+                    HStack(spacing: 8) {
+                        // Transport controls
+                        TransportControlsView()
                         
-                        // Second row: Pattern slots and BPM control
-                        HStack(spacing: 16) {
-                            Spacer()
+                        // Control buttons
+                        HStack(spacing: 6) {
+                            RetroButton(
+                                title: "ADSR",
+                                color: Color(hex: "00FFFF"),
+                                textColor: .black,
+                                action: {},
+                                width: CGFloat(70 * scaleFactor),
+                                height: CGFloat(42 * scaleFactor),
+                                fontSize: CGFloat(14 * scaleFactor)
+                            )
                             
-                            PatternSlotsView()
-                                .frame(height: 56)
+                            RetroButton(
+                                title: "MAJOR",
+                                color: Color(hex: "FFFF00"),
+                                textColor: .black,
+                                action: {},
+                                width: CGFloat(70 * scaleFactor),
+                                height: CGFloat(42 * scaleFactor),
+                                fontSize: CGFloat(14 * scaleFactor)
+                            )
                             
-                            // BPM and Grid Octave controls
-                            HStack(spacing: 16) {
-                                // BPM control
-                                VStack(spacing: 4) {
-                                    HStack(spacing: 4) {
-                                        Text("BPM")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.black)
-                                        
-                                        Text("\(Int(audioEngine.bpm))")
-                                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                            .foregroundColor(.black)
-                                            .frame(width: 36, height: 20)
-                                            .background(
-                                                Rectangle()
-                                                    .fill(Color.white)
-                                                    .overlay(
-                                                        Rectangle()
-                                                            .stroke(Color.black, lineWidth: 1)
-                                                    )
-                                            )
-                                    }
-                                    
-                                    CustomSlider(
-                                        value: $audioEngine.bpm,
-                                        range: 60...200,
-                                        trackColor: Color(hex: "FF1493"),
-                                        label: ""
-                                    )
-                                    .frame(width: 120, height: 40)
-                                }
-                                
-                                // Grid Octave controls
-                                HStack(spacing: 6) {
-                                    Text("GRID OCT")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(.black)
-                                    
-                                    RetroButton(
-                                        title: "-",
-                                        color: Color(hex: "87CEEB"),
-                                        textColor: .black,
-                                        action: {
-                                            if audioEngine.gridTranspose > -24 {
-                                                audioEngine.gridTranspose -= 12
-                                            }
-                                        },
-                                        width: 28,
-                                        height: 28,
-                                        fontSize: 16
-                                    )
-                                    
-                                    Text("\(audioEngine.gridTranspose / 12)")
-                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                        .foregroundColor(.black)
-                                        .frame(width: 24)
-                                    
-                                    RetroButton(
-                                        title: "+",
-                                        color: Color(hex: "87CEEB"),
-                                        textColor: .black,
-                                        action: {
-                                            if audioEngine.gridTranspose < 24 {
-                                                audioEngine.gridTranspose += 12
-                                            }
-                                        },
-                                        width: 28,
-                                        height: 28,
-                                        fontSize: 16
-                                    )
-                                }
-                            }
-                            
-                            Spacer()
+                            RetroButton(
+                                title: "OCTAVE",
+                                color: Color(hex: "9370DB"),
+                                textColor: .black,
+                                action: {},
+                                width: CGFloat(70 * scaleFactor),
+                                height: CGFloat(42 * scaleFactor),
+                                fontSize: CGFloat(14 * scaleFactor)
+                            )
                         }
                     }
                     .padding(.horizontal, 8)
                     
-                    // MAIN CONTENT AREA - responsive sizing
-                    HStack(alignment: .top, spacing: isCompact ? 8 : 12) {
-                        // LEFT COLUMN - Scope at top, then ADSR and Effects
-                        VStack(spacing: 8) {
-                            // Waveform Scope at the top
-                            WaveformScope()
-                                .frame(height: 120)
+                    // Pattern slots and BPM control
+                    HStack(spacing: 16) {
+                        Spacer()
+                        
+                        PatternSlotsView()
+                            .frame(height: 56)
+                        
+                        // BPM and Grid Octave controls
+                        HStack(spacing: 16) {
+                            // BPM control
+                            VStack(spacing: 4) {
+                                HStack(spacing: 4) {
+                                    Text("BPM")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.black)
+                                    
+                                    Text("\(Int(audioEngine.bpm))")
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.black)
+                                        .frame(width: 36, height: 20)
+                                        .background(
+                                            Rectangle()
+                                                .fill(Color.white)
+                                                .overlay(
+                                                    Rectangle()
+                                                        .stroke(Color.black, lineWidth: 1)
+                                                )
+                                        )
+                                }
+                                
+                                CustomSlider(
+                                    value: $audioEngine.bpm,
+                                    range: 60...200,
+                                    trackColor: Color(hex: "FF1493"),
+                                    label: ""
+                                )
+                                .frame(width: 120, height: 40)
+                            }
                             
-                            // ADSR Envelope right below
+                            // Grid Octave controls
+                            HStack(spacing: 6) {
+                                Text("GRID OCT")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.black)
+                                
+                                RetroButton(
+                                    title: "-",
+                                    color: Color(hex: "87CEEB"),
+                                    textColor: .black,
+                                    action: {
+                                        if audioEngine.gridTranspose > -24 {
+                                            audioEngine.gridTranspose -= 12
+                                        }
+                                    },
+                                    width: 28,
+                                    height: 28,
+                                    fontSize: 16
+                                )
+                                
+                                Text("\(audioEngine.gridTranspose / 12)")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 24)
+                                
+                                RetroButton(
+                                    title: "+",
+                                    color: Color(hex: "87CEEB"),
+                                    textColor: .black,
+                                    action: {
+                                        if audioEngine.gridTranspose < 24 {
+                                            audioEngine.gridTranspose += 12
+                                        }
+                                    },
+                                    width: 28,
+                                    height: 28,
+                                    fontSize: 16
+                                )
+                            }
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 4)
+                    
+                    // MAIN CONTENT AREA
+                    HStack(alignment: .top, spacing: 8) {
+                        // LEFT COLUMN - Scope, ADSR, Effects, and KB Octave
+                        VStack(spacing: 6) {
+                            // Waveform Scope
+                            WaveformScope()
+                                .frame(width: 200, height: 120)
+                            
+                            // ADSR Envelope
                             ADSRView()
+                                .frame(width: 200)
                             
                             // Effects
                             EffectsView()
+                                .frame(width: 200)
                             
-                            // Keyboard Octave controls
-                            HStack(spacing: 8) {
+                            // Keyboard Octave controls at bottom
+                            HStack(spacing: 6) {
                                 Text("KB OCTAVE")
-                                    .font(.system(size: 11, weight: .bold))
+                                    .font(.system(size: 10, weight: .bold))
                                     .foregroundColor(.black)
                                 
                                 RetroButton(
@@ -224,15 +227,15 @@ struct ContentView: View {
                                             audioEngine.transpose -= 12
                                         }
                                     },
-                                    width: 40,
-                                    height: 32,
-                                    fontSize: 18
+                                    width: 32,
+                                    height: 28,
+                                    fontSize: 16
                                 )
                                 
                                 Text("\(audioEngine.transpose / 12)")
-                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
                                     .foregroundColor(.black)
-                                    .frame(width: 30)
+                                    .frame(width: 24)
                                 
                                 RetroButton(
                                     title: "+",
@@ -243,19 +246,19 @@ struct ContentView: View {
                                             audioEngine.transpose += 12
                                         }
                                     },
-                                    width: 40,
-                                    height: 32,
-                                    fontSize: 18
+                                    width: 32,
+                                    height: 28,
+                                    fontSize: 16
                                 )
                             }
+                            .padding(.bottom, 4)
                         }
-                        .frame(width: 200) // Fixed width for left column
+                        .frame(width: 200)
                         
-                        // CENTER AND RIGHT AREA - Just the sequencer grid
+                        // SEQUENCER GRID - takes remaining space
                         GridSequencerView()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    .frame(maxHeight: .infinity)
                     .padding(.horizontal, 8)
                     
                     // BOTTOM - Piano keyboard with adaptive height
