@@ -13,11 +13,8 @@ struct ContentView: View {
             let isPhone = geometry.size.width < 800
             let scaleFactor = isPhone ? 0.7 : (isCompact ? 0.85 : 1.0)
             
-            // Calculate heights
-            let screenHeight = geometry.size.height
-            let keyboardHeight: CGFloat = isPhone ? 110 : 130
-            let topSectionHeight: CGFloat = 120 // Compact height for controls + pattern row
-            let middleSectionHeight = screenHeight - topSectionHeight - keyboardHeight
+            // Calculate keyboard height only - let other sections be flexible
+            let keyboardHeight: CGFloat = min(geometry.size.height * 0.15, isPhone ? 110 : 140)
             
             ZStack {
                 // Background gradient
@@ -28,9 +25,9 @@ struct ContentView: View {
                 )
                 .ignoresSafeArea()
                 
-                // 3-PART VERTICAL LAYOUT
+                // 3-ZONE VERTICAL LAYOUT - No spacing between zones
                 VStack(spacing: 0) {
-                    // TOP SECTION: Controls + Pattern Row (Fixed height)
+                    // TOP ZONE: Controls + Pattern Row (Auto height based on content)
                     VStack(spacing: 2) {
                         // Transport controls row
                         HStack(spacing: 8) {
@@ -97,7 +94,7 @@ struct ContentView: View {
                             )
                         }
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 4)
+                        .padding(.vertical, 2)
                         
                         // Pattern row
                         HStack(spacing: 16) {
@@ -178,10 +175,11 @@ struct ContentView: View {
                             Spacer()
                         }
                         .padding(.horizontal, 12)
+                        .padding(.bottom, 4)
                     }
-                    .frame(height: topSectionHeight)
+                    // TOP ZONE ends here - no fixed height, auto-sized based on content
                     
-                    // MIDDLE SECTION: Left Panel + Grid (Flexible height)
+                    // MIDDLE ZONE: Left Panel + Grid (Fills all available space)
                     HStack(alignment: .top, spacing: 8) {
                         // Left sidebar (fixed width)
                         VStack(alignment: .leading, spacing: 8) {
@@ -260,21 +258,18 @@ struct ContentView: View {
                             
                             Spacer()
                         }
-                        .padding(.leading, 20)
-                        .padding(.top, 8)
+                        .padding(.leading, 12)
                         
-                        // Sequencer grid (flexible width)
+                        // Sequencer grid (flexible width and height)
                         GridSequencerView()
-                            .padding(.trailing, 20)
-                            .padding(.top, 8)
+                            .padding(.trailing, 12)
                     }
-                    .frame(height: middleSectionHeight)
+                    .frame(maxHeight: .infinity) // This makes the middle zone expand to fill available space
                     
-                    // BOTTOM SECTION: Keyboard (Fixed height)
+                    // BOTTOM ZONE: Keyboard (Fixed height, pinned to bottom)
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, isPhone ? 8 : 12)
+                        .padding(.horizontal, 12)
                 }
                 
                 // Help Panel overlay
