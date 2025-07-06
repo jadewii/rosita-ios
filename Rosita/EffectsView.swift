@@ -9,11 +9,11 @@ struct EffectsView: View {
     let effectFullNames = ["Echo", "Space", "Warmth", "Phase"]
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             titleView
             effectControlsView
         }
-        .padding()
+        .padding(8)
         .background(backgroundView)
         .onChange(of: audioEngine.selectedInstrument) { _ in
             // Load effects for the newly selected track
@@ -27,12 +27,12 @@ struct EffectsView: View {
     
     private var titleView: some View {
         Text("EFFECTS (TRACK \(audioEngine.selectedInstrument + 1))")
-            .font(.system(size: 14, weight: .bold, design: .monospaced))
+            .font(.system(size: 12, weight: .bold, design: .monospaced))
             .foregroundColor(.black)
     }
     
     private var effectControlsView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             ForEach(0..<4) { index in
                 effectSlider(for: index)
             }

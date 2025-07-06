@@ -196,20 +196,18 @@ struct ContentView: View {
                     // MAIN CONTENT AREA
                     HStack(alignment: .top, spacing: 8) {
                         // LEFT COLUMN - Scope, ADSR, Effects, and KB Octave
-                        VStack(spacing: 6) {
+                        VStack(spacing: 4) {
                             // Waveform Scope
                             WaveformScope()
-                                .frame(width: 200, height: 120)
+                                .frame(width: 200, height: 100)
                             
                             // ADSR Envelope
                             ADSRView()
-                                .frame(width: 200)
+                                .frame(width: 200, height: 180)
                             
                             // Effects
                             EffectsView()
-                                .frame(width: 200)
-                            
-                            Spacer()
+                                .frame(width: 200, height: 120)
                             
                             // Keyboard Octave controls at bottom
                             HStack(spacing: 4) {
@@ -264,11 +262,11 @@ struct ContentView: View {
                     
                     // BOTTOM - Piano keyboard with adaptive height
                     PianoKeyboardView()
-                        .frame(height: isCompact ? 90 : 110)
+                        .frame(height: isCompact ? 85 : 100)
                         .padding(.horizontal, 8)
-                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? 0 : 2)
+                        .padding(.bottom, 0)
                 }
-                .padding(.top, 2)
+                .padding(.vertical, 2)
                 
                 // Help modal overlay
                 if showHelp {
@@ -412,10 +410,10 @@ struct WaveformScope: View {
     let timer = Timer.publish(every: 1.0/60.0, on: .main, in: .common).autoconnect()
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             // Title matching ADSR style
             Text("SCOPE (TRACK \(audioEngine.selectedInstrument + 1))")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
             
             // Waveform display matching ADSR envelope display
@@ -439,7 +437,7 @@ struct WaveformScope: View {
                     }
                 }
             }
-            .frame(height: 80) // Same height as ADSR envelope
+            .frame(height: 60) // Compact height
             
             // Freeze button
             Button(action: { freeze.toggle() }) {
@@ -451,7 +449,7 @@ struct WaveformScope: View {
                     .overlay(Rectangle().stroke(Color.black, lineWidth: 1))
             }
         }
-        .padding()
+        .padding(8)
         .background(
             Rectangle()
                 .fill(Color.white.opacity(0.8))

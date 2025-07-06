@@ -8,20 +8,20 @@ struct ADSRView: View {
     @State private var release: Double = 0.3
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             // Title with selected track indicator
             Text("ADSR (TRACK \(audioEngine.selectedInstrument + 1))")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
             
             // Visual ADSR Envelope Display
             ADSREnvelopeView(attack: attack, decay: decay, sustain: sustain, release: release)
-                .frame(height: 80)
+                .frame(height: 60)
                 .background(Color.black)
                 .cornerRadius(4)
             
             // ADSR Sliders - beautiful custom sliders like original
-            VStack(spacing: 8) {
+            VStack(spacing: 4) {
                 CustomSlider(value: $attack, range: 0...2, trackColor: Color(hex: "FFB6C1"), label: "A:")
                 CustomSlider(value: $decay, range: 0...2, trackColor: Color(hex: "FFB6C1"), label: "D:")
                 CustomSlider(value: $sustain, range: 0...1, trackColor: Color(hex: "FF69B4"), label: "S:")
@@ -56,7 +56,7 @@ struct ADSRView: View {
                 release = trackADSR[3]
             }
         }
-        .padding()
+        .padding(8)
         .background(
             Rectangle()
                 .fill(Color.white.opacity(0.8))
