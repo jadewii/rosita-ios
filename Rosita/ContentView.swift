@@ -274,7 +274,6 @@ struct ContentView: View {
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
                         .padding(.horizontal, 20)
-                        .padding(.bottom, isPhone ? 8 : 12)
                 }
                 
                 // Help Panel overlay
