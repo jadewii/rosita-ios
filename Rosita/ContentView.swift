@@ -34,6 +34,9 @@ struct ContentView: View {
                     VStack(spacing: 2) {
                         // Transport controls row
                         HStack(spacing: 8) {
+                            Spacer()
+                                .frame(width: 240) // Add left spacing to accommodate oscilloscope
+                            
                             TransportControlsView()
                             
                             HStack(spacing: 6) {
@@ -102,7 +105,7 @@ struct ContentView: View {
                         // Pattern row
                         HStack(spacing: 16) {
                             Spacer()
-                                .frame(width: 20)
+                                .frame(width: 240) // Match the transport controls spacing
                             
                             PatternSlotsView()
                                 .frame(height: 50)
@@ -260,12 +263,12 @@ struct ContentView: View {
                             
                             Spacer()
                         }
-                        .padding(.leading, 20)
+                        .padding(.leading, 12)
                         .padding(.top, 8)
                         
                         // Sequencer grid (flexible width)
                         GridSequencerView()
-                            .padding(.trailing, 20)
+                            .padding(.trailing, 12)
                             .padding(.top, 8)
                     }
                     .frame(height: middleSectionHeight)

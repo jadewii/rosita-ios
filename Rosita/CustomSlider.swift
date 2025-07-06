@@ -47,7 +47,7 @@ struct CustomSlider: View {
                     // Filled portion - ensure it doesn't exceed bounds
                     Rectangle()
                         .fill(trackColor)
-                        .frame(width: max(0, min(thumbPosition(in: geometry.size.width) + 10, geometry.size.width - 4)), height: 20)
+                        .frame(width: max(0, thumbPosition(in: geometry.size.width)), height: 20)
                         .offset(x: 2, y: 2)
                     
                     // Thumb
@@ -83,7 +83,7 @@ struct CustomSlider: View {
         let thumbWidth: CGFloat = 20
         let borderWidth: CGFloat = 2
         let minX: CGFloat = borderWidth
-        let maxX: CGFloat = width - thumbWidth - borderWidth
+        let maxX: CGFloat = width - thumbWidth - borderWidth * 2
         let availableWidth = maxX - minX
         let position = minX + CGFloat(normalizedValue) * availableWidth
         return max(minX, min(position, maxX))
@@ -131,7 +131,7 @@ struct CustomEffectSlider: View {
                         // Filled portion - ensure it doesn't exceed bounds
                         Rectangle()
                             .fill(trackColor)
-                            .frame(width: max(0, min(thumbPosition(in: geometry.size.width) + 10, geometry.size.width - 4)), height: 20)
+                            .frame(width: max(0, thumbPosition(in: geometry.size.width)), height: 20)
                             .offset(x: 2, y: 2)
                         
                         // Thumb
@@ -170,7 +170,7 @@ struct CustomEffectSlider: View {
         let thumbWidth: CGFloat = 20
         let borderWidth: CGFloat = 2
         let minX: CGFloat = borderWidth
-        let maxX: CGFloat = width - thumbWidth - borderWidth
+        let maxX: CGFloat = width - thumbWidth - borderWidth * 2
         let availableWidth = maxX - minX
         let position = minX + CGFloat(value) * availableWidth
         return max(minX, min(position, maxX))
