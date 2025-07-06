@@ -13,16 +13,13 @@ struct ContentView: View {
             let isPhone = geometry.size.width < 800
             let scaleFactor = isPhone ? 0.7 : (isCompact ? 0.85 : 1.0)
             
-            // Only calculate keyboard height - everything else is flexbox
-            let keyboardHeight: CGFloat = isPhone ? 110 : 130
-            
             VStack(spacing: 0) {
-                // TOP SECTION: Controls + Pattern Row (LOCKED HEIGHT)
+                // 🔝 Top Bar
                 VStack(spacing: 2) {
-                        // Transport controls row
-                        HStack(spacing: 8) {
-                            Spacer()
-                                .frame(width: 240) // Add left spacing to accommodate oscilloscope
+                // Transport controls row
+                HStack(spacing: 8) {
+                    Spacer()
+                        .frame(width: 240) // Add left spacing to accommodate oscilloscope
                             
                             TransportControlsView()
                             
@@ -168,16 +165,16 @@ struct ContentView: View {
                             Spacer()
                         }
                         .padding(.horizontal, 12)
-                    }
-                    .frame(height: 100) // LOCKED HEIGHT for top section
-                    
-                    // MAIN AREA: Left Panel + Grid (maxHeight: .infinity is the magic)
-                    HStack(alignment: .top, spacing: 0) {
-                        // Left sidebar (fixed width)
-                        VStack(alignment: .leading, spacing: 2) {
-                            // Oscilloscope
-                            OscilloscopeView()
-                                .frame(width: 220, height: 100)
+            }
+            .frame(height: 100)
+
+            // 🧱 Main Body: Sidebar + Grid
+            HStack(spacing: 0) {
+                // Sidebar
+                VStack(alignment: .leading, spacing: 2) {
+                    // Oscilloscope
+                    OscilloscopeView()
+                        .frame(height: 100)
                             
                             // ADSR section
                             VStack(spacing: 0) {
@@ -251,35 +248,39 @@ struct ContentView: View {
                                             .stroke(Color.black, lineWidth: 2)
                                     )
                             )
-                            
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color(hex: "FFB6C1").opacity(0.1))
-                        
-                        // Sequencer grid (flexible width and height)
-                        GridSequencerView()
-                            .padding()
-                    }
-                    .frame(maxHeight: .infinity) // THIS IS THE MAGIC - takes all remaining space
                     
-                    // KEYBOARD: Fixed height at bottom (LOCKED HEIGHT)
-                    PianoKeyboardView()
-                        .frame(height: keyboardHeight)
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color(hex: "FFB6C1"), Color(hex: "FF1493")]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .frame(width: 220)
+                .padding()
+                .background(Color(hex: "FFB6C1").opacity(0.15))
                 
-                // Help Panel overlay
+                // Grid
+                GridSequencerView()
+                    .background(Color(hex: "FFB6C1").opacity(0.2))
+            }
+            .frame(maxHeight: .infinity)
+            
+            // 🎹 Keyboard (Fixed at bottom)
+            PianoKeyboardView()
+                .frame(height: 120)
+        }
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [Color(hex: "FFB6C1"), Color(hex: "FF1493")]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .edgesIgnoringSafeArea(.all)
+        .overlay(
+            // Help Panel overlay
+            Group {
                 if showHelp {
                     HelpPanelPopup(isShowing: $showHelp)
+                }
             }
+        )
         }
         .ignoresSafeArea(.keyboard)
         .onAppear {
