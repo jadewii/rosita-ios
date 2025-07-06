@@ -274,6 +274,7 @@ struct ContentView: View {
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
                         .padding(.horizontal, 20)
+                        .padding(.top, -40) // Negative padding to move keyboard up
                 }
                 
                 // Help Panel overlay
