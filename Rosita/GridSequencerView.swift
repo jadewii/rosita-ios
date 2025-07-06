@@ -35,7 +35,7 @@ struct GridSequencerView: View {
     }
     
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 0) {
             // Main sequencer grid - 8 tracks x 16 steps
             VStack(spacing: 2) {
                     ForEach(0..<8) { track in

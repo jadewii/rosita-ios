@@ -13,11 +13,8 @@ struct ContentView: View {
             let isPhone = geometry.size.width < 800
             let scaleFactor = isPhone ? 0.7 : (isCompact ? 0.85 : 1.0)
             
-            // Calculate heights
-            let screenHeight = geometry.size.height
+            // Only calculate keyboard height - everything else is flexbox
             let keyboardHeight: CGFloat = isPhone ? 110 : 130
-            let topSectionHeight: CGFloat = 100 // Reduced height for controls + pattern row
-            let middleSectionHeight = screenHeight - topSectionHeight - keyboardHeight - 20 // Account for grid octave controls
             
             ZStack {
                 // Background gradient
@@ -28,9 +25,9 @@ struct ContentView: View {
                 )
                 .ignoresSafeArea()
                 
-                // 3-PART VERTICAL LAYOUT
+                // FLEXBOX-STYLE LAYOUT
                 VStack(spacing: 0) {
-                    // TOP SECTION: Controls + Pattern Row (Fixed height)
+                    // TOP SECTION: Controls + Pattern Row (Auto height)
                     VStack(spacing: 2) {
                         // Transport controls row
                         HStack(spacing: 8) {
@@ -182,9 +179,9 @@ struct ContentView: View {
                         }
                         .padding(.horizontal, 12)
                     }
-                    .frame(height: topSectionHeight)
+                    // TOP SECTION ends - no fixed height, just auto-sized
                     
-                    // MIDDLE SECTION: Left Panel + Grid (Flexible height)
+                    // MAIN AREA: Left Panel + Grid (flex: 1 equivalent)
                     HStack(alignment: .top, spacing: 8) {
                         // Left sidebar (fixed width)
                         VStack(alignment: .leading, spacing: 2) {
@@ -273,13 +270,12 @@ struct ContentView: View {
                         GridSequencerView()
                             .padding(.trailing, 12)
                     }
-                    .frame(height: middleSectionHeight)
+                    .frame(maxHeight: .infinity) // This is flex: 1 in SwiftUI
                     
-                    // BOTTOM SECTION: Keyboard (Fixed height) - NO GAP!
+                    // KEYBOARD: Fixed height at bottom
                     PianoKeyboardView()
                         .frame(height: keyboardHeight)
                         .padding(.horizontal, 20)
-                        .offset(y: -100) // Position keyboard just below grid without overlap
                 }
                 
                 // Help Panel overlay
