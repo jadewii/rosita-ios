@@ -5,14 +5,14 @@ struct ArpeggiatorView: View {
     
     var body: some View {
         // Main box with title and buttons - matching instrument selector exactly
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             // Title
             Text("ARPEGGIATOR")
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
             
             // Arpeggiator buttons - retro style
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 ForEach(0..<3) { index in
                     RetroArpButton(
                         number: index + 1,
@@ -24,7 +24,7 @@ struct ArpeggiatorView: View {
                 }
             }
         }
-        .padding(8)
+        .padding(6)
         .background(
             Rectangle()
                 .fill(Color.white)
@@ -72,7 +72,7 @@ struct RetroArpButton: View {
             Text("\(number)")
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
                 .foregroundColor(isSelected ? .black : .white)
-                .frame(width: 40, height: 32)
+                .frame(width: 38, height: 28)
                 .background(
                     ZStack {
                         Rectangle()

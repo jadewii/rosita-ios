@@ -27,20 +27,16 @@ struct ContentView: View {
                 // Main layout - responsive for different iPad sizes
                 VStack(spacing: 2) {
                     // Top right buttons and controls
-                    HStack {
+                    HStack(alignment: .top, spacing: 8) {
                         Spacer()
                         
                         // Instrument selector
                         InstrumentSelectorView()
-                            .frame(width: 200, height: 60)
-                        
-                        // Spacing between instrument and arpeggiator
-                        Spacer()
-                            .frame(width: 16)
+                            .frame(width: 140, height: 56)
                         
                         // Arpeggiator
                         ArpeggiatorView()
-                            .frame(width: 200, height: 60)
+                            .frame(width: 140, height: 56)
                         
                         // WAV button - same size as help button
                         RetroButton(
@@ -70,6 +66,7 @@ struct ContentView: View {
                         .padding(.trailing, 8)
                     }
                     .padding(.top, 2)
+                    .frame(height: 60)
                     
                     // TOP SECTION - Transport and Pattern controls
                     HStack(spacing: 8) {
@@ -212,10 +209,15 @@ struct ContentView: View {
                             EffectsView()
                                 .frame(width: 200)
                             
+                            Spacer()
+                            
                             // Keyboard Octave controls at bottom
-                            HStack(spacing: 6) {
-                                Text("KB OCTAVE")
-                                    .font(.system(size: 10, weight: .bold))
+                            HStack(spacing: 4) {
+                                Text("KB")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(.black)
+                                Text("OCTAVE")
+                                    .font(.system(size: 9, weight: .bold))
                                     .foregroundColor(.black)
                                 
                                 RetroButton(
@@ -227,15 +229,15 @@ struct ContentView: View {
                                             audioEngine.transpose -= 12
                                         }
                                     },
-                                    width: 32,
-                                    height: 28,
-                                    fontSize: 16
+                                    width: 28,
+                                    height: 24,
+                                    fontSize: 14
                                 )
                                 
                                 Text("\(audioEngine.transpose / 12)")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
                                     .foregroundColor(.black)
-                                    .frame(width: 24)
+                                    .frame(width: 20)
                                 
                                 RetroButton(
                                     title: "+",
@@ -246,12 +248,11 @@ struct ContentView: View {
                                             audioEngine.transpose += 12
                                         }
                                     },
-                                    width: 32,
-                                    height: 28,
-                                    fontSize: 16
+                                    width: 28,
+                                    height: 24,
+                                    fontSize: 14
                                 )
                             }
-                            .padding(.bottom, 4)
                         }
                         .frame(width: 200)
                         

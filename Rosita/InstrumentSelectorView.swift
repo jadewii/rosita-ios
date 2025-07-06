@@ -5,14 +5,14 @@ struct InstrumentSelectorView: View {
     @State private var animatingIndex: Int? = nil
     
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             // Title
             Text("INSTRUMENT")
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
             
             // Instrument buttons in a single row - retro style
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 ForEach(0..<4) { index in
                     RetroInstrumentButton(
                         index: index,
@@ -43,7 +43,7 @@ struct InstrumentSelectorView: View {
                 }
             }
         }
-        .padding(8)
+        .padding(6)
         .background(
             Rectangle()
                 .fill(Color.white)
@@ -95,9 +95,9 @@ struct RetroInstrumentButton: View {
             }
         }) {
             Text(type.displayNumber)
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(isSelected ? .black : .white)
-                .frame(width: 36, height: 36)
+                .frame(width: 28, height: 28)
                 .scaleEffect(isAnimating ? 1.2 : 1.0)
                 .background(
                     Rectangle()
