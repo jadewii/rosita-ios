@@ -25,7 +25,7 @@ struct ContentView: View {
                     .ignoresSafeArea(.all)
                 
                 // Main layout - responsive for different iPad sizes
-                VStack(spacing: isCompact ? 2 : 6) {
+                VStack(spacing: 4) {
                     // Help button in top right corner
                     HStack {
                         Spacer()
@@ -44,14 +44,14 @@ struct ContentView: View {
                         .padding(.top, 4)
                     }
                     
-                    // TOP SECTION - Reorganized layout
+                    // TOP SECTION
                     VStack(spacing: 8) {
-                        // First row: Transport controls, control buttons, BPM, Instrument and Arpeggiator
+                        // First row: Transport controls, buttons, Instrument and Arpeggiator
                         HStack(spacing: 8) {
                             // Transport controls
                             TransportControlsView()
                             
-                            // Control buttons (ADSR, Major, Octave) next to MIXER
+                            // Control buttons
                             HStack(spacing: 6) {
                                 RetroButton(
                                     title: "ADSR",
@@ -84,7 +84,7 @@ struct ContentView: View {
                                 )
                             }
                             
-                            // Instrument, Arpeggiator, and utility buttons in one row
+                            // Instrument, Arpeggiator, and utility buttons
                             HStack(spacing: 8) {
                                 InstrumentSelectorView()
                                     .frame(width: 200, height: 60)
@@ -108,10 +108,6 @@ struct ContentView: View {
                         }
                         .frame(height: 60)
                         
-                        // Pink space between sections
-                        Spacer()
-                            .frame(height: 12)
-                        
                         // Second row: Pattern slots and BPM control
                         HStack(spacing: 16) {
                             Spacer()
@@ -121,7 +117,7 @@ struct ContentView: View {
                             
                             // BPM and Grid Octave controls
                             HStack(spacing: 16) {
-                                // BPM control with custom slider
+                                // BPM control
                                 VStack(spacing: 4) {
                                     HStack(spacing: 4) {
                                         Text("BPM")
@@ -199,20 +195,19 @@ struct ContentView: View {
                     
                     // MAIN CONTENT AREA - responsive sizing
                     HStack(alignment: .top, spacing: isCompact ? 8 : 12) {
-                        // LEFT COLUMN - Scope, ADSR and Effects
+                        // LEFT COLUMN - Scope at top, then ADSR and Effects
                         VStack(spacing: 8) {
-                            // Waveform Scope
+                            // Waveform Scope at the top
                             WaveformScope()
-                                .frame(height: 140)
+                                .frame(height: 120)
                             
-                            // ADSR Envelope
+                            // ADSR Envelope right below
                             ADSRView()
                             
                             // Effects
                             EffectsView()
                             
-                            // Keyboard Octave controls at bottom
-                            Spacer()
+                            // Keyboard Octave controls
                             HStack(spacing: 8) {
                                 Text("KB OCTAVE")
                                     .font(.system(size: 11, weight: .bold))
@@ -251,7 +246,6 @@ struct ContentView: View {
                                     fontSize: 18
                                 )
                             }
-                            .padding(.bottom, 16)
                         }
                         .frame(width: 200) // Fixed width for left column
                         
@@ -266,10 +260,9 @@ struct ContentView: View {
                     PianoKeyboardView()
                         .frame(height: isCompact ? 90 : 110)
                         .padding(.horizontal, 8)
-                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? 0 : 4)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? 0 : 2)
                 }
-                .padding(.top, 4)
-                .padding(.bottom, 0)
+                .padding(.top, 2)
                 
                 // Help modal overlay
                 if showHelp {
