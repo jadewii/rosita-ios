@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		070B85AB2E19F5C2001931A4 /* RositaAUv3.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 070B85822E19F5C2001931A4 /* RositaAUv3.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A1A1A1A12B000001 /* RositaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B000001 /* RositaApp.swift */; };
 		A1A1A1A22B000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B000002 /* ContentView.swift */; };
 		A1A1A1A32B000001 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B000003 /* AudioEngine.swift */; };
@@ -23,34 +22,12 @@
 		A1A1A1AD2B000001 /* RetroButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B00000D /* RetroButton.swift */; };
 		A1A1A1AE2B000001 /* HelpPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B00000E /* HelpPanel.swift */; };
 		A1A1A1AF2B000001 /* HelpPanelPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B00000G /* HelpPanelPopup.swift */; };
+		E54B502A731901D1BF2F875F /* OscilloscopeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0028F1083D858AF74431CB3 /* OscilloscopeView.swift */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		070B85A92E19F5C2001931A4 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A1A1A0F92B000001 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 070B85812E19F5C2001931A4;
-			remoteInfo = RositaAUv3;
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		070B85AC2E19F5C2001931A4 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				070B85AB2E19F5C2001931A4 /* RositaAUv3.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		070B85822E19F5C2001931A4 /* RositaAUv3.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RositaAUv3.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A0028F1083D858AF74431CB3 /* OscilloscopeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OscilloscopeView.swift; sourceTree = "<group>"; };
 		A1A1A1002B000001 /* Rosita.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rosita.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1A1A1A02B000001 /* RositaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RositaApp.swift; sourceTree = "<group>"; };
 		A1A1A1A02B000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -71,7 +48,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		070B85AF2E19F5C2001931A4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		070B85AF2E19F5C2001931A4 /* Exceptions for "RositaAUv3" folder in "RositaAUv3" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -81,7 +58,18 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		070B85832E19F5C2001931A4 /* RositaAUv3 */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (070B85AF2E19F5C2001931A4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = RositaAUv3; sourceTree = "<group>"; };
+		070B85832E19F5C2001931A4 /* RositaAUv3 */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				070B85AF2E19F5C2001931A4 /* Exceptions for "RositaAUv3" folder in "RositaAUv3" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = RositaAUv3;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -132,6 +120,7 @@
 				A1A1A1A02B00000E /* HelpPanel.swift */,
 				A1A1A1A02B00000G /* HelpPanelPopup.swift */,
 				A1A1A1A02B00000F /* Info.plist */,
+				A0028F1083D858AF74431CB3 /* OscilloscopeView.swift */,
 			);
 			path = Rosita;
 			sourceTree = "<group>";
@@ -155,8 +144,6 @@
 				070B85832E19F5C2001931A4 /* RositaAUv3 */,
 			);
 			name = RositaAUv3;
-			packageProductDependencies = (
-			);
 			productName = RositaAUv3;
 			productReference = 070B85822E19F5C2001931A4 /* RositaAUv3.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -173,8 +160,6 @@
 			dependencies = (
 			);
 			name = Rosita;
-			packageProductDependencies = (
-			);
 			productName = Rosita;
 			productReference = A1A1A1002B000001 /* Rosita.app */;
 			productType = "com.apple.product-type.application";
@@ -206,8 +191,6 @@
 				Base,
 			);
 			mainGroup = A1A1A0F82B000001;
-			packageReferences = (
-			);
 			productRefGroup = A1A1A1022B000001 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -262,18 +245,11 @@
 				A1A1A1AD2B000001 /* RetroButton.swift in Sources */,
 				A1A1A1AE2B000001 /* HelpPanel.swift in Sources */,
 				A1A1A1AF2B000001 /* HelpPanelPopup.swift in Sources */,
+				E54B502A731901D1BF2F875F /* OscilloscopeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		070B85AA2E19F5C2001931A4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 070B85812E19F5C2001931A4 /* RositaAUv3 */;
-			targetProxy = 070B85A92E19F5C2001931A4 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		070B85AD2E19F5C2001931A4 /* Debug */ = {

@@ -145,7 +145,7 @@ struct OscilloscopeView: View {
             if index < bufferData.count {
                 let sample = bufferData[index]
                 let x = (CGFloat(i) / CGFloat(pointCount - 1)) * size.width
-                let y = (1.0 - (sample + 1.0) / 2.0) * size.height // Convert from [-1, 1] to [0, height]
+                let y = (1.0 - CGFloat(sample + 1.0) / 2.0) * size.height // Convert from [-1, 1] to [0, height]
                 waveformPoints.append(CGPoint(x: x, y: y))
             }
         }

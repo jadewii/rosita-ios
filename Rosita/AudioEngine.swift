@@ -831,6 +831,13 @@ class AudioEngine: ObservableObject {
         
         return buffer
     }
+    
+    // MARK: - Audio Buffer for Oscilloscope
+    
+    func getAudioBuffer() -> [Float] {
+        // Use the existing generateOscilloscopeData method
+        return generateOscilloscopeData()
+    }
 }
 
 // MARK: - Supporting Types
@@ -1284,12 +1291,5 @@ class SimpleInstrument {
                 self.audioEngine.detach(playerNode)
             }
         }
-    }
-    
-    // MARK: - Audio Buffer for Oscilloscope
-    
-    func getAudioBuffer() -> [Float] {
-        // Use the existing generateOscilloscopeData method
-        return generateOscilloscopeData()
     }
 }
