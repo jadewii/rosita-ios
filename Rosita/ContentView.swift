@@ -9,7 +9,7 @@ struct ContentView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            let isCompact = geometry.size.width < 1000 // iPad 11" vs 13"
+            let isCompact = geometry.size.width < 1100 // iPad 11" vs 13"
             let scaleFactor = isCompact ? 0.85 : 1.0
             
             ZStack {
@@ -24,8 +24,8 @@ struct ContentView: View {
                     )
                     .ignoresSafeArea(.all)
                 
-                // Main layout - responsive for different iPad sizes
-                VStack(spacing: 2) {
+                // Main layout - ensure full screen usage
+                VStack(spacing: 4) {
                     // Top right buttons and controls
                     HStack(alignment: .top, spacing: 8) {
                         Spacer()
@@ -259,6 +259,7 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .padding(.horizontal, 8)
+                    .frame(maxHeight: .infinity)
                     
                     // BOTTOM - Piano keyboard with adaptive height
                     PianoKeyboardView()
@@ -266,7 +267,7 @@ struct ContentView: View {
                         .padding(.horizontal, 8)
                         .padding(.bottom, 0)
                 }
-                .padding(.vertical, 2)
+                .edgesIgnoringSafeArea(.all)
                 
                 // Help modal overlay
                 if showHelp {
@@ -358,7 +359,10 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
+            // Force landscape orientation
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape))
+            }
             AppDelegate.orientationLock = .landscape
         }
         .alert("WAV Export", isPresented: $showExportAlert) {
