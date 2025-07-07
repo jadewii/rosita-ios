@@ -16,7 +16,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.togglePlayback()
                     },
-                    width: 50,
+                    width: 56,
                     height: 42,
                     fontSize: audioEngine.isPlaying ? 16 : 13
                 )
@@ -29,7 +29,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.stop()
                     },
-                    width: 50,
+                    width: 56,
                     height: 42,
                     fontSize: 13
                 )
@@ -44,7 +44,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.toggleRecording()
                     },
-                    width: 45,
+                    width: 50,
                     height: 42,
                     fontSize: 13
                 )
@@ -60,7 +60,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.randomizePattern()
                     },
-                    width: 65,
+                    width: 72,
                     height: 42,
                     fontSize: 11
                 )
@@ -73,7 +73,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.clearPattern()
                     },
-                    width: 55,
+                    width: 62,
                     height: 42,
                     fontSize: 12
                 )
@@ -86,7 +86,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.clearAllPatterns()
                     },
-                    width: 65,
+                    width: 72,
                     height: 42,
                     fontSize: 11
                 )
@@ -99,9 +99,42 @@ struct TransportControlsView: View {
                     action: {
                         // Mixer functionality
                     },
-                    width: 55,
+                    width: 62,
                     height: 42,
                     fontSize: 12
+                )
+                
+                // ADSR button
+                RetroButton(
+                    title: "ADSR",
+                    color: Color(hex: "00FFFF"),
+                    textColor: .black,
+                    action: {},
+                    width: 56,
+                    height: 42,
+                    fontSize: 12
+                )
+                
+                // MAJOR button
+                RetroButton(
+                    title: "MAJOR",
+                    color: Color(hex: "FFFF00"),
+                    textColor: .black,
+                    action: {},
+                    width: 56,
+                    height: 42,
+                    fontSize: 12
+                )
+                
+                // OCTAVE button
+                RetroButton(
+                    title: "OCTAVE",
+                    color: Color(hex: "9370DB"),
+                    textColor: .black,
+                    action: {},
+                    width: 62,
+                    height: 42,
+                    fontSize: 11
                 )
             }
         }

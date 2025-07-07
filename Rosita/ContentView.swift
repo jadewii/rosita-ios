@@ -16,7 +16,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 // Add small pink space at top
                 Spacer()
-                    .frame(height: 8)
+                    .frame(height: 16)
                 
                 // 🔝 Top Controls - FIXED HEIGHT
                 VStack(spacing: 0) {
@@ -26,49 +26,34 @@ struct ContentView: View {
                         
                         Spacer()
                         
-                        HStack(spacing: 6) {
-                            RetroButton(
-                                title: "ADSR",
-                                color: Color(hex: "00FFFF"),
-                                textColor: .black,
-                                action: {},
-                                width: CGFloat(70 * scaleFactor),
-                                height: CGFloat(42 * scaleFactor),
-                                fontSize: CGFloat(14 * scaleFactor)
-                            )
+                        // BPM controls in top row - horizontal layout
+                        HStack(spacing: 8) {
+                            Text("BPM")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.black)
                             
-                            RetroButton(
-                                title: "MAJOR",
-                                color: Color(hex: "FFFF00"),
-                                textColor: .black,
-                                action: {},
-                                width: CGFloat(70 * scaleFactor),
-                                height: CGFloat(42 * scaleFactor),
-                                fontSize: CGFloat(14 * scaleFactor)
+                            CustomSlider(
+                                value: $audioEngine.bpm,
+                                range: 60...200,
+                                trackColor: Color(hex: "FF1493"),
+                                label: ""
                             )
+                            .frame(width: 120, height: 30)
                             
-                            RetroButton(
-                                title: "OCTAVE",
-                                color: Color(hex: "9370DB"),
-                                textColor: .black,
-                                action: {},
-                                width: CGFloat(70 * scaleFactor),
-                                height: CGFloat(42 * scaleFactor),
-                                fontSize: CGFloat(14 * scaleFactor)
-                            )
+                            Text("\(Int(audioEngine.bpm))")
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundColor(.black)
+                                .frame(width: 36, height: 20)
+                                .background(
+                                    Rectangle()
+                                        .fill(Color.white)
+                                        .overlay(
+                                            Rectangle()
+                                                .stroke(Color.black, lineWidth: 1)
+                                        )
+                                )
                         }
-                        
-                        Spacer()
-                        
-                        InstrumentSelectorView()
-                            .frame(width: 180, height: 70)
-                            .padding(.top, 4)
-                        
-                        Spacer()
-                        
-                        ArpeggiatorView()
-                            .frame(width: 160, height: 70)
-                            .padding(.top, 4)
+                        .padding(.top, 4)
                         
                         Spacer()
                         
@@ -94,57 +79,35 @@ struct ContentView: View {
                         )
                         .padding(.top, 4)
                     }
-                    .padding(.horizontal, 0)  // Edge to edge!
+                    .padding(.horizontal, 8)  // Add padding to prevent cutoff
+                    
+                    // Add spacing to move pattern buttons down
+                    Spacer()
+                        .frame(height: 12)
                     
                     // Pattern row
-                    HStack(spacing: 16) {
+                    HStack(spacing: 31) {  // Increased by 15 (was 16, now 31)
                         HStack {
                             // Empty space for left panel
                         }
-                        .frame(width: 220)
+                        .frame(width: 200)  // Match the reduced panel width
                         
                         PatternSlotsView()
                         
-                        HStack(spacing: 6) {
-                            Text("GRID OCT")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.black)
-                            
-                            RetroButton(
-                                title: "-",
-                                color: Color(hex: "87CEEB"),
-                                textColor: .black,
-                                action: {
-                                    if audioEngine.gridTranspose > -24 {
-                                        audioEngine.gridTranspose -= 12
-                                    }
-                                },
-                                width: 28,
-                                height: 28,
-                                fontSize: 16
-                            )
-                            
-                            Text("\(audioEngine.gridTranspose / 12)")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(.black)
-                                .frame(width: 24)
-                            
-                            RetroButton(
-                                title: "+",
-                                color: Color(hex: "87CEEB"),
-                                textColor: .black,
-                                action: {
-                                    if audioEngine.gridTranspose < 24 {
-                                        audioEngine.gridTranspose += 12
-                                    }
-                                },
-                                width: 28,
-                                height: 28,
-                                fontSize: 16
-                            )
-                        }
-                        
                         Spacer()
+                        
+                        // Instrument selector first
+                        InstrumentSelectorView()
+                            .frame(width: 180, height: 56)
+                        
+                        // Small gap like between WAV and ? buttons
+                        Spacer()
+                            .frame(width: 6)
+                        
+                        // Arpeggiator second
+                        ArpeggiatorView()
+                            .frame(width: 180, height: 56)
+                            .padding(.trailing, 12)
                     }
                     .padding(.horizontal, 12)
                 }
@@ -158,39 +121,8 @@ struct ContentView: View {
                 HStack(alignment: .top, spacing: 0) {
                     // Left Sidebar - START AT TOP
                     VStack(alignment: .leading, spacing: 12) {
-                        // BPM controls at top of left panel
-                        VStack(spacing: 2) {
-                            HStack(spacing: 4) {
-                                Text("BPM")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.black)
-                                
-                                Text("\(Int(audioEngine.bpm))")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.black)
-                                    .frame(width: 36, height: 20)
-                                    .background(
-                                        Rectangle()
-                                            .fill(Color.white)
-                                            .overlay(
-                                                Rectangle()
-                                                    .stroke(Color.black, lineWidth: 1)
-                                            )
-                                    )
-                            }
-                            
-                            CustomSlider(
-                                value: $audioEngine.bpm,
-                                range: 60...200,
-                                trackColor: Color(hex: "FF1493"),
-                                label: ""
-                            )
-                            .frame(width: 180, height: 30)
-                        }
-                        
-                        // Oscilloscope after BPM
+                        // Oscilloscope section
                         OscilloscopeView()
-                            .frame(height: 80)
 
                         // ADSR section
                         VStack(spacing: 0) {
@@ -266,23 +198,27 @@ struct ContentView: View {
                                 )
                         )
                     }
-                    .frame(width: 220)
+                    .frame(width: 200)  // Reduced width to prevent cutoff
                     .offset(y: -95)  // Move entire left panel up even more (-20)
                     
                     // Grid Area 
                     GridSequencerView()
                 }
                 
+                // Add space above keyboard
+                Spacer()
+                    .frame(height: 15)
+                
                 // 🎹 KEYBOARD - FULL WIDTH, OUTSIDE OF HSTACK
                 PianoKeyboardView()
                     .frame(maxWidth: .infinity)
                     .frame(height: 140)  // Bigger to show all keys
                     .padding(.horizontal, 0)
-                    .offset(y: -40)  // Move keyboard UP to reduce pink space
+                    .offset(y: -55)  // NEVER TOUCH - Perfect keyboard position
                 
                 // Small bottom margin
                 Spacer()
-                    .frame(height: 15)  // Small pink margin at bottom
+                    .frame(height: 7)  // Reduced to compensate for top spacing
             }
             .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))  // True edge to edge!
             .background(Color(hex: "FFB6C1"))

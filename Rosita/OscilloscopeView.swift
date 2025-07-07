@@ -56,7 +56,8 @@ struct OscilloscopeView: View {
                 ZStack {
                     // Background
                     Rectangle()
-                        .fill(Color.black)
+                        .fill(Color(hex: "E6E6FA"))
+                        .cornerRadius(4)
                     
                     // Grid lines
                     Path { path in
@@ -110,16 +111,11 @@ struct OscilloscopeView: View {
                 }
             }
             .frame(height: 65)
-            .cornerRadius(4)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
         }
-        .background(
-            Rectangle()
-                .fill(Color.white.opacity(0.8))
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.black, lineWidth: 3)
-                )
-        )
+        .background(Color.white.opacity(0.8))
+        .border(Color.black, width: 3)
     }
     
     private func updateWaveform(size: CGSize) {
