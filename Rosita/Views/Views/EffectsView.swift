@@ -7,14 +7,14 @@ struct EffectsView: View {
     let effectFullNames = ["Delay", "Reverb", "Distortion", "Chorus"]
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             // Title
             Text("Effects")
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.black)
             
             // Effect Controls
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 ForEach(0..<4) { index in
                     EffectSlider(
                         label: effectNames[index] + ":",
@@ -23,6 +23,7 @@ struct EffectsView: View {
                         isEnabled: $audioEngine.effectsEnabled[index],
                         color: .blue
                     )
+                    .padding(.horizontal, 10)
                     .onChange(of: audioEngine.effectAmounts[index]) { _ in
                         audioEngine.updateEffects()
                     }
@@ -32,13 +33,13 @@ struct EffectsView: View {
                 }
             }
         }
-        .padding()
+        .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.white.opacity(0.8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.black, lineWidth: 2)
+                        .stroke(Color.black, lineWidth: 3)
                 )
         )
     }

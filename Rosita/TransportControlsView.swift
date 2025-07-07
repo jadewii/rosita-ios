@@ -16,7 +16,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.togglePlayback()
                     },
-                    width: 56,
+                    width: 84,
                     height: 42,
                     fontSize: audioEngine.isPlaying ? 16 : 13
                 )
@@ -29,7 +29,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.stop()
                     },
-                    width: 56,
+                    width: 84,
                     height: 42,
                     fontSize: 13
                 )
@@ -44,7 +44,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.toggleRecording()
                     },
-                    width: 50,
+                    width: 76,
                     height: 42,
                     fontSize: 13
                 )
@@ -60,7 +60,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.randomizePattern()
                     },
-                    width: 72,
+                    width: 100,
                     height: 42,
                     fontSize: 11
                 )
@@ -73,7 +73,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.clearPattern()
                     },
-                    width: 62,
+                    width: 90,
                     height: 42,
                     fontSize: 12
                 )
@@ -86,7 +86,7 @@ struct TransportControlsView: View {
                     action: {
                         audioEngine.clearAllPatterns()
                     },
-                    width: 72,
+                    width: 100,
                     height: 42,
                     fontSize: 11
                 )
@@ -99,7 +99,7 @@ struct TransportControlsView: View {
                     action: {
                         // Mixer functionality
                     },
-                    width: 62,
+                    width: 90,
                     height: 42,
                     fontSize: 12
                 )
@@ -110,7 +110,7 @@ struct TransportControlsView: View {
                     color: Color(hex: "00FFFF"),
                     textColor: .black,
                     action: {},
-                    width: 56,
+                    width: 84,
                     height: 42,
                     fontSize: 12
                 )
@@ -121,7 +121,7 @@ struct TransportControlsView: View {
                     color: Color(hex: "FFFF00"),
                     textColor: .black,
                     action: {},
-                    width: 56,
+                    width: 84,
                     height: 42,
                     fontSize: 12
                 )
@@ -132,9 +132,39 @@ struct TransportControlsView: View {
                     color: Color(hex: "9370DB"),
                     textColor: .black,
                     action: {},
-                    width: 62,
+                    width: 90,
                     height: 42,
                     fontSize: 11
+                )
+                
+                // Grid octave - button
+                RetroButton(
+                    title: "-",
+                    color: Color(hex: "87CEEB"),
+                    textColor: .black,
+                    action: {
+                        if audioEngine.gridTranspose > -24 {
+                            audioEngine.gridTranspose -= 12
+                        }
+                    },
+                    width: 52,
+                    height: 36,
+                    fontSize: 16
+                )
+                
+                // Grid octave + button
+                RetroButton(
+                    title: "+",
+                    color: Color(hex: "87CEEB"),
+                    textColor: .black,
+                    action: {
+                        if audioEngine.gridTranspose < 24 {
+                            audioEngine.gridTranspose += 12
+                        }
+                    },
+                    width: 52,
+                    height: 36,
+                    fontSize: 16
                 )
             }
         }

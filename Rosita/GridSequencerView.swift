@@ -55,6 +55,12 @@ struct GridSequencerView: View {
                         ) {
                             audioEngine.toggleGridCell(row: track, col: step)
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            
+                            // Play sound when placing a step
+                            if audioEngine.getGridCell(row: track, col: step) {
+                                let note = 60 - track * 2 + audioEngine.gridTranspose // C4 minus track offset
+                                audioEngine.playNote(instrument: audioEngine.selectedInstrument, note: note)
+                            }
                         } longPressAction: {
                             audioEngine.showVelocityEditor(row: track, col: step)
                         }

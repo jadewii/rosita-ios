@@ -4,18 +4,22 @@ struct ADSRView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             // Title
             Text("ADSR Envelope")
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.black)
             
             // ADSR Sliders
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 ADSRSlider(label: "A:", value: $audioEngine.attack, range: 0...2, color: .pink)
+                    .padding(.horizontal, 10)
                 ADSRSlider(label: "D:", value: $audioEngine.decay, range: 0...2, color: .pink)
+                    .padding(.horizontal, 10)
                 ADSRSlider(label: "S:", value: $audioEngine.sustain, range: 0...1, color: .pink)
+                    .padding(.horizontal, 10)
                 ADSRSlider(label: "R:", value: $audioEngine.release, range: 0...5, color: .pink)
+                    .padding(.horizontal, 10)
             }
             .onChange(of: audioEngine.attack) { _ in audioEngine.updateADSR() }
             .onChange(of: audioEngine.decay) { _ in audioEngine.updateADSR() }
@@ -70,13 +74,13 @@ struct ADSRView: View {
                 }
             }
         }
-        .padding()
+        .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.white.opacity(0.8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.black, lineWidth: 2)
+                        .stroke(Color.black, lineWidth: 3)
                 )
         )
     }

@@ -17,7 +17,7 @@ struct PatternSlotsView: View {
             }
             
             Spacer()
-                .frame(width: 20)  // Add space before DUP button
+                .frame(width: 6)  // Same spacing as between other buttons
             
             // Dup button - retro style (twice the size)
             RetroButton(

@@ -43,7 +43,7 @@ struct InstrumentSelectorView: View {
                 }
             }
         }
-        .padding(8)
+        .padding(4)
         .background(
             Rectangle()
                 .fill(Color.white)
@@ -95,9 +95,9 @@ struct RetroInstrumentButton: View {
             }
         }) {
             Text(type.displayNumber)
-                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .font(.system(size: 20, weight: .bold, design: .monospaced))
                 .foregroundColor(isSelected ? .black : .white)
-                .frame(width: 36, height: 36)
+                .frame(width: 56, height: 56)
                 .scaleEffect(isAnimating ? 1.2 : 1.0)
                 .background(
                     Rectangle()

@@ -16,17 +16,13 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 // Add small pink space at top
                 Spacer()
-                    .frame(height: 16)
+                    .frame(height: 56)
                 
                 // 🔝 Top Controls - FIXED HEIGHT
                 VStack(spacing: 0) {
                     // Transport controls row
                     HStack(spacing: 8) {
-                        TransportControlsView()
-                        
-                        Spacer()
-                        
-                        // BPM controls in top row - horizontal layout
+                        // BPM controls in top left
                         HStack(spacing: 8) {
                             Text("BPM")
                                 .font(.system(size: 10, weight: .bold))
@@ -53,7 +49,13 @@ struct ContentView: View {
                                         )
                                 )
                         }
-                        .padding(.top, 4)
+                        .padding(.leading, 12)
+                        .padding(.vertical, 10)
+                        
+                        Spacer()
+                            .frame(width: 12)
+                        
+                        TransportControlsView()
                         
                         Spacer()
                         
@@ -66,7 +68,6 @@ struct ContentView: View {
                             height: 36,
                             fontSize: 12
                         )
-                        .padding(.top, 4)
                         
                         RetroButton(
                             title: "?",
@@ -77,45 +78,38 @@ struct ContentView: View {
                             height: 36,
                             fontSize: 20
                         )
-                        .padding(.top, 4)
                     }
-                    .padding(.horizontal, 8)  // Add padding to prevent cutoff
+                    .padding(.horizontal, 0)  // Remove padding since we have it on the main container
                     
                     // Add spacing to move pattern buttons down
                     Spacer()
-                        .frame(height: 12)
+                        .frame(height: 25)
                     
                     // Pattern row
                     HStack(spacing: 31) {  // Increased by 15 (was 16, now 31)
                         HStack {
                             // Empty space for left panel
                         }
-                        .frame(width: 200)  // Match the reduced panel width
+                        .frame(width: 190)  // Match the reduced panel width
                         
                         PatternSlotsView()
                         
                         Spacer()
                         
-                        // Instrument selector first
                         InstrumentSelectorView()
-                            .frame(width: 180, height: 56)
+                            .frame(width: 210, height: 76)
                         
-                        // Small gap like between WAV and ? buttons
-                        Spacer()
-                            .frame(width: 6)
-                        
-                        // Arpeggiator second
                         ArpeggiatorView()
-                            .frame(width: 180, height: 56)
-                            .padding(.trailing, 12)
+                            .frame(width: 190, height: 76)
+                            .padding(.leading, 4)
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 0)
                 }
                 .frame(height: 100)
                 
                 // 🎯 SMALL GAP BETWEEN PATTERN BUTTONS AND GRID
                 Spacer()
-                    .frame(height: 60)  // Align grid with effects bottom
+                    .frame(height: 53)  // Reduced by 7 to move everything up
                 
                 // 🎯 MAIN CONTENT - FILL REMAINING SPACE NATURALLY
                 HStack(alignment: .top, spacing: 0) {
@@ -198,7 +192,7 @@ struct ContentView: View {
                                 )
                         )
                     }
-                    .frame(width: 200)  // Reduced width to prevent cutoff
+                    .frame(width: 190)  // Further reduced to prevent right cutoff
                     .offset(y: -95)  // Move entire left panel up even more (-20)
                     
                     // Grid Area 
@@ -207,20 +201,20 @@ struct ContentView: View {
                 
                 // Add space above keyboard
                 Spacer()
-                    .frame(height: 15)
+                    .frame(height: 30)
                 
                 // 🎹 KEYBOARD - FULL WIDTH, OUTSIDE OF HSTACK
                 PianoKeyboardView()
                     .frame(maxWidth: .infinity)
                     .frame(height: 140)  // Bigger to show all keys
                     .padding(.horizontal, 0)
-                    .offset(y: -55)  // NEVER TOUCH - Perfect keyboard position
+                    .offset(y: -72)  // Move down to avoid black line touching keys
                 
                 // Small bottom margin
                 Spacer()
-                    .frame(height: 7)  // Reduced to compensate for top spacing
+                    .frame(height: 30)  // More space to separate keyboard from black edge
             }
-            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))  // True edge to edge!
+            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 4))  // Small right padding to prevent cutoff
             .background(Color(hex: "FFB6C1"))
             .overlay(
                 // Help Panel overlay
