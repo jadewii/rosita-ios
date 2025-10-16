@@ -4,8 +4,54 @@ struct ContentView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @State private var showHelp = false
     @State private var showExportAlert = false
+    @State private var showLayoutEditor = false
+    @State private var isEditMode = false
+    @State private var octaveMode: OctaveMode = .keyboard // KB or GRD mode
+    @State private var keyboardOffsetX: Double = 0
+    @State private var keyboardOffsetY: Double = -72
+    @State private var octaveButtonOffsetY: Double = -95
+
+    // Base positions for keyboard and octave (for drag accumulation)
+    @State private var keyboardBaseX: Double = 0
+    @State private var keyboardBaseY: Double = -72
+    @State private var octaveButtonBaseX: Double = 0
+    @State private var octaveButtonBaseY: Double = -95
+    @State private var octaveButtonOffsetX: Double = 0
+
+    // Draggable element positions (current display offset)
+    @State private var oscilloscopeOffset = CGSize.zero
+    @State private var instrumentSelectorOffset = CGSize.zero
+    @State private var adsrOffset = CGSize.zero
+    @State private var effectsOffset = CGSize.zero
+    @State private var playStopRecOffset = CGSize.zero
+    @State private var transport6ButtonsOffset = CGSize.zero
+    @State private var patternSlotsOffset = CGSize.zero  // Includes DUP button
+    @State private var bpmSliderOffset = CGSize.zero
+    @State private var wavButtonOffset = CGSize.zero
+    @State private var helpButtonOffset = CGSize.zero
+    @State private var utilityButtonsOffset = CGSize.zero  // EDIT/WAV/? group
+
+
+    // Base positions (persistent across drags)
+    @State private var oscilloscopeBase = CGSize.zero
+    @State private var utilityButtonsBase = CGSize.zero  // Base for utility group
+    @State private var instrumentSelectorBase = CGSize.zero
+    @State private var adsrBase = CGSize.zero
+    @State private var effectsBase = CGSize.zero
+    @State private var playStopRecBase = CGSize.zero
+    @State private var transport6ButtonsBase = CGSize.zero
+    @State private var patternSlotsBase = CGSize.zero  // Includes DUP button
+    @State private var bpmSliderBase = CGSize.zero
+    @State private var wavButtonBase = CGSize.zero
+    @State private var helpButtonBase = CGSize.zero
+
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @Environment(\.verticalSizeClass) var verticalSizeClass
+
+    enum OctaveMode {
+        case keyboard  // Controls transpose (keyboard octave)
+        case grid      // Controls gridTranspose (grid octave)
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -20,88 +66,264 @@ struct ContentView: View {
                 
                 // 🔝 Top Controls - FIXED HEIGHT
                 VStack(spacing: 0) {
-                    // Transport controls row
+                    // Transport controls row - all buttons in order
                     HStack(spacing: 8) {
-                        // BPM controls in top left
-                        HStack(spacing: 8) {
-                            Text("BPM")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.black)
-                            
-                            CustomSlider(
-                                value: $audioEngine.bpm,
-                                range: 60...200,
-                                trackColor: Color(hex: "FF1493"),
-                                label: ""
+                        PlayStopRecButtons()
+                            .disabled(isEditMode)
+                            .padding(.leading, 12)
+                            .offset(playStopRecOffset)
+                            .animation(nil, value: playStopRecOffset)
+                            .overlay(
+                                isEditMode ?
+                                Rectangle()
+                                    .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                                    .padding(.leading, 12)
+                                : nil
                             )
-                            .frame(width: 120, height: 30)
-                            
-                            Text("\(Int(audioEngine.bpm))")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(.black)
-                                .frame(width: 36, height: 20)
-                                .background(
-                                    Rectangle()
-                                        .fill(Color.white)
-                                        .overlay(
-                                            Rectangle()
-                                                .stroke(Color.black, lineWidth: 1)
+                            .simultaneousGesture(
+                                isEditMode ?
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { gesture in
+                                        playStopRecOffset = CGSize(
+                                            width: playStopRecBase.width + gesture.translation.width,
+                                            height: playStopRecBase.height + gesture.translation.height
                                         )
+                                    }
+                                    .onEnded { gesture in
+                                        playStopRecBase = playStopRecOffset
+                                    }
+                                : nil
+                            )
+                            .zIndex(100)
+
+                        Transport6Buttons()
+                            .disabled(isEditMode)
+                            .offset(transport6ButtonsOffset)
+                            .animation(nil, value: transport6ButtonsOffset)
+                            .overlay(
+                                isEditMode ?
+                                Rectangle()
+                                    .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                                : nil
+                            )
+                            .simultaneousGesture(
+                                isEditMode ?
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { gesture in
+                                        transport6ButtonsOffset = CGSize(
+                                            width: transport6ButtonsBase.width + gesture.translation.width,
+                                            height: transport6ButtonsBase.height + gesture.translation.height
+                                        )
+                                    }
+                                    .onEnded { gesture in
+                                        transport6ButtonsBase = transport6ButtonsOffset
+                                    }
+                                : nil
+                            )
+                            .zIndex(100)
+
+                        Spacer()
+
+                        // BPM slider OR Pitch slider (when editing pitch)
+                        HStack(spacing: 8) {
+                            if audioEngine.isDrumPitchEditMode {
+                                // Drum pitch slider (0.5x to 2.0x)
+                                CustomSlider(
+                                    value: $audioEngine.drumStepPitch,
+                                    range: 0.5...2.0,
+                                    trackColor: Color(hex: "FFD700"),
+                                    label: "",
+                                    onlyUpdateOnRelease: false
                                 )
+                                .frame(width: 120, height: 30)
+                                .onChange(of: audioEngine.drumStepPitch) { newPitch in
+                                    // Apply pitch to selected drum step and play preview
+                                    if let step = audioEngine.editingDrumStep {
+                                        audioEngine.setDrumPitch(row: step.row, col: step.col, pitch: newPitch)
+
+                                        // Play preview of the drum sound at this pitch
+                                        let drumNote = [36, 38, 42, 46][step.row]
+                                        audioEngine.playDrumSound(drumType: drumNote, pitch: newPitch)
+                                    }
+                                }
+
+                                Text(String(format: "%.2f", audioEngine.drumStepPitch))
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 42, height: 24)
+                                    .background(
+                                        Rectangle()
+                                            .fill(Color(hex: "FFD700"))
+                                            .overlay(
+                                                Rectangle()
+                                                    .stroke(Color.black, lineWidth: 2)
+                                            )
+                                    )
+                            } else if audioEngine.isStepEditMode {
+                                // Melodic pitch slider (-24 to +24 semitones, octave snapped)
+                                CustomSlider(
+                                    value: $audioEngine.stepPitch,
+                                    range: -24...24,
+                                    trackColor: Color(hex: "32CD32"),
+                                    label: "",
+                                    onlyUpdateOnRelease: false
+                                )
+                                .frame(width: 120, height: 30)
+                                .onChange(of: audioEngine.stepPitch) { newPitch in
+                                    // Apply pitch to selected step and play preview
+                                    if let step = audioEngine.editingStep {
+                                        // Round to nearest octave (12 semitones)
+                                        let roundedPitch = round(newPitch / 12.0) * 12.0
+                                        audioEngine.setMelodicPitch(row: step.row, col: step.col, instrument: audioEngine.selectedInstrument, pitch: roundedPitch)
+
+                                        // Play preview note at the new pitch
+                                        let baseNote = audioEngine.rowToNote(row: step.row, instrument: audioEngine.selectedInstrument)
+                                        let octaveOffset = audioEngine.trackOctaveOffsets[audioEngine.selectedInstrument] * 12
+                                        let note = baseNote + audioEngine.gridTranspose + octaveOffset + Int(roundedPitch)
+                                        audioEngine.playNote(instrument: audioEngine.selectedInstrument, note: note)
+                                    }
+                                }
+
+                                Text(String(format: "%+d", Int(audioEngine.stepPitch)))
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 42, height: 24)
+                                    .background(
+                                        Rectangle()
+                                            .fill(Color(hex: "32CD32"))
+                                            .overlay(
+                                                Rectangle()
+                                                    .stroke(Color.black, lineWidth: 2)
+                                            )
+                                    )
+                            } else {
+                                // BPM slider (normal mode)
+                                CustomSlider(
+                                    value: $audioEngine.bpm,
+                                    range: 60...200,
+                                    trackColor: Color(hex: "FF1493"),
+                                    label: "",
+                                    onlyUpdateOnRelease: true
+                                )
+                                .frame(width: 120, height: 30)
+
+                                Text("\(Int(audioEngine.bpm))")
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 42, height: 24)
+                                    .background(
+                                        Rectangle()
+                                            .fill(Color.white)
+                                            .overlay(
+                                                Rectangle()
+                                                    .stroke(Color.black, lineWidth: 2)
+                                            )
+                                    )
+                            }
                         }
-                        .padding(.leading, 12)
-                        .padding(.vertical, 10)
-                        
-                        Spacer()
-                            .frame(width: 12)
-                        
-                        TransportControlsView()
-                        
-                        Spacer()
-                        
-                        RetroButton(
-                            title: "WAV",
-                            color: Color(hex: "90EE90"),
-                            textColor: .black,
-                            action: { exportWAV() },
-                            width: 36,
-                            height: 36,
-                            fontSize: 12
+                        .disabled(isEditMode)
+                        .padding(.trailing, 12)
+                        .offset(bpmSliderOffset)
+                        .animation(nil, value: bpmSliderOffset)
+                        .overlay(
+                            isEditMode ?
+                            Rectangle()
+                                .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                                .padding(.trailing, 12)
+                            : nil
                         )
-                        
-                        RetroButton(
-                            title: "?",
-                            color: Color(hex: "87CEEB"),
-                            textColor: .black,
-                            action: { showHelp = true },
-                            width: 36,
-                            height: 36,
-                            fontSize: 20
+                        .simultaneousGesture(
+                            isEditMode ?
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { gesture in
+                                    bpmSliderOffset = CGSize(
+                                        width: bpmSliderBase.width + gesture.translation.width,
+                                        height: bpmSliderBase.height + gesture.translation.height
+                                    )
+                                }
+                                .onEnded { gesture in
+                                    bpmSliderBase = bpmSliderOffset
+                                }
+                            : nil
                         )
+                        .zIndex(100)
+
+                        // Pattern buttons + DUP as one group
+                        HStack(spacing: 6) {
+                            Pattern8Buttons()
+                            DupButton()
+                        }
+                        .disabled(isEditMode)
+                        .padding(.trailing, 8)
+                        .offset(patternSlotsOffset)
+                        .animation(nil, value: patternSlotsOffset)
+                        .overlay(
+                            isEditMode ?
+                            Rectangle()
+                                .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                                .padding(.trailing, 8)
+                            : nil
+                        )
+                        .simultaneousGesture(
+                            isEditMode ?
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { gesture in
+                                    patternSlotsOffset = CGSize(
+                                        width: patternSlotsBase.width + gesture.translation.width,
+                                        height: patternSlotsBase.height + gesture.translation.height
+                                    )
+                                }
+                                .onEnded { gesture in
+                                    patternSlotsBase = patternSlotsOffset
+                                }
+                            : nil
+                        )
+                        .zIndex(100)
                     }
-                    .padding(.horizontal, 0)  // Remove padding since we have it on the main container
-                    
+                    .padding(.horizontal, 0)
+
                     // Add spacing to move pattern buttons down
                     Spacer()
                         .frame(height: 25)
-                    
-                    // Pattern row
-                    HStack(spacing: 31) {  // Increased by 15 (was 16, now 31)
+
+                    // Instrument and control buttons row
+                    HStack(spacing: 16) {
                         HStack {
                             // Empty space for left panel
                         }
-                        .frame(width: 190)  // Match the reduced panel width
-                        
-                        PatternSlotsView()
-                        
+                        .frame(width: 190)
+
                         Spacer()
-                        
-                        InstrumentSelectorView()
+
+                        // Oscilloscope centered
+                        OscilloscopeView()
                             .frame(width: 210, height: 76)
-                        
-                        ArpeggiatorView()
-                            .frame(width: 190, height: 76)
-                            .padding(.leading, 4)
+                            .offset(oscilloscopeOffset)
+                            .animation(nil, value: oscilloscopeOffset)
+                            .overlay(
+                                isEditMode ?
+                                Rectangle()
+                                    .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                                    .frame(width: 210, height: 76)
+                                : nil
+                            )
+                            .simultaneousGesture(
+                                isEditMode ?
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { gesture in
+                                        oscilloscopeOffset = CGSize(
+                                            width: oscilloscopeBase.width + gesture.translation.width,
+                                            height: oscilloscopeBase.height + gesture.translation.height
+                                        )
+                                    }
+                                    .onEnded { gesture in
+                                        oscilloscopeBase = oscilloscopeOffset
+                                    }
+                                : nil
+                            )
+                            .zIndex(100)
+
+                        Spacer()
                     }
                     .padding(.horizontal, 0)
                 }
@@ -115,8 +337,32 @@ struct ContentView: View {
                 HStack(alignment: .top, spacing: 0) {
                     // Left Sidebar - START AT TOP
                     VStack(alignment: .leading, spacing: 12) {
-                        // Oscilloscope section
-                        OscilloscopeView()
+                        // Instrument selector
+                        InstrumentSelectorView()
+                            .disabled(isEditMode)
+                            .offset(instrumentSelectorOffset)
+                            .animation(nil, value: instrumentSelectorOffset)
+                            .overlay(
+                                isEditMode ?
+                                Rectangle()
+                                    .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                                : nil
+                            )
+                            .simultaneousGesture(
+                                isEditMode ?
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { gesture in
+                                        instrumentSelectorOffset = CGSize(
+                                            width: instrumentSelectorBase.width + gesture.translation.width,
+                                            height: instrumentSelectorBase.height + gesture.translation.height
+                                        )
+                                    }
+                                    .onEnded { gesture in
+                                        instrumentSelectorBase = instrumentSelectorOffset
+                                    }
+                                : nil
+                            )
+                            .zIndex(100)
 
                         // ADSR section
                         VStack(spacing: 0) {
@@ -126,77 +372,71 @@ struct ContentView: View {
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .padding(.vertical, 4)
                                 .background(Color.white.opacity(0.3))
-                            
+
                             ADSRView()
+                                .disabled(isEditMode)
                         }
                         .background(
                             Rectangle()
                                 .fill(Color.white.opacity(0.8))
                                 .overlay(
                                     Rectangle()
-                                        .stroke(Color.black, lineWidth: 3)
+                                        .stroke(isEditMode ? Color(hex: "FF1493") : Color.black, lineWidth: 3)
                                 )
                         )
-                        
+                        .offset(adsrOffset)
+                        .animation(nil, value: adsrOffset)
+                        .simultaneousGesture(
+                            isEditMode ?
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { gesture in
+                                    adsrOffset = CGSize(
+                                        width: adsrBase.width + gesture.translation.width,
+                                        height: adsrBase.height + gesture.translation.height
+                                    )
+                                }
+                                .onEnded { gesture in
+                                    adsrBase = adsrOffset
+                                }
+                            : nil
+                        )
+                        .zIndex(100)
+
                         // Effects section
                         EffectsView()
-                        
+                            .disabled(isEditMode)
+                            .offset(effectsOffset)
+                            .animation(nil, value: effectsOffset)
+                            .overlay(
+                                isEditMode ?
+                                Rectangle()
+                                    .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                                : nil
+                            )
+                            .simultaneousGesture(
+                                isEditMode ?
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { gesture in
+                                        effectsOffset = CGSize(
+                                            width: effectsBase.width + gesture.translation.width,
+                                            height: effectsBase.height + gesture.translation.height
+                                        )
+                                    }
+                                    .onEnded { gesture in
+                                        effectsBase = effectsOffset
+                                    }
+                                : nil
+                            )
+                            .zIndex(100)
+
                         Spacer()
-                        
-                        // KB Octave controls
-                        HStack(spacing: 4) {
-                            Text("KB OCTAVE")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.black)
-                            
-                            RetroButton(
-                                title: "-",
-                                color: Color(hex: "FF69B4"),
-                                textColor: .black,
-                                action: {
-                                    if audioEngine.transpose > -24 {
-                                        audioEngine.transpose -= 12
-                                    }
-                                },
-                                width: 30,
-                                height: 26,
-                                fontSize: 14
-                            )
-                            
-                            Text("\(audioEngine.transpose / 12)")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(.black)
-                                .frame(width: 24)
-                            
-                            RetroButton(
-                                title: "+",
-                                color: Color(hex: "FF69B4"),
-                                textColor: .black,
-                                action: {
-                                    if audioEngine.transpose < 24 {
-                                        audioEngine.transpose += 12
-                                    }
-                                },
-                                width: 30,
-                                height: 26,
-                                fontSize: 14
-                            )
-                        }
-                        .padding(8)
-                        .background(
-                            Rectangle()
-                                .fill(Color(hex: "FFB6C1").opacity(0.5))
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.black, lineWidth: 2)
-                                )
-                        )
                     }
                     .frame(width: 190)  // Further reduced to prevent right cutoff
-                    .offset(y: -95)  // Move entire left panel up even more (-20)
-                    
-                    // Grid Area 
+
+                    // Grid Area - always at the back, disabled in edit mode
                     GridSequencerView()
+                        .zIndex(-1)
+                        .allowsHitTesting(!isEditMode)
                 }
                 
                 // Add space above keyboard
@@ -205,10 +445,34 @@ struct ContentView: View {
                 
                 // 🎹 KEYBOARD - FULL WIDTH, OUTSIDE OF HSTACK
                 PianoKeyboardView()
+                    .disabled(isEditMode)
                     .frame(maxWidth: .infinity)
                     .frame(height: 140)  // Bigger to show all keys
                     .padding(.horizontal, 0)
-                    .offset(y: -72)  // Move down to avoid black line touching keys
+                    .offset(x: CGFloat(keyboardOffsetX), y: CGFloat(keyboardOffsetY))
+                    .animation(nil, value: keyboardOffsetX)
+                    .animation(nil, value: keyboardOffsetY)
+                    .overlay(
+                        isEditMode ?
+                        Rectangle()
+                            .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                            .frame(height: 140)
+                        : nil
+                    )
+                    .simultaneousGesture(
+                        isEditMode ?
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { gesture in
+                                keyboardOffsetX = keyboardBaseX + Double(gesture.translation.width)
+                                keyboardOffsetY = keyboardBaseY + Double(gesture.translation.height)
+                            }
+                            .onEnded { gesture in
+                                keyboardBaseX = keyboardOffsetX
+                                keyboardBaseY = keyboardOffsetY
+                            }
+                        : nil
+                    )
+                    .zIndex(100)
                 
                 // Small bottom margin
                 Spacer()
@@ -216,13 +480,195 @@ struct ContentView: View {
             }
             .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 4))  // Small right padding to prevent cutoff
             .background(Color(hex: "FFB6C1"))
+            .overlay(overlaysView)
             .overlay(
-                // Help Panel overlay
-                Group {
-                    if showHelp {
-                        HelpPanelPopup(isShowing: $showHelp)
+                // KB/GRD Octave controls - independently draggable
+                HStack(spacing: 4) {
+                    // Mode toggle button - KB=orange, GRD=blue
+                    RetroButton(
+                        title: octaveMode == .keyboard ? "KB" : "GRD",
+                        color: octaveMode == .keyboard ? Color(hex: "FFA500") : Color(hex: "1E90FF"),
+                        textColor: .white,
+                        action: {
+                            octaveMode = octaveMode == .keyboard ? .grid : .keyboard
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        },
+                        width: 46,
+                        height: 36,
+                        fontSize: 11
+                    )
+
+                    RetroButton(
+                        title: "-",
+                        color: getOctaveButtonColor(isLowerButton: true),
+                        textColor: getCurrentOctave() < 0 ? .white : (getCurrentOctave() == 0 ? .white : .black),
+                        action: {
+                            if octaveMode == .keyboard {
+                                if audioEngine.transpose > -24 {
+                                    audioEngine.transpose -= 12
+                                }
+                            } else {
+                                if audioEngine.gridTranspose > -24 {
+                                    audioEngine.gridTranspose -= 12
+                                }
+                            }
+                        },
+                        width: 38,
+                        height: 36,
+                        fontSize: 16
+                    )
+
+                    Text("\(getCurrentOctave())")
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                        .frame(width: 28)
+                        .animation(nil, value: getCurrentOctave())
+
+                    RetroButton(
+                        title: "+",
+                        color: getOctaveButtonColor(isLowerButton: false),
+                        textColor: getCurrentOctave() > 0 ? .white : (getCurrentOctave() == 0 ? .white : .black),
+                        action: {
+                            if octaveMode == .keyboard {
+                                if audioEngine.transpose < 24 {
+                                    audioEngine.transpose += 12
+                                }
+                            } else {
+                                if audioEngine.gridTranspose < 24 {
+                                    audioEngine.gridTranspose += 12
+                                }
+                            }
+                        },
+                        width: 38,
+                        height: 36,
+                        fontSize: 16
+                    )
+                }
+                .disabled(isEditMode)
+                .animation(nil, value: octaveMode)
+                .animation(nil, value: audioEngine.transpose)
+                .animation(nil, value: audioEngine.gridTranspose)
+                .transaction { t in t.animation = nil }
+                .padding(8)
+                .background(
+                    Rectangle()
+                        .fill(Color(hex: "FFB6C1").opacity(0.5))
+                        .overlay(
+                            Rectangle()
+                                .stroke(Color.black, lineWidth: 2)
+                        )
+                )
+                .offset(x: CGFloat(octaveButtonOffsetX), y: CGFloat(octaveButtonOffsetY))
+                .animation(nil, value: octaveButtonOffsetX)
+                .animation(nil, value: octaveButtonOffsetY)
+                .overlay(
+                    isEditMode ?
+                    Rectangle()
+                        .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                    : nil
+                )
+                .simultaneousGesture(
+                    isEditMode ?
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { gesture in
+                            octaveButtonOffsetX = octaveButtonBaseX + Double(gesture.translation.width)
+                            octaveButtonOffsetY = octaveButtonBaseY + Double(gesture.translation.height)
+                        }
+                        .onEnded { gesture in
+                            octaveButtonBaseX = octaveButtonOffsetX
+                            octaveButtonBaseY = octaveButtonOffsetY
+                        }
+                    : nil
+                )
+                .zIndex(100)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .padding(.leading, 8)
+                .padding(.bottom, 180)
+            )
+            .overlay(
+                // Utility buttons - draggable group
+                HStack(spacing: 6) {
+                    RetroButton(
+                        title: "EDIT",
+                        color: isEditMode ? Color(hex: "FF1493") : Color(hex: "FFD700"),
+                        textColor: isEditMode ? .white : .black,
+                        action: {
+                            isEditMode.toggle()
+                            if !isEditMode {
+                                saveElementPositions()
+                            }
+                        },
+                        width: 60,
+                        height: 36,
+                        fontSize: 11
+                    )
+
+                    RetroButton(
+                        title: "WAV",
+                        color: Color(hex: "90EE90"),
+                        textColor: .black,
+                        action: { exportWAV() },
+                        width: 36,
+                        height: 36,
+                        fontSize: 12
+                    )
+                    .disabled(isEditMode)
+
+                    RetroButton(
+                        title: "?",
+                        color: Color(hex: "87CEEB"),
+                        textColor: .black,
+                        action: { showHelp = true },
+                        width: 36,
+                        height: 36,
+                        fontSize: 20
+                    )
+                    .disabled(isEditMode)
+                }
+                .offset(utilityButtonsOffset)
+                .animation(nil, value: utilityButtonsOffset)
+                .overlay(
+                    isEditMode ?
+                    Rectangle()
+                        .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                    : nil
+                )
+                .simultaneousGesture(
+                    isEditMode ?
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { gesture in
+                            utilityButtonsOffset = CGSize(
+                                width: utilityButtonsBase.width + gesture.translation.width,
+                                height: utilityButtonsBase.height + gesture.translation.height
+                            )
+                        }
+                        .onEnded { gesture in
+                            utilityButtonsBase = utilityButtonsOffset
+                        }
+                    : nil
+                )
+                .zIndex(100)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            )
+            .overlay(
+                // Center crosshair guide in edit mode
+                isEditMode ?
+                GeometryReader { geo in
+                    ZStack {
+                        // Vertical line
+                        Rectangle()
+                            .fill(Color.white.opacity(0.5))
+                            .frame(width: 2)
+                            .position(x: geo.size.width / 2, y: geo.size.height / 2)
+
+                        // Horizontal line
+                        Rectangle()
+                            .fill(Color.white.opacity(0.5))
+                            .frame(height: 2)
+                            .position(x: geo.size.width / 2, y: geo.size.height / 2)
                     }
                 }
+                : nil
             )
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -232,6 +678,22 @@ struct ContentView: View {
                 windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape))
             }
             AppDelegate.orientationLock = .landscape
+
+            // Load slot 2 keyboard position by default
+            let savedX = UserDefaults.standard.double(forKey: "keyboardX_2")
+            let savedY = UserDefaults.standard.double(forKey: "keyboardY_2")
+
+            if savedX != 0 || savedY != 0 {
+                keyboardOffsetX = savedX
+                keyboardOffsetY = savedY
+                keyboardBaseX = savedX
+                keyboardBaseY = savedY
+            } else {
+                keyboardBaseY = -72  // Initialize default
+            }
+
+            // Load element positions (includes KB/GRD section)
+            loadElementPositions()
         }
         .alert("WAV Export", isPresented: $showExportAlert) {
             Button("OK") { }
@@ -239,9 +701,212 @@ struct ContentView: View {
             Text("WAV export functionality coming soon!")
         }
     }
-    
+
+    private var overlaysView: some View {
+        ZStack {
+            // Help Panel overlay
+            if showHelp {
+                HelpPanelPopup(isShowing: $showHelp)
+            }
+
+            // Layout Editor overlay
+            if showLayoutEditor {
+                KeyboardLayoutEditor(
+                    isShowing: $showLayoutEditor,
+                    keyboardOffsetX: $keyboardOffsetX,
+                    keyboardOffsetY: $keyboardOffsetY,
+                    octaveButtonOffsetY: $octaveButtonOffsetY
+                )
+            }
+        }
+    }
+
+    private func getCurrentOctave() -> Int {
+        return octaveMode == .keyboard ? audioEngine.transpose / 12 : audioEngine.gridTranspose / 12
+    }
+
+    private func getOctaveButtonColor(isLowerButton: Bool) -> Color {
+        let baseColor = Color(hex: "FF69B4")  // Pink
+        let octave = getCurrentOctave()
+
+        // Determine if this button should be highlighted
+        let shouldHighlight = (isLowerButton && octave < 0) || (!isLowerButton && octave > 0)
+
+        if !shouldHighlight {
+            return Color.black
+        }
+
+        let absOctave = abs(octave)
+
+        if !isLowerButton {
+            // + button: lighter colors for higher octaves
+            switch absOctave {
+            case 1: return adjustBrightness(baseColor, by: 0.15)
+            case 2: return adjustBrightness(baseColor, by: 0.30)
+            default: return baseColor
+            }
+        } else {
+            // - button: darker colors for lower octaves
+            switch absOctave {
+            case 1: return adjustBrightness(baseColor, by: -0.20)
+            case 2: return adjustBrightness(baseColor, by: -0.40)
+            default: return baseColor
+            }
+        }
+    }
+
+    private func adjustBrightness(_ color: Color, by amount: CGFloat) -> Color {
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+
+        let uiColor = UIColor(color)
+        uiColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+
+        let newBrightness = max(0, min(1, brightness + amount))
+        return Color(hue: Double(hue), saturation: Double(saturation), brightness: Double(newBrightness), opacity: Double(alpha))
+    }
+
+    private func saveElementPositions() {
+        // Original elements
+        UserDefaults.standard.set(oscilloscopeOffset.width, forKey: "oscilloscopeX")
+        UserDefaults.standard.set(oscilloscopeOffset.height, forKey: "oscilloscopeY")
+        UserDefaults.standard.set(instrumentSelectorOffset.width, forKey: "instrumentSelectorX")
+        UserDefaults.standard.set(instrumentSelectorOffset.height, forKey: "instrumentSelectorY")
+        UserDefaults.standard.set(adsrOffset.width, forKey: "adsrX")
+        UserDefaults.standard.set(adsrOffset.height, forKey: "adsrY")
+        UserDefaults.standard.set(effectsOffset.width, forKey: "effectsX")
+        UserDefaults.standard.set(effectsOffset.height, forKey: "effectsY")
+
+        // Transport controls
+        UserDefaults.standard.set(playStopRecOffset.width, forKey: "playStopRecX")
+        UserDefaults.standard.set(playStopRecOffset.height, forKey: "playStopRecY")
+        UserDefaults.standard.set(transport6ButtonsOffset.width, forKey: "transport6ButtonsX")
+        UserDefaults.standard.set(transport6ButtonsOffset.height, forKey: "transport6ButtonsY")
+
+        // Pattern controls (includes DUP button)
+        UserDefaults.standard.set(patternSlotsOffset.width, forKey: "patternSlotsX")
+        UserDefaults.standard.set(patternSlotsOffset.height, forKey: "patternSlotsY")
+
+        // BPM
+        UserDefaults.standard.set(bpmSliderOffset.width, forKey: "bpmSliderX")
+        UserDefaults.standard.set(bpmSliderOffset.height, forKey: "bpmSliderY")
+
+        // Utility button group
+        UserDefaults.standard.set(utilityButtonsOffset.width, forKey: "utilityButtonsX")
+        UserDefaults.standard.set(utilityButtonsOffset.height, forKey: "utilityButtonsY")
+
+        // Keyboard and octave (save to slot 2 for consistency)
+        UserDefaults.standard.set(keyboardOffsetX, forKey: "keyboardX_2")
+        UserDefaults.standard.set(keyboardOffsetY, forKey: "keyboardY_2")
+
+        // KB/GRD section position
+        UserDefaults.standard.set(octaveButtonOffsetX, forKey: "octaveButtonX")
+        UserDefaults.standard.set(octaveButtonOffsetY, forKey: "octaveButtonY")
+    }
+
+    private func loadElementPositions() {
+        // Original elements
+        oscilloscopeOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "oscilloscopeX"),
+            height: UserDefaults.standard.double(forKey: "oscilloscopeY")
+        )
+        oscilloscopeBase = oscilloscopeOffset
+
+        instrumentSelectorOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "instrumentSelectorX"),
+            height: UserDefaults.standard.double(forKey: "instrumentSelectorY")
+        )
+        instrumentSelectorBase = instrumentSelectorOffset
+
+        adsrOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "adsrX"),
+            height: UserDefaults.standard.double(forKey: "adsrY")
+        )
+        adsrBase = adsrOffset
+
+        effectsOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "effectsX"),
+            height: UserDefaults.standard.double(forKey: "effectsY")
+        )
+        effectsBase = effectsOffset
+
+        // Transport controls
+        playStopRecOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "playStopRecX"),
+            height: UserDefaults.standard.double(forKey: "playStopRecY")
+        )
+        playStopRecBase = playStopRecOffset
+
+        transport6ButtonsOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "transport6ButtonsX"),
+            height: UserDefaults.standard.double(forKey: "transport6ButtonsY")
+        )
+        transport6ButtonsBase = transport6ButtonsOffset
+
+        // Pattern controls (includes DUP button)
+        patternSlotsOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "patternSlotsX"),
+            height: UserDefaults.standard.double(forKey: "patternSlotsY")
+        )
+        patternSlotsBase = patternSlotsOffset
+
+        // BPM
+        bpmSliderOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "bpmSliderX"),
+            height: UserDefaults.standard.double(forKey: "bpmSliderY")
+        )
+        bpmSliderBase = bpmSliderOffset
+
+        // Individual utility buttons (legacy - kept for compatibility)
+        wavButtonOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "wavButtonX"),
+            height: UserDefaults.standard.double(forKey: "wavButtonY")
+        )
+        wavButtonBase = wavButtonOffset
+
+        helpButtonOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "helpButtonX"),
+            height: UserDefaults.standard.double(forKey: "helpButtonY")
+        )
+        helpButtonBase = helpButtonOffset
+
+        // Utility button group
+        utilityButtonsOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "utilityButtonsX"),
+            height: UserDefaults.standard.double(forKey: "utilityButtonsY")
+        )
+        utilityButtonsBase = utilityButtonsOffset
+
+        // KB/GRD section position
+        let savedOctX = UserDefaults.standard.double(forKey: "octaveButtonX")
+        let savedOctY = UserDefaults.standard.double(forKey: "octaveButtonY")
+        octaveButtonOffsetX = savedOctX
+        octaveButtonOffsetY = savedOctY != 0 ? savedOctY : -95
+        octaveButtonBaseX = octaveButtonOffsetX
+        octaveButtonBaseY = octaveButtonOffsetY
+    }
+
     private func exportWAV() {
         showExportAlert = true
+    }
+
+    private func cycleScale() {
+        let newScale = (audioEngine.currentScale + 1) % 5
+        audioEngine.changeScale(to: newScale)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
+    private func getScaleColor() -> Color {
+        switch audioEngine.currentScale {
+        case 0: return Color(hex: "FF69B4") // Major - Hot Pink
+        case 1: return Color(hex: "9370DB") // Minor - Purple
+        case 2: return Color(hex: "32CD32") // Pentatonic - Lime Green
+        case 3: return Color(hex: "1E90FF") // Blues - Dodger Blue
+        case 4: return Color(hex: "FFD700") // Chromatic - Gold
+        default: return Color.gray
+        }
     }
 }
 
@@ -273,10 +938,243 @@ extension Color {
     }
 }
 
+// Keyboard Layout Editor
+struct KeyboardLayoutEditor: View {
+    @Binding var isShowing: Bool
+    @Binding var keyboardOffsetX: Double
+    @Binding var keyboardOffsetY: Double
+    @Binding var octaveButtonOffsetY: Double
+    @State private var selectedSlot: Int = 2  // Default to slot 2
+    @State private var selectedElement: String = "keyboard"  // "keyboard" or "octave"
+    @State private var savedPositions: [Int: (keyX: Double, keyY: Double, octY: Double)] = [:]
+
+    var body: some View {
+        ZStack {
+            // Semi-transparent background
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    isShowing = false
+                }
+
+            // Editor panel
+            VStack(spacing: 16) {
+                Text("KEYBOARD LAYOUT EDITOR")
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundColor(.black)
+                    .padding()
+                    .background(Color(hex: "FFD700"))
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color.black, lineWidth: 3)
+                    )
+
+                VStack(spacing: 12) {
+                    // Slot selector
+                    HStack(spacing: 8) {
+                        Text("SLOT:")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(.black)
+
+                        ForEach(1...4, id: \.self) { slot in
+                            RetroButton(
+                                title: "\(slot)",
+                                color: selectedSlot == slot ? Color(hex: "FF69B4") : Color.white,
+                                textColor: .black,
+                                action: {
+                                    selectedSlot = slot
+                                    if let saved = savedPositions[slot] {
+                                        keyboardOffsetX = saved.keyX
+                                        keyboardOffsetY = saved.keyY
+                                        octaveButtonOffsetY = saved.octY
+                                    }
+                                },
+                                width: 40,
+                                height: 36,
+                                fontSize: 14
+                            )
+                        }
+                    }
+
+                    // Element selector
+                    HStack(spacing: 8) {
+                        Text("ELEMENT:")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(.black)
+
+                        RetroButton(
+                            title: "KEYBOARD",
+                            color: selectedElement == "keyboard" ? Color(hex: "1E90FF") : Color.white,
+                            textColor: .black,
+                            action: { selectedElement = "keyboard" },
+                            width: 90,
+                            height: 32,
+                            fontSize: 10
+                        )
+
+                        RetroButton(
+                            title: "OCTAVE",
+                            color: selectedElement == "octave" ? Color(hex: "FFA500") : Color.white,
+                            textColor: .black,
+                            action: { selectedElement = "octave" },
+                            width: 80,
+                            height: 32,
+                            fontSize: 10
+                        )
+                    }
+
+                    // Position controls based on selected element
+                    VStack(spacing: 8) {
+                        if selectedElement == "keyboard" {
+                            // X position
+                            HStack(spacing: 8) {
+                                Text("X:")
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 30)
+
+                                CustomSlider(
+                                    value: $keyboardOffsetX,
+                                    range: -300...300,
+                                    trackColor: Color(hex: "1E90FF"),
+                                    label: ""
+                                )
+                                .frame(width: 200, height: 30)
+
+                                Text("\(Int(keyboardOffsetX))")
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 50)
+                            }
+
+                            // Y position
+                            HStack(spacing: 8) {
+                                Text("Y:")
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 30)
+
+                                CustomSlider(
+                                    value: $keyboardOffsetY,
+                                    range: -300...300,
+                                    trackColor: Color(hex: "FF69B4"),
+                                    label: ""
+                                )
+                                .frame(width: 200, height: 30)
+
+                                Text("\(Int(keyboardOffsetY))")
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 50)
+                            }
+                        } else {
+                            // Octave button Y position only
+                            HStack(spacing: 8) {
+                                Text("Y:")
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 30)
+
+                                CustomSlider(
+                                    value: $octaveButtonOffsetY,
+                                    range: -300...300,
+                                    trackColor: Color(hex: "FFA500"),
+                                    label: ""
+                                )
+                                .frame(width: 200, height: 30)
+
+                                Text("\(Int(octaveButtonOffsetY))")
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.black)
+                                    .frame(width: 50)
+                            }
+                        }
+
+                        // Save and Reset buttons
+                        HStack(spacing: 8) {
+                            RetroButton(
+                                title: "SAVE",
+                                color: Color(hex: "32CD32"),
+                                textColor: .black,
+                                action: {
+                                    savedPositions[selectedSlot] = (keyX: keyboardOffsetX, keyY: keyboardOffsetY, octY: octaveButtonOffsetY)
+                                    UserDefaults.standard.set(keyboardOffsetX, forKey: "keyboardX_\(selectedSlot)")
+                                    UserDefaults.standard.set(keyboardOffsetY, forKey: "keyboardY_\(selectedSlot)")
+                                    UserDefaults.standard.set(octaveButtonOffsetY, forKey: "octaveY_\(selectedSlot)")
+                                },
+                                width: 80,
+                                height: 36,
+                                fontSize: 12
+                            )
+
+                            RetroButton(
+                                title: "RESET",
+                                color: Color(hex: "FFA500"),
+                                textColor: .black,
+                                action: {
+                                    if selectedElement == "keyboard" {
+                                        keyboardOffsetX = 0
+                                        keyboardOffsetY = -72
+                                    } else {
+                                        octaveButtonOffsetY = -95
+                                    }
+                                },
+                                width: 80,
+                                height: 36,
+                                fontSize: 12
+                            )
+                        }
+                    }
+                }
+                .padding(16)
+                .background(
+                    Rectangle()
+                        .fill(Color(hex: "FFB6C1"))
+                        .overlay(
+                            Rectangle()
+                                .stroke(Color.black, lineWidth: 3)
+                        )
+                )
+
+                // Close button
+                RetroButton(
+                    title: "DONE",
+                    color: Color(hex: "90EE90"),
+                    textColor: .black,
+                    action: {
+                        isShowing = false
+                    },
+                    width: 120,
+                    height: 48,
+                    fontSize: 14
+                )
+            }
+            .padding(32)
+            .onAppear {
+                // Load saved positions
+                for slot in 1...4 {
+                    let x = UserDefaults.standard.double(forKey: "keyboardX_\(slot)")
+                    let y = UserDefaults.standard.double(forKey: "keyboardY_\(slot)")
+                    let octY = UserDefaults.standard.double(forKey: "octaveY_\(slot)")
+                    if x != 0 || y != 0 || octY != 0 {
+                        savedPositions[slot] = (keyX: x, keyY: y, octY: octY == 0 ? -95 : octY)
+                    }
+                }
+                // Load slot 2 by default
+                if let saved = savedPositions[2] {
+                    keyboardOffsetX = saved.keyX
+                    keyboardOffsetY = saved.keyY
+                    octaveButtonOffsetY = saved.octY
+                }
+            }
+        }
+    }
+}
+
 // App Delegate for orientation lock
 class AppDelegate: NSObject, UIApplicationDelegate {
     static var orientationLock = UIInterfaceOrientationMask.all
-    
+
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         return AppDelegate.orientationLock
     }

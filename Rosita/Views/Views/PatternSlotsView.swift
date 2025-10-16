@@ -51,12 +51,10 @@ struct PatternButton: View {
     let number: Int
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                action()
-            }
+            action()
         }) {
             Text("\(number)")
                 .font(.system(size: 16, weight: .bold))
@@ -67,7 +65,6 @@ struct PatternButton: View {
                         .fill(isSelected ? Color.white : Color.white.opacity(0.2))
                         .shadow(radius: isSelected ? 4 : 2)
                 )
-                .scaleEffect(isSelected ? 1.1 : 1.0)
         }
     }
 }

@@ -23,7 +23,7 @@ struct OscilloscopeView: View {
             HStack {
                 Text("SCOPE (TRACK \(audioEngine.selectedInstrument + 1))")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundColor(.black)
+                    .foregroundColor(.white)
                     .frame(maxWidth: .infinity, alignment: .center)
                 
                 Button(action: {
@@ -49,14 +49,14 @@ struct OscilloscopeView: View {
                 .padding(.trailing, 4)
             }
             .padding(.vertical, 4)
-            .background(Color.white.opacity(0.3))
-            
+            .background(Color(hex: "90EE90"))
+
             // Waveform display
             GeometryReader { geometry in
                 ZStack {
                     // Background
                     Rectangle()
-                        .fill(Color(hex: "E6E6FA"))
+                        .fill(Color(hex: "90EE90"))
                         .cornerRadius(4)
                     
                     // Grid lines
@@ -114,7 +114,7 @@ struct OscilloscopeView: View {
             .padding(.horizontal, 8)
             .padding(.bottom, 8)
         }
-        .background(Color.white.opacity(0.8))
+        .background(Color(hex: "90EE90"))
         .border(Color.black, width: 3)
     }
     

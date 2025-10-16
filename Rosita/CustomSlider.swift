@@ -6,9 +6,11 @@ struct CustomSlider: View {
     let trackColor: Color
     let thumbColor: Color = Color(hex: "FF69B4") // Pink thumb like original
     let label: String
-    
+    var onlyUpdateOnRelease: Bool = false // New parameter for BPM slider behavior
+
     @State private var isEditing = false
-    
+    @State private var tempValue: Double = 0
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if !label.isEmpty {
@@ -16,10 +18,10 @@ struct CustomSlider: View {
                     Text(label)
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
                         .foregroundColor(.black)
-                    
+
                     Spacer()
-                    
-                    Text(String(format: "%.2f", value))
+
+                    Text(String(format: "%.2f", displayValue))
                         .font(.system(size: 9, weight: .bold, design: .monospaced))
                         .foregroundColor(.black)
                         .padding(.horizontal, 4)
@@ -32,7 +34,7 @@ struct CustomSlider: View {
                         .frame(minWidth: 35)
                 }
             }
-            
+
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     // Track background
@@ -43,13 +45,13 @@ struct CustomSlider: View {
                             Rectangle()
                                 .stroke(Color.black, lineWidth: 2)
                         )
-                    
+
                     // Filled portion - ensure it doesn't exceed bounds
                     Rectangle()
                         .fill(trackColor)
                         .frame(width: max(0, thumbPosition(in: geometry.size.width)), height: 20)
                         .offset(x: 2, y: 2)
-                    
+
                     // Thumb
                     Rectangle()
                         .fill(thumbColor)
@@ -65,21 +67,41 @@ struct CustomSlider: View {
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { gesture in
-                            isEditing = true
+                            if !isEditing {
+                                isEditing = true
+                                tempValue = value
+                            }
                             let newValue = valueFromPosition(gesture.location.x, width: geometry.size.width)
-                            value = min(max(newValue, range.lowerBound), range.upperBound)
+                            let clampedValue = min(max(newValue, range.lowerBound), range.upperBound)
+
+                            if onlyUpdateOnRelease {
+                                tempValue = clampedValue
+                            } else {
+                                value = clampedValue
+                            }
                         }
                         .onEnded { _ in
                             isEditing = false
+                            if onlyUpdateOnRelease {
+                                value = tempValue
+                            }
                         }
                 )
             }
             .frame(height: 24)
         }
     }
-    
+
+    private var displayValue: Double {
+        if onlyUpdateOnRelease && isEditing {
+            return tempValue
+        }
+        return value
+    }
+
     private func thumbPosition(in width: CGFloat) -> CGFloat {
-        let normalizedValue = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+        let currentValue = onlyUpdateOnRelease && isEditing ? tempValue : value
+        let normalizedValue = (currentValue - range.lowerBound) / (range.upperBound - range.lowerBound)
         let thumbWidth: CGFloat = 20
         let borderWidth: CGFloat = 2
         let minX: CGFloat = borderWidth

@@ -22,33 +22,87 @@ struct ADSRView: View {
                 CustomSlider(value: $sustain, range: 0...1, trackColor: Color(hex: "FF69B4"), label: "S:")
                 CustomSlider(value: $release, range: 0...5, trackColor: Color(hex: "FFB6C1"), label: "R:")
             }
-            .onChange(of: attack) { newValue in 
-                audioEngine.updateTrackADSR(track: audioEngine.selectedInstrument, attack: newValue, decay: decay, sustain: sustain, release: release)
+            .onChange(of: attack) { newValue in
+                // Check if in STEP EDIT mode with a selected step
+                if (audioEngine.isStepEditMode && audioEngine.editingStep != nil) || (audioEngine.isDrumPitchEditMode && audioEngine.editingDrumStep != nil) {
+                    // Update per-step ADSR
+                    let step = audioEngine.editingStep ?? audioEngine.editingDrumStep
+                    if let step = step {
+                        audioEngine.setStepADSR(row: step.row, col: step.col, instrument: audioEngine.selectedInstrument, attack: newValue, decay: decay, sustain: sustain, release: release)
+                    }
+                } else {
+                    // Update track ADSR
+                    audioEngine.updateTrackADSR(track: audioEngine.selectedInstrument, attack: newValue, decay: decay, sustain: sustain, release: release)
+                }
             }
-            .onChange(of: decay) { newValue in 
-                audioEngine.updateTrackADSR(track: audioEngine.selectedInstrument, attack: attack, decay: newValue, sustain: sustain, release: release)
+            .onChange(of: decay) { newValue in
+                if (audioEngine.isStepEditMode && audioEngine.editingStep != nil) || (audioEngine.isDrumPitchEditMode && audioEngine.editingDrumStep != nil) {
+                    let step = audioEngine.editingStep ?? audioEngine.editingDrumStep
+                    if let step = step {
+                        audioEngine.setStepADSR(row: step.row, col: step.col, instrument: audioEngine.selectedInstrument, attack: attack, decay: newValue, sustain: sustain, release: release)
+                    }
+                } else {
+                    audioEngine.updateTrackADSR(track: audioEngine.selectedInstrument, attack: attack, decay: newValue, sustain: sustain, release: release)
+                }
             }
-            .onChange(of: sustain) { newValue in 
-                audioEngine.updateTrackADSR(track: audioEngine.selectedInstrument, attack: attack, decay: decay, sustain: newValue, release: release)
+            .onChange(of: sustain) { newValue in
+                if (audioEngine.isStepEditMode && audioEngine.editingStep != nil) || (audioEngine.isDrumPitchEditMode && audioEngine.editingDrumStep != nil) {
+                    let step = audioEngine.editingStep ?? audioEngine.editingDrumStep
+                    if let step = step {
+                        audioEngine.setStepADSR(row: step.row, col: step.col, instrument: audioEngine.selectedInstrument, attack: attack, decay: decay, sustain: newValue, release: release)
+                    }
+                } else {
+                    audioEngine.updateTrackADSR(track: audioEngine.selectedInstrument, attack: attack, decay: decay, sustain: newValue, release: release)
+                }
             }
-            .onChange(of: release) { newValue in 
-                audioEngine.updateTrackADSR(track: audioEngine.selectedInstrument, attack: attack, decay: decay, sustain: sustain, release: newValue)
+            .onChange(of: release) { newValue in
+                if (audioEngine.isStepEditMode && audioEngine.editingStep != nil) || (audioEngine.isDrumPitchEditMode && audioEngine.editingDrumStep != nil) {
+                    let step = audioEngine.editingStep ?? audioEngine.editingDrumStep
+                    if let step = step {
+                        audioEngine.setStepADSR(row: step.row, col: step.col, instrument: audioEngine.selectedInstrument, attack: attack, decay: decay, sustain: sustain, release: newValue)
+                    }
+                } else {
+                    audioEngine.updateTrackADSR(track: audioEngine.selectedInstrument, attack: attack, decay: decay, sustain: sustain, release: newValue)
+                }
+            }
+            .onChange(of: audioEngine.currentStepADSR) { newValue in
+                // When step ADSR changes (step selected), update UI
+                attack = newValue[0]
+                decay = newValue[1]
+                sustain = newValue[2]
+                release = newValue[3]
             }
             .onChange(of: audioEngine.selectedInstrument) { _ in
-                // Load ADSR values for the newly selected track
-                let trackADSR = audioEngine.getTrackADSR(track: audioEngine.selectedInstrument)
-                attack = trackADSR[0]
-                decay = trackADSR[1]
-                sustain = trackADSR[2]
-                release = trackADSR[3]
+                // Load ADSR values - check if step is selected, otherwise use track
+                if (audioEngine.isStepEditMode && audioEngine.editingStep != nil) || (audioEngine.isDrumPitchEditMode && audioEngine.editingDrumStep != nil) {
+                    let adsr = audioEngine.currentStepADSR
+                    attack = adsr[0]
+                    decay = adsr[1]
+                    sustain = adsr[2]
+                    release = adsr[3]
+                } else {
+                    let trackADSR = audioEngine.getTrackADSR(track: audioEngine.selectedInstrument)
+                    attack = trackADSR[0]
+                    decay = trackADSR[1]
+                    sustain = trackADSR[2]
+                    release = trackADSR[3]
+                }
             }
             .onAppear {
-                // Initialize with current track's ADSR values
-                let trackADSR = audioEngine.getTrackADSR(track: audioEngine.selectedInstrument)
-                attack = trackADSR[0]
-                decay = trackADSR[1]
-                sustain = trackADSR[2]
-                release = trackADSR[3]
+                // Initialize - check if step is selected, otherwise use track
+                if (audioEngine.isStepEditMode && audioEngine.editingStep != nil) || (audioEngine.isDrumPitchEditMode && audioEngine.editingDrumStep != nil) {
+                    let adsr = audioEngine.currentStepADSR
+                    attack = adsr[0]
+                    decay = adsr[1]
+                    sustain = adsr[2]
+                    release = adsr[3]
+                } else {
+                    let trackADSR = audioEngine.getTrackADSR(track: audioEngine.selectedInstrument)
+                    attack = trackADSR[0]
+                    decay = trackADSR[1]
+                    sustain = trackADSR[2]
+                    release = trackADSR[3]
+                }
             }
         }
         .padding(8)
@@ -166,9 +220,10 @@ struct ADSREnvelopeView: View {
                 alignment: .bottom
             )
         }
-        .animation(.easeInOut(duration: 0.2), value: attack)
-        .animation(.easeInOut(duration: 0.2), value: decay)
-        .animation(.easeInOut(duration: 0.2), value: sustain)
-        .animation(.easeInOut(duration: 0.2), value: release)
+        .animation(nil, value: attack)  // Disable animation for instant updates
+        .animation(nil, value: decay)
+        .animation(nil, value: sustain)
+        .animation(nil, value: release)
+        .transaction { t in t.animation = nil }  // Force-disable inherited animations
     }
 }

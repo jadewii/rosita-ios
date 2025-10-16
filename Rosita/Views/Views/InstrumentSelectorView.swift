@@ -2,102 +2,188 @@ import SwiftUI
 
 struct InstrumentSelectorView: View {
     @EnvironmentObject var audioEngine: AudioEngine
-    
+    @State private var animatingIndex: Int? = nil
+
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 2) {
             // Title
-            Text("Instrument")
-                .font(.system(size: 18, weight: .bold))
+            Text("INSTRUMENT")
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
-            
-            // Instrument buttons grid
-            HStack(spacing: 12) {
+
+            // Instrument buttons in a single row - retro style
+            HStack(spacing: 4) {
                 ForEach(0..<4) { index in
-                    InstrumentButton(
+                    RetroInstrumentButton(
                         index: index,
                         isSelected: audioEngine.selectedInstrument == index,
-                        type: InstrumentType(rawValue: index) ?? .synth
+                        type: InstrumentType(rawValue: index) ?? .synth,
+                        waveformIndex: audioEngine.instrumentWaveforms[index],
+                        isAnimating: animatingIndex == index
                     ) {
-                        audioEngine.selectedInstrument = index
-                    }
-                }
-            }
-            
-            // Volume controls for each instrument
-            HStack(spacing: 8) {
-                ForEach(0..<3) { index in
-                    VStack(spacing: 4) {
-                        Button(action: {
-                            // Volume up action
-                        }) {
-                            Text("+")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.black)
-                                .frame(width: 24, height: 16)
-                                .background(Color.yellow)
-                                .cornerRadius(4)
-                        }
-                        
-                        Button(action: {
-                            // Volume down action
-                        }) {
-                            Text("-")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.black)
-                                .frame(width: 24, height: 16)
-                                .background(Color.yellow)
-                                .cornerRadius(4)
+                        if audioEngine.selectedInstrument == index {
+                            // Already selected - cycle waveform
+                            audioEngine.cycleInstrumentWaveform(index)
+                            // Haptic feedback for waveform change
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+                            // Trigger animation
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                animatingIndex = index
+                            }
+                            // Reset animation state
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                animatingIndex = nil
+                            }
+                        } else {
+                            // Select this instrument
+                            audioEngine.selectedInstrument = index
                         }
                     }
                 }
-                
-                // Kit 4 special display
-                Text("Kit 4")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.black)
-                    .frame(width: 60, height: 40)
-                    .background(Color.orange)
-                    .cornerRadius(8)
             }
         }
-        .padding()
+        .padding(4)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.8))
+            Rectangle()
+                .fill(Color.white)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    Rectangle()
                         .stroke(Color.black, lineWidth: 2)
                 )
         )
     }
 }
 
-struct InstrumentButton: View {
+struct RetroInstrumentButton: View {
     let index: Int
     let isSelected: Bool
     let type: InstrumentType
+    let waveformIndex: Int
+    let isAnimating: Bool
     let action: () -> Void
-    
+
+    func getWaveformColor() -> Color {
+        // Colors based on waveform type (consistent across all instruments)
+        if type == .drums {
+            // Drums keep kit-based colors
+            switch waveformIndex {
+            case 0: return Color(hex: "FFD700") // Gold - kit 1
+            case 1: return Color(hex: "FFA500") // Orange - kit 2
+            case 2: return Color(hex: "FF8C00") // Dark orange - kit 3
+            case 3: return Color(hex: "FF6347") // Tomato - kit 4
+            default: return type.color
+            }
+        } else {
+            // All melodic instruments use the same color per waveform
+            switch waveformIndex {
+            case 0: return Color(hex: "FF69B4") // Hot pink - square
+            case 1: return Color(hex: "32CD32") // Lime green - sawtooth
+            case 2: return Color(hex: "1E90FF") // Dodger blue - triangle
+            case 3: return Color(hex: "FFD700") // Gold - sine
+            case 4: return Color(hex: "FF4500") // Orange red - reverse saw
+            default: return type.color
+            }
+        }
+    }
+
+    @ViewBuilder
+    func getWaveformShape() -> some View {
+        if type != .drums {
+            switch waveformIndex {
+            case 0: // Square
+                SquareWaveShape()
+                    .stroke(isSelected ? Color.black.opacity(0.3) : Color.white.opacity(0.4), lineWidth: 1.5)
+                    .frame(width: 40, height: 16)
+            case 1: // Sawtooth
+                SawtoothWaveShape()
+                    .stroke(isSelected ? Color.black.opacity(0.3) : Color.white.opacity(0.4), lineWidth: 1.5)
+                    .frame(width: 40, height: 16)
+            case 2: // Triangle
+                TriangleWaveShape()
+                    .stroke(isSelected ? Color.black.opacity(0.3) : Color.white.opacity(0.4), lineWidth: 1.5)
+                    .frame(width: 40, height: 16)
+            case 3: // Sine
+                SineWaveShape()
+                    .stroke(isSelected ? Color.black.opacity(0.3) : Color.white.opacity(0.4), lineWidth: 1.5)
+                    .frame(width: 40, height: 16)
+            case 4: // Reverse Sawtooth
+                ReverseSawWaveShape()
+                    .stroke(isSelected ? Color.black.opacity(0.3) : Color.white.opacity(0.4), lineWidth: 1.5)
+                    .frame(width: 40, height: 16)
+            default:
+                EmptyView()
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
     var body: some View {
         Button(action: {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(.easeInOut(duration: 0.1)) {
                 action()
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
         }) {
-            Text(type.displayNumber)
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.black)
-                .frame(width: 50, height: 40)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? type.color : type.color.opacity(0.6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.black, lineWidth: isSelected ? 3 : 1)
-                        )
-                )
-                .scaleEffect(isSelected ? 1.1 : 1.0)
+            ZStack {
+                // Background and number
+                Text(type.displayNumber)
+                    .font(.system(size: 20, weight: .bold, design: .monospaced))
+                    .foregroundColor(isSelected ? .black : .white)
+                    .frame(width: 56, height: 56)
+                    .scaleEffect(isAnimating ? 1.2 : 1.0)
+                    .background(
+                        Rectangle()
+                            .fill(isSelected ? getWaveformColor() : Color.black)
+                            .overlay(
+                                ZStack {
+                                    // 3D bevel effect
+                                    if isSelected {
+                                        // Top and left highlight
+                                        VStack(spacing: 0) {
+                                            Rectangle()
+                                                .fill(Color.white.opacity(0.4))
+                                                .frame(height: 2)
+                                            Spacer()
+                                        }
+
+                                        HStack(spacing: 0) {
+                                            Rectangle()
+                                                .fill(Color.white.opacity(0.4))
+                                                .frame(width: 2)
+                                            Spacer()
+                                        }
+
+                                        // Bottom and right shadow
+                                        VStack(spacing: 0) {
+                                            Spacer()
+                                            Rectangle()
+                                                .fill(Color.black.opacity(0.6))
+                                                .frame(height: 2)
+                                        }
+
+                                        HStack(spacing: 0) {
+                                            Spacer()
+                                            Rectangle()
+                                                .fill(Color.black.opacity(0.6))
+                                                .frame(width: 2)
+                                        }
+                                    }
+
+                                    Rectangle()
+                                        .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                                }
+                            )
+                    )
+
+                // Waveform overlay at bottom of button
+                VStack {
+                    Spacer()
+                    getWaveformShape()
+                        .padding(.bottom, 4)
+                }
+            }
         }
     }
 }

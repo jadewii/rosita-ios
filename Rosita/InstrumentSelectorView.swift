@@ -2,15 +2,15 @@ import SwiftUI
 
 struct InstrumentSelectorView: View {
     @EnvironmentObject var audioEngine: AudioEngine
-    @State private var animatingIndex: Int? = nil
-    
+
     var body: some View {
+        // Instrument selector with title
         VStack(spacing: 2) {
             // Title
-            Text("INSTRUMENT")
+            Text("ROSITA")
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(.black)
-            
+
             // Instrument buttons in a single row - retro style
             HStack(spacing: 4) {
                 ForEach(0..<4) { index in
@@ -18,23 +18,11 @@ struct InstrumentSelectorView: View {
                         index: index,
                         isSelected: audioEngine.selectedInstrument == index,
                         type: InstrumentType(rawValue: index) ?? .synth,
-                        waveformIndex: audioEngine.instrumentWaveforms[index],
-                        isAnimating: animatingIndex == index
+                        waveformIndex: audioEngine.instrumentWaveforms[index]
                     ) {
                         if audioEngine.selectedInstrument == index {
                             // Already selected - cycle waveform
                             audioEngine.cycleInstrumentWaveform(index)
-                            // Haptic feedback for waveform change
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            
-                            // Trigger animation
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                animatingIndex = index
-                            }
-                            // Reset animation state
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                animatingIndex = nil
-                            }
                         } else {
                             // Select this instrument
                             audioEngine.selectedInstrument = index
@@ -60,7 +48,6 @@ struct RetroInstrumentButton: View {
     let isSelected: Bool
     let type: InstrumentType
     let waveformIndex: Int
-    let isAnimating: Bool
     let action: () -> Void
     
     func getWaveformColor() -> Color {
@@ -86,62 +73,237 @@ struct RetroInstrumentButton: View {
             }
         }
     }
-    
+
+    @ViewBuilder
+    func getWaveformShape() -> some View {
+        if type != .drums {
+            VStack(spacing: 4) {
+                // Waveform icon on top
+                switch waveformIndex {
+                case 0: // Square
+                    SquareWaveShape()
+                        .stroke(isSelected ? Color.black.opacity(0.6) : Color.white, lineWidth: 2)
+                        .frame(width: 42, height: 24)
+                case 1: // Sawtooth
+                    SawtoothWaveShape()
+                        .stroke(isSelected ? Color.black.opacity(0.6) : Color.white, lineWidth: 2)
+                        .frame(width: 42, height: 24)
+                case 2: // Triangle
+                    TriangleWaveShape()
+                        .stroke(isSelected ? Color.black.opacity(0.6) : Color.white, lineWidth: 2)
+                        .frame(width: 42, height: 24)
+                case 3: // Sine
+                    SineWaveShape()
+                        .stroke(isSelected ? Color.black.opacity(0.6) : Color.white, lineWidth: 2)
+                        .frame(width: 42, height: 24)
+                case 4: // Reverse Sawtooth
+                    ReverseSawWaveShape()
+                        .stroke(isSelected ? Color.black.opacity(0.6) : Color.white, lineWidth: 2)
+                        .frame(width: 42, height: 24)
+                default:
+                    EmptyView()
+                }
+
+                // Text label below
+                Text(getWaveformLabel())
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundColor(isSelected ? Color.black.opacity(0.7) : Color.white.opacity(0.9))
+            }
+            .frame(width: 56, height: 56)
+        } else {
+            // Show grid icon for percussion (track 4) or kit label for other drums
+            if index == 3 {
+                // Track 4 - show 4-square grid icon
+                GridIconShape()
+                    .fill(isSelected ? Color.black : Color.white)
+                    .frame(width: 56, height: 56)
+            } else {
+                // Other drum tracks - show kit label
+                VStack(spacing: 2) {
+                    Text("KIT")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(isSelected ? .black : .white)
+                    Text("\(waveformIndex + 1)")
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundColor(isSelected ? .black : .white)
+                }
+            }
+        }
+    }
+
+    func getWaveformLabel() -> String {
+        switch waveformIndex {
+        case 0: return "SQR"
+        case 1: return "SAW"
+        case 2: return "TRI"
+        case 3: return "SIN"
+        case 4: return "RSAW"
+        default: return ""
+        }
+    }
+
     var body: some View {
         Button(action: {
-            withAnimation(.easeInOut(duration: 0.1)) {
-                action()
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            }
+            action()
         }) {
-            Text(type.displayNumber)
-                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                .foregroundColor(isSelected ? .black : .white)
-                .frame(width: 56, height: 56)
-                .scaleEffect(isAnimating ? 1.2 : 1.0)
-                .background(
-                    Rectangle()
-                        .fill(isSelected ? getWaveformColor() : Color.black)
-                        .overlay(
-                            ZStack {
-                                // 3D bevel effect
-                                if isSelected {
-                                    // Top and left highlight
-                                    VStack(spacing: 0) {
-                                        Rectangle()
-                                            .fill(Color.white.opacity(0.4))
-                                            .frame(height: 2)
-                                        Spacer()
-                                    }
-                                    
-                                    HStack(spacing: 0) {
-                                        Rectangle()
-                                            .fill(Color.white.opacity(0.4))
-                                            .frame(width: 2)
-                                        Spacer()
-                                    }
-                                    
-                                    // Bottom and right shadow
-                                    VStack(spacing: 0) {
-                                        Spacer()
-                                        Rectangle()
-                                            .fill(Color.black.opacity(0.6))
-                                            .frame(height: 2)
-                                    }
-                                    
-                                    HStack(spacing: 0) {
-                                        Spacer()
-                                        Rectangle()
-                                            .fill(Color.black.opacity(0.6))
-                                            .frame(width: 2)
-                                    }
+            ZStack {
+                // Background
+                Rectangle()
+                    .fill(isSelected ? getWaveformColor() : Color.black)
+                    .frame(width: 56, height: 56)
+                    .animation(nil, value: isSelected)
+                    .overlay(
+                        ZStack {
+                            // 3D bevel effect
+                            if isSelected {
+                                // Top and left highlight
+                                VStack(spacing: 0) {
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.4))
+                                        .frame(height: 2)
+                                    Spacer()
                                 }
-                                
-                                Rectangle()
-                                    .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+
+                                HStack(spacing: 0) {
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.4))
+                                        .frame(width: 2)
+                                    Spacer()
+                                }
+
+                                // Bottom and right shadow
+                                VStack(spacing: 0) {
+                                    Spacer()
+                                    Rectangle()
+                                        .fill(Color.black.opacity(0.6))
+                                        .frame(height: 2)
+                                }
+
+                                HStack(spacing: 0) {
+                                    Spacer()
+                                    Rectangle()
+                                        .fill(Color.black.opacity(0.6))
+                                        .frame(width: 2)
+                                }
                             }
-                        )
-                )
+
+                            Rectangle()
+                                .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                        }
+                    )
+
+                // Waveform shape in center (replaces number)
+                getWaveformShape()
+            }
+            .drawingGroup()  // Force instant redraw, no layer blending fade
         }
+        .buttonStyle(PlainButtonStyle())
+        .transaction { t in t.animation = nil }  // Force-disable inherited animations
+    }
+}
+
+struct OctaveButton: View {
+    let symbol: String
+    let instrumentType: InstrumentType
+    let octaveOffset: Int
+    let isUpperButton: Bool
+    let action: () -> Void
+
+    private func getButtonColor() -> Color {
+        let baseColor = instrumentType.color
+
+        // Determine if this button should be highlighted
+        let shouldHighlight = (isUpperButton && octaveOffset > 0) || (!isUpperButton && octaveOffset < 0)
+
+        if !shouldHighlight {
+            return Color.black
+        }
+
+        // Calculate color based on octave offset
+        // Higher octave = lighter, lower octave = darker
+        let absOffset = abs(octaveOffset)
+
+        if isUpperButton {
+            // + button: lighter colors for higher octaves
+            switch absOffset {
+            case 1: return adjustBrightness(baseColor, by: 0.15)  // Slightly lighter
+            case 2: return adjustBrightness(baseColor, by: 0.30)  // Much lighter
+            default: return baseColor
+            }
+        } else {
+            // - button: darker colors for lower octaves
+            switch absOffset {
+            case 1: return adjustBrightness(baseColor, by: -0.20) // Slightly darker
+            case 2: return adjustBrightness(baseColor, by: -0.40) // Much darker
+            default: return baseColor
+            }
+        }
+    }
+
+    private func adjustBrightness(_ color: Color, by amount: CGFloat) -> Color {
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+
+        let uiColor = UIColor(color)
+        uiColor.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+
+        let newBrightness = max(0, min(1, brightness + amount))
+        return Color(hue: Double(hue), saturation: Double(saturation), brightness: Double(newBrightness), opacity: Double(alpha))
+    }
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Rectangle()
+                    .fill(getButtonColor())
+                    .frame(width: 56, height: 35)
+                    .overlay(
+                        ZStack {
+                            // 3D bevel effect when active
+                            if octaveOffset != 0 {
+                                // Top and left highlight
+                                VStack(spacing: 0) {
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.4))
+                                        .frame(height: 2)
+                                    Spacer()
+                                }
+
+                                HStack(spacing: 0) {
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.4))
+                                        .frame(width: 2)
+                                    Spacer()
+                                }
+
+                                // Bottom and right shadow
+                                VStack(spacing: 0) {
+                                    Spacer()
+                                    Rectangle()
+                                        .fill(Color.black.opacity(0.6))
+                                        .frame(height: 2)
+                                }
+
+                                HStack(spacing: 0) {
+                                    Spacer()
+                                    Rectangle()
+                                        .fill(Color.black.opacity(0.6))
+                                        .frame(width: 2)
+                                }
+                            }
+
+                            Rectangle()
+                                .stroke(octaveOffset != 0 ? Color.white : Color.gray, lineWidth: 2)
+                        }
+                    )
+
+                Text(symbol)
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundColor(octaveOffset != 0 ? .black : .white)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }

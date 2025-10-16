@@ -7,6 +7,63 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		076713F92EA02433007040C0 /* kick_9.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D62EA02433007040C0 /* kick_9.caf */; };
+		076713FA2EA02433007040C0 /* perc_6.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E32EA02433007040C0 /* perc_6.caf */; };
+		076713FB2EA02433007040C0 /* perc_3.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E02EA02433007040C0 /* perc_3.caf */; };
+		076713FC2EA02433007040C0 /* snare_8.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713EF2EA02433007040C0 /* snare_8.caf */; };
+		076713FD2EA02433007040C0 /* kick_13.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713DA2EA02433007040C0 /* kick_13.caf */; };
+		076713FE2EA02433007040C0 /* snare_1.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E82EA02433007040C0 /* snare_1.caf */; };
+		076713FF2EA02433007040C0 /* hat_9.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C72EA02433007040C0 /* hat_9.caf */; };
+		076714002EA02433007040C0 /* hat_5.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C32EA02433007040C0 /* hat_5.caf */; };
+		076714012EA02433007040C0 /* kick_10.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D72EA02433007040C0 /* kick_10.caf */; };
+		076714022EA02433007040C0 /* snare_5.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713EC2EA02433007040C0 /* snare_5.caf */; };
+		076714032EA02433007040C0 /* hat_11.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C92EA02433007040C0 /* hat_11.caf */; };
+		076714042EA02433007040C0 /* perc_9.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E62EA02433007040C0 /* perc_9.caf */; };
+		076714052EA02433007040C0 /* hat_7.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C52EA02433007040C0 /* hat_7.caf */; };
+		076714062EA02433007040C0 /* snare_12.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713F32EA02433007040C0 /* snare_12.caf */; };
+		076714072EA02433007040C0 /* kick_1.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713CF2EA02433007040C0 /* kick_1.caf */; };
+		076714082EA02433007040C0 /* hat_2.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C02EA02433007040C0 /* hat_2.caf */; };
+		076714092EA02433007040C0 /* hat_13.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713CB2EA02433007040C0 /* hat_13.caf */; };
+		0767140A2EA02433007040C0 /* snare_10.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713F12EA02433007040C0 /* snare_10.caf */; };
+		0767140B2EA02433007040C0 /* hat_14.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713CC2EA02433007040C0 /* hat_14.caf */; };
+		0767140C2EA02433007040C0 /* hat_12.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713CA2EA02433007040C0 /* hat_12.caf */; };
+		0767140D2EA02433007040C0 /* kick_8.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D52EA02433007040C0 /* kick_8.caf */; };
+		0767140E2EA02433007040C0 /* snare_6.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713ED2EA02433007040C0 /* snare_6.caf */; };
+		0767140F2EA02433007040C0 /* snare_11.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713F22EA02433007040C0 /* snare_11.caf */; };
+		076714102EA02433007040C0 /* snare_13.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713F42EA02433007040C0 /* snare_13.caf */; };
+		076714112EA02433007040C0 /* hat_16.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713CE2EA02433007040C0 /* hat_16.caf */; };
+		076714122EA02433007040C0 /* kick_2.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D02EA02433007040C0 /* kick_2.caf */; };
+		076714132EA02433007040C0 /* hat_10.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C82EA02433007040C0 /* hat_10.caf */; };
+		076714142EA02433007040C0 /* kick_15.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713DC2EA02433007040C0 /* kick_15.caf */; };
+		076714152EA02433007040C0 /* kick_12.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D92EA02433007040C0 /* kick_12.caf */; };
+		076714162EA02433007040C0 /* kick_3.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D12EA02433007040C0 /* kick_3.caf */; };
+		076714172EA02433007040C0 /* snare_15.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713F62EA02433007040C0 /* snare_15.caf */; };
+		076714182EA02433007040C0 /* snare_9.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713F02EA02433007040C0 /* snare_9.caf */; };
+		076714192EA02433007040C0 /* perc_10.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E72EA02433007040C0 /* perc_10.caf */; };
+		0767141A2EA02433007040C0 /* snare_4.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713EB2EA02433007040C0 /* snare_4.caf */; };
+		0767141B2EA02433007040C0 /* perc_5.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E22EA02433007040C0 /* perc_5.caf */; };
+		0767141C2EA02433007040C0 /* perc_1.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713DE2EA02433007040C0 /* perc_1.caf */; };
+		0767141D2EA02433007040C0 /* kick_14.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713DB2EA02433007040C0 /* kick_14.caf */; };
+		0767141E2EA02433007040C0 /* snare_2.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E92EA02433007040C0 /* snare_2.caf */; };
+		0767141F2EA02433007040C0 /* perc_2.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713DF2EA02433007040C0 /* perc_2.caf */; };
+		076714202EA02433007040C0 /* kick_11.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D82EA02433007040C0 /* kick_11.caf */; };
+		076714212EA02433007040C0 /* snare_14.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713F52EA02433007040C0 /* snare_14.caf */; };
+		076714222EA02433007040C0 /* kick_6.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D32EA02433007040C0 /* kick_6.caf */; };
+		076714232EA02433007040C0 /* kick_16.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713DD2EA02433007040C0 /* kick_16.caf */; };
+		076714242EA02433007040C0 /* perc_4.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E12EA02433007040C0 /* perc_4.caf */; };
+		076714252EA02433007040C0 /* perc_7.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E42EA02433007040C0 /* perc_7.caf */; };
+		076714262EA02433007040C0 /* kick_7.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D42EA02433007040C0 /* kick_7.caf */; };
+		076714272EA02433007040C0 /* hat_8.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C62EA02433007040C0 /* hat_8.caf */; };
+		076714282EA02433007040C0 /* kick_4.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713D22EA02433007040C0 /* kick_4.caf */; };
+		076714292EA02433007040C0 /* snare_7.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713EE2EA02433007040C0 /* snare_7.caf */; };
+		0767142A2EA02433007040C0 /* hat_4.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C22EA02433007040C0 /* hat_4.caf */; };
+		0767142B2EA02433007040C0 /* perc_8.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713E52EA02433007040C0 /* perc_8.caf */; };
+		0767142C2EA02433007040C0 /* snare_3.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713EA2EA02433007040C0 /* snare_3.caf */; };
+		0767142D2EA02433007040C0 /* hat_3.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C12EA02433007040C0 /* hat_3.caf */; };
+		0767142E2EA02433007040C0 /* hat_1.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713BF2EA02433007040C0 /* hat_1.caf */; };
+		0767142F2EA02433007040C0 /* hat_6.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713C42EA02433007040C0 /* hat_6.caf */; };
+		076714302EA02433007040C0 /* hat_15.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713CD2EA02433007040C0 /* hat_15.caf */; };
+		076714312EA02433007040C0 /* snare_16.caf in Resources */ = {isa = PBXBuildFile; fileRef = 076713F72EA02433007040C0 /* snare_16.caf */; };
 		A1A1A1A12B000001 /* RositaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B000001 /* RositaApp.swift */; };
 		A1A1A1A22B000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B000002 /* ContentView.swift */; };
 		A1A1A1A32B000001 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A1A1A02B000003 /* AudioEngine.swift */; };
@@ -27,6 +84,63 @@
 
 /* Begin PBXFileReference section */
 		070B85822E19F5C2001931A4 /* RositaAUv3.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RositaAUv3.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		076713BF2EA02433007040C0 /* hat_1.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_1.caf; sourceTree = "<group>"; };
+		076713C02EA02433007040C0 /* hat_2.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_2.caf; sourceTree = "<group>"; };
+		076713C12EA02433007040C0 /* hat_3.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_3.caf; sourceTree = "<group>"; };
+		076713C22EA02433007040C0 /* hat_4.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_4.caf; sourceTree = "<group>"; };
+		076713C32EA02433007040C0 /* hat_5.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_5.caf; sourceTree = "<group>"; };
+		076713C42EA02433007040C0 /* hat_6.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_6.caf; sourceTree = "<group>"; };
+		076713C52EA02433007040C0 /* hat_7.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_7.caf; sourceTree = "<group>"; };
+		076713C62EA02433007040C0 /* hat_8.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_8.caf; sourceTree = "<group>"; };
+		076713C72EA02433007040C0 /* hat_9.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_9.caf; sourceTree = "<group>"; };
+		076713C82EA02433007040C0 /* hat_10.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_10.caf; sourceTree = "<group>"; };
+		076713C92EA02433007040C0 /* hat_11.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_11.caf; sourceTree = "<group>"; };
+		076713CA2EA02433007040C0 /* hat_12.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_12.caf; sourceTree = "<group>"; };
+		076713CB2EA02433007040C0 /* hat_13.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_13.caf; sourceTree = "<group>"; };
+		076713CC2EA02433007040C0 /* hat_14.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_14.caf; sourceTree = "<group>"; };
+		076713CD2EA02433007040C0 /* hat_15.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_15.caf; sourceTree = "<group>"; };
+		076713CE2EA02433007040C0 /* hat_16.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = hat_16.caf; sourceTree = "<group>"; };
+		076713CF2EA02433007040C0 /* kick_1.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_1.caf; sourceTree = "<group>"; };
+		076713D02EA02433007040C0 /* kick_2.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_2.caf; sourceTree = "<group>"; };
+		076713D12EA02433007040C0 /* kick_3.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_3.caf; sourceTree = "<group>"; };
+		076713D22EA02433007040C0 /* kick_4.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_4.caf; sourceTree = "<group>"; };
+		076713D32EA02433007040C0 /* kick_6.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_6.caf; sourceTree = "<group>"; };
+		076713D42EA02433007040C0 /* kick_7.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_7.caf; sourceTree = "<group>"; };
+		076713D52EA02433007040C0 /* kick_8.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_8.caf; sourceTree = "<group>"; };
+		076713D62EA02433007040C0 /* kick_9.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_9.caf; sourceTree = "<group>"; };
+		076713D72EA02433007040C0 /* kick_10.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_10.caf; sourceTree = "<group>"; };
+		076713D82EA02433007040C0 /* kick_11.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_11.caf; sourceTree = "<group>"; };
+		076713D92EA02433007040C0 /* kick_12.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_12.caf; sourceTree = "<group>"; };
+		076713DA2EA02433007040C0 /* kick_13.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_13.caf; sourceTree = "<group>"; };
+		076713DB2EA02433007040C0 /* kick_14.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_14.caf; sourceTree = "<group>"; };
+		076713DC2EA02433007040C0 /* kick_15.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_15.caf; sourceTree = "<group>"; };
+		076713DD2EA02433007040C0 /* kick_16.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = kick_16.caf; sourceTree = "<group>"; };
+		076713DE2EA02433007040C0 /* perc_1.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_1.caf; sourceTree = "<group>"; };
+		076713DF2EA02433007040C0 /* perc_2.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_2.caf; sourceTree = "<group>"; };
+		076713E02EA02433007040C0 /* perc_3.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_3.caf; sourceTree = "<group>"; };
+		076713E12EA02433007040C0 /* perc_4.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_4.caf; sourceTree = "<group>"; };
+		076713E22EA02433007040C0 /* perc_5.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_5.caf; sourceTree = "<group>"; };
+		076713E32EA02433007040C0 /* perc_6.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_6.caf; sourceTree = "<group>"; };
+		076713E42EA02433007040C0 /* perc_7.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_7.caf; sourceTree = "<group>"; };
+		076713E52EA02433007040C0 /* perc_8.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_8.caf; sourceTree = "<group>"; };
+		076713E62EA02433007040C0 /* perc_9.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_9.caf; sourceTree = "<group>"; };
+		076713E72EA02433007040C0 /* perc_10.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = perc_10.caf; sourceTree = "<group>"; };
+		076713E82EA02433007040C0 /* snare_1.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_1.caf; sourceTree = "<group>"; };
+		076713E92EA02433007040C0 /* snare_2.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_2.caf; sourceTree = "<group>"; };
+		076713EA2EA02433007040C0 /* snare_3.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_3.caf; sourceTree = "<group>"; };
+		076713EB2EA02433007040C0 /* snare_4.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_4.caf; sourceTree = "<group>"; };
+		076713EC2EA02433007040C0 /* snare_5.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_5.caf; sourceTree = "<group>"; };
+		076713ED2EA02433007040C0 /* snare_6.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_6.caf; sourceTree = "<group>"; };
+		076713EE2EA02433007040C0 /* snare_7.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_7.caf; sourceTree = "<group>"; };
+		076713EF2EA02433007040C0 /* snare_8.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_8.caf; sourceTree = "<group>"; };
+		076713F02EA02433007040C0 /* snare_9.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_9.caf; sourceTree = "<group>"; };
+		076713F12EA02433007040C0 /* snare_10.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_10.caf; sourceTree = "<group>"; };
+		076713F22EA02433007040C0 /* snare_11.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_11.caf; sourceTree = "<group>"; };
+		076713F32EA02433007040C0 /* snare_12.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_12.caf; sourceTree = "<group>"; };
+		076713F42EA02433007040C0 /* snare_13.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_13.caf; sourceTree = "<group>"; };
+		076713F52EA02433007040C0 /* snare_14.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_14.caf; sourceTree = "<group>"; };
+		076713F62EA02433007040C0 /* snare_15.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_15.caf; sourceTree = "<group>"; };
+		076713F72EA02433007040C0 /* snare_16.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = snare_16.caf; sourceTree = "<group>"; };
 		A0028F1083D858AF74431CB3 /* OscilloscopeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OscilloscopeView.swift; sourceTree = "<group>"; };
 		A1A1A1002B000001 /* Rosita.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rosita.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1A1A1A02B000001 /* RositaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RositaApp.swift; sourceTree = "<group>"; };
@@ -72,6 +186,70 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		076713F82EA02433007040C0 /* DrumSamples */ = {
+			isa = PBXGroup;
+			children = (
+				076713BF2EA02433007040C0 /* hat_1.caf */,
+				076713C02EA02433007040C0 /* hat_2.caf */,
+				076713C12EA02433007040C0 /* hat_3.caf */,
+				076713C22EA02433007040C0 /* hat_4.caf */,
+				076713C32EA02433007040C0 /* hat_5.caf */,
+				076713C42EA02433007040C0 /* hat_6.caf */,
+				076713C52EA02433007040C0 /* hat_7.caf */,
+				076713C62EA02433007040C0 /* hat_8.caf */,
+				076713C72EA02433007040C0 /* hat_9.caf */,
+				076713C82EA02433007040C0 /* hat_10.caf */,
+				076713C92EA02433007040C0 /* hat_11.caf */,
+				076713CA2EA02433007040C0 /* hat_12.caf */,
+				076713CB2EA02433007040C0 /* hat_13.caf */,
+				076713CC2EA02433007040C0 /* hat_14.caf */,
+				076713CD2EA02433007040C0 /* hat_15.caf */,
+				076713CE2EA02433007040C0 /* hat_16.caf */,
+				076713CF2EA02433007040C0 /* kick_1.caf */,
+				076713D02EA02433007040C0 /* kick_2.caf */,
+				076713D12EA02433007040C0 /* kick_3.caf */,
+				076713D22EA02433007040C0 /* kick_4.caf */,
+				076713D32EA02433007040C0 /* kick_6.caf */,
+				076713D42EA02433007040C0 /* kick_7.caf */,
+				076713D52EA02433007040C0 /* kick_8.caf */,
+				076713D62EA02433007040C0 /* kick_9.caf */,
+				076713D72EA02433007040C0 /* kick_10.caf */,
+				076713D82EA02433007040C0 /* kick_11.caf */,
+				076713D92EA02433007040C0 /* kick_12.caf */,
+				076713DA2EA02433007040C0 /* kick_13.caf */,
+				076713DB2EA02433007040C0 /* kick_14.caf */,
+				076713DC2EA02433007040C0 /* kick_15.caf */,
+				076713DD2EA02433007040C0 /* kick_16.caf */,
+				076713DE2EA02433007040C0 /* perc_1.caf */,
+				076713DF2EA02433007040C0 /* perc_2.caf */,
+				076713E02EA02433007040C0 /* perc_3.caf */,
+				076713E12EA02433007040C0 /* perc_4.caf */,
+				076713E22EA02433007040C0 /* perc_5.caf */,
+				076713E32EA02433007040C0 /* perc_6.caf */,
+				076713E42EA02433007040C0 /* perc_7.caf */,
+				076713E52EA02433007040C0 /* perc_8.caf */,
+				076713E62EA02433007040C0 /* perc_9.caf */,
+				076713E72EA02433007040C0 /* perc_10.caf */,
+				076713E82EA02433007040C0 /* snare_1.caf */,
+				076713E92EA02433007040C0 /* snare_2.caf */,
+				076713EA2EA02433007040C0 /* snare_3.caf */,
+				076713EB2EA02433007040C0 /* snare_4.caf */,
+				076713EC2EA02433007040C0 /* snare_5.caf */,
+				076713ED2EA02433007040C0 /* snare_6.caf */,
+				076713EE2EA02433007040C0 /* snare_7.caf */,
+				076713EF2EA02433007040C0 /* snare_8.caf */,
+				076713F02EA02433007040C0 /* snare_9.caf */,
+				076713F12EA02433007040C0 /* snare_10.caf */,
+				076713F22EA02433007040C0 /* snare_11.caf */,
+				076713F32EA02433007040C0 /* snare_12.caf */,
+				076713F42EA02433007040C0 /* snare_13.caf */,
+				076713F52EA02433007040C0 /* snare_14.caf */,
+				076713F62EA02433007040C0 /* snare_15.caf */,
+				076713F72EA02433007040C0 /* snare_16.caf */,
+			);
+			path = DrumSamples;
+			sourceTree = "<group>";
+		};
 		A1A1A0F82B000001 = {
 			isa = PBXGroup;
 			children = (
@@ -96,6 +274,7 @@
 				A1A1A1A02B000001 /* RositaApp.swift */,
 				A1A1A1A02B000002 /* ContentView.swift */,
 				A1A1A1A02B000003 /* AudioEngine.swift */,
+				076713F82EA02433007040C0 /* DrumSamples */,
 				A1A1A1A02B000004 /* InstrumentSelectorView.swift */,
 				A1A1A1A02B000005 /* ArpeggiatorView.swift */,
 				A1A1A1A02B000006 /* ADSRView.swift */,
@@ -202,6 +381,63 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				076713F92EA02433007040C0 /* kick_9.caf in Resources */,
+				076713FA2EA02433007040C0 /* perc_6.caf in Resources */,
+				076713FB2EA02433007040C0 /* perc_3.caf in Resources */,
+				076713FC2EA02433007040C0 /* snare_8.caf in Resources */,
+				076713FD2EA02433007040C0 /* kick_13.caf in Resources */,
+				076713FE2EA02433007040C0 /* snare_1.caf in Resources */,
+				076713FF2EA02433007040C0 /* hat_9.caf in Resources */,
+				076714002EA02433007040C0 /* hat_5.caf in Resources */,
+				076714012EA02433007040C0 /* kick_10.caf in Resources */,
+				076714022EA02433007040C0 /* snare_5.caf in Resources */,
+				076714032EA02433007040C0 /* hat_11.caf in Resources */,
+				076714042EA02433007040C0 /* perc_9.caf in Resources */,
+				076714052EA02433007040C0 /* hat_7.caf in Resources */,
+				076714062EA02433007040C0 /* snare_12.caf in Resources */,
+				076714072EA02433007040C0 /* kick_1.caf in Resources */,
+				076714082EA02433007040C0 /* hat_2.caf in Resources */,
+				076714092EA02433007040C0 /* hat_13.caf in Resources */,
+				0767140A2EA02433007040C0 /* snare_10.caf in Resources */,
+				0767140B2EA02433007040C0 /* hat_14.caf in Resources */,
+				0767140C2EA02433007040C0 /* hat_12.caf in Resources */,
+				0767140D2EA02433007040C0 /* kick_8.caf in Resources */,
+				0767140E2EA02433007040C0 /* snare_6.caf in Resources */,
+				0767140F2EA02433007040C0 /* snare_11.caf in Resources */,
+				076714102EA02433007040C0 /* snare_13.caf in Resources */,
+				076714112EA02433007040C0 /* hat_16.caf in Resources */,
+				076714122EA02433007040C0 /* kick_2.caf in Resources */,
+				076714132EA02433007040C0 /* hat_10.caf in Resources */,
+				076714142EA02433007040C0 /* kick_15.caf in Resources */,
+				076714152EA02433007040C0 /* kick_12.caf in Resources */,
+				076714162EA02433007040C0 /* kick_3.caf in Resources */,
+				076714172EA02433007040C0 /* snare_15.caf in Resources */,
+				076714182EA02433007040C0 /* snare_9.caf in Resources */,
+				076714192EA02433007040C0 /* perc_10.caf in Resources */,
+				0767141A2EA02433007040C0 /* snare_4.caf in Resources */,
+				0767141B2EA02433007040C0 /* perc_5.caf in Resources */,
+				0767141C2EA02433007040C0 /* perc_1.caf in Resources */,
+				0767141D2EA02433007040C0 /* kick_14.caf in Resources */,
+				0767141E2EA02433007040C0 /* snare_2.caf in Resources */,
+				0767141F2EA02433007040C0 /* perc_2.caf in Resources */,
+				076714202EA02433007040C0 /* kick_11.caf in Resources */,
+				076714212EA02433007040C0 /* snare_14.caf in Resources */,
+				076714222EA02433007040C0 /* kick_6.caf in Resources */,
+				076714232EA02433007040C0 /* kick_16.caf in Resources */,
+				076714242EA02433007040C0 /* perc_4.caf in Resources */,
+				076714252EA02433007040C0 /* perc_7.caf in Resources */,
+				076714262EA02433007040C0 /* kick_7.caf in Resources */,
+				076714272EA02433007040C0 /* hat_8.caf in Resources */,
+				076714282EA02433007040C0 /* kick_4.caf in Resources */,
+				076714292EA02433007040C0 /* snare_7.caf in Resources */,
+				0767142A2EA02433007040C0 /* hat_4.caf in Resources */,
+				0767142B2EA02433007040C0 /* perc_8.caf in Resources */,
+				0767142C2EA02433007040C0 /* snare_3.caf in Resources */,
+				0767142D2EA02433007040C0 /* hat_3.caf in Resources */,
+				0767142E2EA02433007040C0 /* hat_1.caf in Resources */,
+				0767142F2EA02433007040C0 /* hat_6.caf in Resources */,
+				076714302EA02433007040C0 /* hat_15.caf in Resources */,
+				076714312EA02433007040C0 /* snare_16.caf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
