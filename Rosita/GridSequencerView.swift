@@ -377,6 +377,11 @@ struct GridCell: View {
     }
 
     private func getActiveOutlineColor() -> Color {
+        // For drums, always use pink outline
+        if selectedInstrument == 3 {
+            return Color(hex: "C71585") // Pink outline for drums
+        }
+
         // Return an even darker shade than the cell color for better contrast
         switch instrumentColor {
         case Color(hex: "FFB6C1"): return Color(hex: "C71585") // Pink -> Medium Violet Red

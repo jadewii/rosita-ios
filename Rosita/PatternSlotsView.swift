@@ -7,22 +7,65 @@ struct Pattern8Buttons: View {
     var body: some View {
         HStack(spacing: 6) {
             ForEach(0..<8) { slot in
-                RetroPatternButton(
-                    number: slot + 1,
-                    isSelected: audioEngine.isStepEditMode ? (trackLengthForSlot(slot) == audioEngine.trackLengths[audioEngine.selectedInstrument]) : (audioEngine.currentPatternSlot == slot),
-                    isDupTarget: audioEngine.isDupMode && !audioEngine.isStepEditMode,
-                    action: {
-                        if audioEngine.isStepEditMode {
-                            // In STEP EDIT mode, set track length
-                            let length = trackLengthForSlot(slot)
-                            audioEngine.setTrackLength(track: audioEngine.selectedInstrument, length: length)
-                        } else {
-                            // Normal mode, select pattern
-                            audioEngine.selectPattern(slot)
+                if audioEngine.isStepEditMode && slot < 4 {
+                    // First 4 buttons become sequence direction buttons in STEP EDIT mode
+                    RetroButton(
+                        title: getSequenceDirectionName(slot),
+                        color: getSequenceDirectionColor(slot),
+                        textColor: audioEngine.sequenceDirections[audioEngine.selectedInstrument] == slot ? .white : .black,
+                        action: {
+                            audioEngine.sequenceDirections[audioEngine.selectedInstrument] = slot
+                        },
+                        width: 56,
+                        height: 56,
+                        fontSize: 10
+                    )
+                } else {
+                    RetroPatternButton(
+                        number: slot + 1,
+                        isSelected: audioEngine.isStepEditMode ? (trackLengthForSlot(slot) == audioEngine.trackLengths[audioEngine.selectedInstrument]) : (audioEngine.currentPatternSlot == slot),
+                        isDupTarget: audioEngine.isDupMode && !audioEngine.isStepEditMode,
+                        action: {
+                            if audioEngine.isStepEditMode {
+                                // In STEP EDIT mode, set track length
+                                let length = trackLengthForSlot(slot)
+                                audioEngine.setTrackLength(track: audioEngine.selectedInstrument, length: length)
+                            } else {
+                                // Normal mode, select pattern
+                                audioEngine.selectPattern(slot)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
+        }
+    }
+
+    // Get sequence direction name
+    private func getSequenceDirectionName(_ direction: Int) -> String {
+        switch direction {
+        case 0: return "FWD"
+        case 1: return "BWD"
+        case 2: return "PEND"
+        case 3: return "RND"
+        default: return "FWD"
+        }
+    }
+
+    // Get sequence direction color
+    private func getSequenceDirectionColor(_ direction: Int) -> Color {
+        let currentDirection = audioEngine.sequenceDirections[audioEngine.selectedInstrument]
+        if currentDirection == direction {
+            // Active colors
+            switch direction {
+            case 0: return Color(hex: "32CD32")  // Forward - Green
+            case 1: return Color(hex: "FF6347")  // Backward - Tomato Red
+            case 2: return Color(hex: "FFD700")  // Pendulum - Gold
+            case 3: return Color(hex: "9370DB")  // Random - Purple
+            default: return Color.white
+            }
+        } else {
+            return Color.white
         }
     }
 

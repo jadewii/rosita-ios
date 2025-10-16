@@ -96,6 +96,9 @@ class AudioEngine: ObservableObject {
     // Continuous random mode - per track
     @Published var continuousRandomEnabled = [false, false, false, false]  // One for each instrument
 
+    // Sequence direction - per track (0=Forward, 1=Backward, 2=Pendulum, 3=Random)
+    @Published var sequenceDirections = [0, 0, 0, 0]  // One for each instrument
+
     // Drum pitch editing mode
     @Published var isDrumPitchEditMode = false
     @Published var editingDrumStep: (row: Int, col: Int)? = nil
