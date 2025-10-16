@@ -59,6 +59,7 @@ class AudioEngine: ObservableObject {
     private var currentStep = 0
     private var playbackSteps = [0, 0, 0, 0]  // Per-instrument playback step counters
     private var pendulumDirections = [1, 1, 1, 1]  // 1=forward, -1=backward for pendulum mode
+    private var trackStepCounters = [0, 0, 0, 0]  // Counters for track speed implementation
     private var nextSampleTime: AVAudioFramePosition = 0
     private let sampleRate: Double = 44100.0
     private let audioQueue = DispatchQueue(label: "com.rosita.audio", qos: .userInteractive)
@@ -260,6 +261,7 @@ class AudioEngine: ObservableObject {
         currentStep = 0
         playbackSteps = [0, 0, 0, 0]  // Reset all instrument playback positions
         pendulumDirections = [1, 1, 1, 1]  // Reset pendulum directions to forward
+        trackStepCounters = [0, 0, 0, 0]  // Reset track speed counters
         startSequencer()
     }
 
@@ -401,48 +403,75 @@ class AudioEngine: ObservableObject {
     private func scheduleNotesForStep(_ step: Int, at sampleTime: AVAudioFramePosition) {
         // Play notes for all instruments at their individual steps
         for instrument in 0..<4 {
-            let instrumentStep = playbackSteps[instrument]
+            let speedIndex = trackSpeeds[instrument]
 
-            // Skip if this step is beyond the track's length
-            if instrumentStep >= trackLengths[instrument] {
+            // Determine how many times to trigger this instrument on this global step
+            var triggerCount = 1
+            var shouldTrigger = true
+
+            switch speedIndex {
+            case 0: // 1/2x speed - trigger every 2 global steps
+                trackStepCounters[instrument] += 1
+                shouldTrigger = (trackStepCounters[instrument] % 2 == 0)
+            case 1: // 1x speed - normal, trigger every global step
+                triggerCount = 1
+            case 2: // 2x speed - trigger twice per global step
+                triggerCount = 2
+            case 3: // 4x speed - trigger 4 times per global step
+                triggerCount = 4
+            default:
+                triggerCount = 1
+            }
+
+            if !shouldTrigger {
                 continue
             }
 
-            for row in 0..<8 {
-                let key = "\(instrument)_\(row)_\(instrumentStep)"
+            // Execute trigger(s) based on speed
+            for _ in 0..<triggerCount {
+                let instrumentStep = playbackSteps[instrument]
 
-                // Skip if this was just recorded to prevent double triggering
-                if recentlyRecordedNotes.contains(key) {
+                // Skip if this step is beyond the track's length
+                if instrumentStep >= trackLengths[instrument] {
                     continue
                 }
 
-                if self.instrumentSteps[key] == true {
-                    if instrument == 3 {
-                        // Drums - with pitch
-                        let drumNote = drumRowToNote(row: row)
-                        let pitch = getDrumPitch(row: row, col: instrumentStep)
-                        playDrumSound(drumType: drumNote, pitch: pitch)
-                    } else {
-                        // Melodic instruments - use stored note or default
-                        let baseNote = instrumentNotes[key] ?? rowToNote(row: row, instrument: instrument)
-                        let octaveOffset = trackOctaveOffsets[instrument] * 12  // Apply per-track octave offset
-                        let pitchOffset = Int(getMelodicPitch(row: row, col: instrumentStep, instrument: instrument))  // Apply per-step pitch offset
-                        let note = baseNote + gridTranspose + octaveOffset + pitchOffset  // Apply all offsets
+                for row in 0..<8 {
+                    let key = "\(instrument)_\(row)_\(instrumentStep)"
 
-                        // Get per-step ADSR for this note
-                        let stepADSR = getStepADSR(row: row, col: instrumentStep, instrument: instrument)
-                        playNote(instrument: instrument, note: note, adsr: stepADSR)
+                    // Skip if this was just recorded to prevent double triggering
+                    if recentlyRecordedNotes.contains(key) {
+                        continue
+                    }
+
+                    if self.instrumentSteps[key] == true {
+                        if instrument == 3 {
+                            // Drums - with pitch
+                            let drumNote = drumRowToNote(row: row)
+                            let pitch = getDrumPitch(row: row, col: instrumentStep)
+                            playDrumSound(drumType: drumNote, pitch: pitch)
+                        } else {
+                            // Melodic instruments - use stored note or default
+                            let baseNote = instrumentNotes[key] ?? rowToNote(row: row, instrument: instrument)
+                            let octaveOffset = trackOctaveOffsets[instrument] * 12  // Apply per-track octave offset
+                            let pitchOffset = Int(getMelodicPitch(row: row, col: instrumentStep, instrument: instrument))  // Apply per-step pitch offset
+                            let note = baseNote + gridTranspose + octaveOffset + pitchOffset  // Apply all offsets
+
+                            // Get per-step ADSR for this note
+                            let stepADSR = getStepADSR(row: row, col: instrumentStep, instrument: instrument)
+                            playNote(instrument: instrument, note: note, adsr: stepADSR)
+                        }
                     }
                 }
-            }
 
-            // Advance this instrument's step
-            advanceInstrumentStep(instrument)
+                // Advance this instrument's step
+                advanceInstrumentStep(instrument)
 
-            // Update UI with selected instrument's current step
-            if instrument == selectedInstrument {
-                DispatchQueue.main.async {
-                    self.currentInstrumentPlayingStep = self.playbackSteps[instrument]
+                // Update UI with selected instrument's current step
+                if instrument == selectedInstrument {
+                    DispatchQueue.main.async {
+                        self.currentInstrumentPlayingStep = self.playbackSteps[instrument]
+                    }
                 }
             }
         }
