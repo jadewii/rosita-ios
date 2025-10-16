@@ -53,6 +53,8 @@ struct ContentView: View {
     enum OctaveMode {
         case keyboard  // Controls transpose (keyboard octave)
         case grid      // Controls gridTranspose (grid octave)
+        case stepEdit  // Controls single step pitch (in step edit mode)
+        case sequence  // Controls entire grid octave (in step edit mode)
     }
     
     var body: some View {
@@ -434,18 +436,22 @@ struct ContentView: View {
             .background(Color(hex: "FFB6C1"))
             .overlay(overlaysView)
             .overlay(
-                // KB/GRD Octave controls - independently draggable
+                // KB/GRD/STP/SEQ Octave controls - independently draggable
                 HStack(spacing: 4) {
-                    // Mode toggle button - KB=orange, GRD=blue, STP=pastel red in step edit
+                    // Mode toggle button - KB=orange, GRD=blue, STP=pastel red, SEQ=purple
                     RetroButton(
-                        title: audioEngine.isStepEditMode ? "STP" : (octaveMode == .keyboard ? "KB" : "GRD"),
-                        color: audioEngine.isStepEditMode ? Color(hex: "FF9999") : (octaveMode == .keyboard ? Color(hex: "FFA500") : Color(hex: "1E90FF")),
+                        title: audioEngine.isStepEditMode ? (octaveMode == .stepEdit ? "STP" : "SEQ") : (octaveMode == .keyboard ? "KB" : "GRD"),
+                        color: audioEngine.isStepEditMode ? (octaveMode == .stepEdit ? Color(hex: "FF9999") : Color(hex: "9370DB")) : (octaveMode == .keyboard ? Color(hex: "FFA500") : Color(hex: "1E90FF")),
                         textColor: .white,
                         action: {
-                            if !audioEngine.isStepEditMode {
+                            if audioEngine.isStepEditMode {
+                                // Toggle between STP (stepEdit) and SEQ (sequence) in step edit mode
+                                octaveMode = octaveMode == .stepEdit ? .sequence : .stepEdit
+                            } else {
+                                // Toggle between KB and GRD in normal mode
                                 octaveMode = octaveMode == .keyboard ? .grid : .keyboard
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         },
                         width: 46,
                         height: 36,
@@ -458,13 +464,15 @@ struct ContentView: View {
                         textColor: getOctaveButtonColor(isLowerButton: true) == .black ? .white : .black,
                         action: {
                             if octaveMode == .keyboard {
+                                // KB mode: control keyboard transpose
                                 if audioEngine.transpose > -24 {
                                     audioEngine.transpose -= 12
                                 }
-                            } else {
-                                // GRD mode: control current track octave
+                            } else if octaveMode == .grid || octaveMode == .sequence {
+                                // GRD or SEQ mode: control current track octave
                                 audioEngine.decreaseTrackOctave()
                             }
+                            // STP mode: does nothing (individual step pitch controlled by slider)
                         },
                         width: 38,
                         height: 36,
@@ -483,13 +491,15 @@ struct ContentView: View {
                         textColor: getOctaveButtonColor(isLowerButton: false) == .black ? .white : .black,
                         action: {
                             if octaveMode == .keyboard {
+                                // KB mode: control keyboard transpose
                                 if audioEngine.transpose < 24 {
                                     audioEngine.transpose += 12
                                 }
-                            } else {
-                                // GRD mode: control current track octave
+                            } else if octaveMode == .grid || octaveMode == .sequence {
+                                // GRD or SEQ mode: control current track octave
                                 audioEngine.increaseTrackOctave()
                             }
+                            // STP mode: does nothing (individual step pitch controlled by slider)
                         },
                         width: 38,
                         height: 36,
@@ -648,6 +658,15 @@ struct ContentView: View {
             // Load element positions (includes KB/GRD section)
             loadElementPositions()
         }
+        .onChange(of: audioEngine.isStepEditMode) { isStepEdit in
+            // When entering step edit mode, default to STP mode (stepEdit)
+            if isStepEdit {
+                octaveMode = .stepEdit
+            } else {
+                // When exiting step edit mode, return to GRD mode
+                octaveMode = .grid
+            }
+        }
         .alert("WAV Export", isPresented: $showExportAlert) {
             Button("OK") { }
         } message: {
@@ -675,7 +694,14 @@ struct ContentView: View {
     }
 
     private func getCurrentOctave() -> Int {
-        return octaveMode == .keyboard ? audioEngine.transpose / 12 : audioEngine.trackOctaveOffsets[audioEngine.selectedInstrument]
+        switch octaveMode {
+        case .keyboard:
+            return audioEngine.transpose / 12
+        case .grid, .sequence:
+            return audioEngine.trackOctaveOffsets[audioEngine.selectedInstrument]
+        case .stepEdit:
+            return 0  // STP mode doesn't show octave (step pitch controlled by slider)
+        }
     }
 
     private func getOctaveButtonColor(isLowerButton: Bool) -> Color {
