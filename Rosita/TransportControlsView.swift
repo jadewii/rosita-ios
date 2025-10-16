@@ -71,6 +71,10 @@ struct Transport6Buttons: View {
     @State private var clearCountdown: Int? = nil // 3, 2, 1, then clear
     @State private var isFlashingRed = false
 
+    // Scale button long press state
+    @State private var scaleLongPressTimer: Timer?
+    @State private var isScaleLongPressing = false
+
     var body: some View {
         HStack(spacing: 6) {
             // Random button - tap to randomize once, long press to enable continuous random
@@ -224,17 +228,38 @@ struct Transport6Buttons: View {
                 height: 56
             )
 
-            // Scale button - shows scale name
+            // Scale button - tap to cycle, long press to enter scale selection mode
             RetroButton(
                 title: getScaleName(),
                 color: getScaleColor(),
                 textColor: .black,
                 action: {
-                    cycleScale()
+                    if !isScaleLongPressing {
+                        cycleScale()
+                    }
                 },
                 width: 56,
                 height: 56,
                 fontSize: 9
+            )
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        if scaleLongPressTimer == nil {
+                            scaleLongPressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+                                isScaleLongPressing = true
+                                audioEngine.isScaleSelectionMode = true
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            }
+                        }
+                    }
+                    .onEnded { _ in
+                        scaleLongPressTimer?.invalidate()
+                        scaleLongPressTimer = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            isScaleLongPressing = false
+                        }
+                    }
             )
         }
     }

@@ -158,6 +158,9 @@ class AudioEngine: ObservableObject {
     @Published var editingStep: (row: Int, col: Int)? = nil
     @Published var stepPitch: Double = 0.0 // -24 to +24 semitones (octave changes only)
 
+    // Scale selection mode (activated by long press on SCALE button)
+    @Published var isScaleSelectionMode = false
+
     // Storage for melodic step pitches
     private var melodicPitches: [String: Double] = [:] // key: "instrument_row_col", value: pitch offset in semitones
 

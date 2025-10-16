@@ -7,7 +7,18 @@ struct Pattern8Buttons: View {
     var body: some View {
         HStack(spacing: 6) {
             ForEach(0..<8) { slot in
-                if audioEngine.isStepEditMode && slot < 4 {
+                if audioEngine.isScaleSelectionMode && slot < 5 {
+                    // First 5 buttons show scale names in SCALE SELECTION mode
+                    ScaleButton(
+                        scaleIndex: slot,
+                        isSelected: audioEngine.currentScale == slot,
+                        action: {
+                            audioEngine.changeScale(to: slot)
+                            audioEngine.isScaleSelectionMode = false
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                    )
+                } else if audioEngine.isStepEditMode && slot < 4 {
                     // First 4 buttons become sequence direction icon buttons in STEP EDIT mode
                     SequenceDirectionButton(
                         direction: slot,
@@ -35,10 +46,13 @@ struct Pattern8Buttons: View {
                 } else {
                     RetroPatternButton(
                         number: slot + 1,
-                        isSelected: audioEngine.isStepEditMode ? false : (audioEngine.currentPatternSlot == slot),
-                        isDupTarget: audioEngine.isDupMode && !audioEngine.isStepEditMode,
+                        isSelected: audioEngine.isScaleSelectionMode ? false : (audioEngine.isStepEditMode ? false : (audioEngine.currentPatternSlot == slot)),
+                        isDupTarget: audioEngine.isDupMode && !audioEngine.isStepEditMode && !audioEngine.isScaleSelectionMode,
                         action: {
-                            if audioEngine.isStepEditMode {
+                            if audioEngine.isScaleSelectionMode {
+                                // In SCALE SELECTION mode, only first 5 buttons work
+                                return
+                            } else if audioEngine.isStepEditMode {
                                 // In STEP EDIT mode, buttons 1-4 are direction, 5-8 are speed, no pattern selection
                                 return
                             } else {
@@ -288,6 +302,83 @@ struct TrackSpeedButton: View {
         case 2: return "2x"
         case 3: return "4x"
         default: return "1x"
+        }
+    }
+}
+
+// Scale selection button
+struct ScaleButton: View {
+    let scaleIndex: Int
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(getScaleColor())
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect
+                        VStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.4))
+                                .frame(height: 2)
+                            Spacer()
+                        }
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.4))
+                                .frame(width: 2)
+                            Spacer()
+                        }
+                        VStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(height: 2)
+                        }
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(width: 2)
+                        }
+                        Rectangle()
+                            .stroke(isSelected ? Color.white : Color.black, lineWidth: isSelected ? 3 : 2)
+                    }
+                )
+
+            // Scale name
+            Text(getScaleName())
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(isSelected ? .white : .black)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
+    }
+
+    private func getScaleName() -> String {
+        switch scaleIndex {
+        case 0: return "MAJ"
+        case 1: return "MIN"
+        case 2: return "PENT"
+        case 3: return "BLUE"
+        case 4: return "CHRO"
+        default: return ""
+        }
+    }
+
+    private func getScaleColor() -> Color {
+        switch scaleIndex {
+        case 0: return Color(hex: "FF69B4") // Major - Hot Pink
+        case 1: return Color(hex: "9370DB") // Minor - Purple
+        case 2: return Color(hex: "32CD32") // Pentatonic - Lime Green
+        case 3: return Color(hex: "1E90FF") // Blues - Dodger Blue
+        case 4: return Color(hex: "FFD700") // Chromatic - Gold
+        default: return Color.gray
         }
     }
 }
