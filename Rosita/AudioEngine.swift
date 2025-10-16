@@ -318,6 +318,8 @@ class AudioEngine: ObservableObject {
         let direction = sequenceDirections[instrument]
         let trackLength = trackLengths[instrument]
 
+        print("🎵 Inst \(instrument): direction=\(direction) step=\(playbackSteps[instrument]) length=\(trackLength)")
+
         switch direction {
         case 0: // Forward
             playbackSteps[instrument] = (playbackSteps[instrument] + 1) % trackLength

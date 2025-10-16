@@ -14,7 +14,9 @@ struct Pattern8Buttons: View {
                         color: getSequenceDirectionColor(slot),
                         iconColor: audioEngine.sequenceDirections[audioEngine.selectedInstrument] == slot ? .white : .black,
                         action: {
+                            print("🎯 Setting direction for instrument \(audioEngine.selectedInstrument) to \(slot)")
                             audioEngine.sequenceDirections[audioEngine.selectedInstrument] = slot
+                            print("🎯 Directions array is now: \(audioEngine.sequenceDirections)")
                         }
                     )
                 } else {
@@ -170,11 +172,26 @@ struct SequenceDirectionButton: View {
     @ViewBuilder
     private func getDirectionIcon() -> some View {
         switch direction {
-        case 0: ArrowRightShape().fill(iconColor)
-        case 1: ArrowLeftShape().fill(iconColor)
-        case 2: ArrowPendulumShape().fill(iconColor)
-        case 3: RandomIconShape().fill(iconColor)
-        default: ArrowRightShape().fill(iconColor)
+        case 0:
+            Text("→")  // Forward
+                .font(.system(size: 28))
+                .foregroundColor(iconColor)
+        case 1:
+            Text("←")  // Backward
+                .font(.system(size: 28))
+                .foregroundColor(iconColor)
+        case 2:
+            Text("⟷")  // Pendulum
+                .font(.system(size: 28))
+                .foregroundColor(iconColor)
+        case 3:
+            Text("🎲")  // Random
+                .font(.system(size: 28))
+                .foregroundColor(iconColor)
+        default:
+            Text("→")
+                .font(.system(size: 28))
+                .foregroundColor(iconColor)
         }
     }
 }
@@ -190,70 +207,5 @@ struct PatternSlotsView: View {
 
             DupButton()
         }
-    }
-}
-
-// MARK: - Arrow Shapes for Sequence Direction
-
-struct ArrowRightShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = rect.height
-
-        // Right arrow (for Forward)
-        path.move(to: CGPoint(x: width * 0.75, y: height * 0.5))
-        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.75))
-        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.6))
-        path.addLine(to: CGPoint(x: width * 0.25, y: height * 0.6))
-        path.addLine(to: CGPoint(x: width * 0.25, y: height * 0.4))
-        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.4))
-        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.25))
-        path.closeSubpath()
-
-        return path
-    }
-}
-
-struct ArrowLeftShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = rect.height
-
-        // Left arrow (for Backward)
-        path.move(to: CGPoint(x: width * 0.25, y: height * 0.5))
-        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.75))
-        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.6))
-        path.addLine(to: CGPoint(x: width * 0.75, y: height * 0.6))
-        path.addLine(to: CGPoint(x: width * 0.75, y: height * 0.4))
-        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.4))
-        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.25))
-        path.closeSubpath()
-
-        return path
-    }
-}
-
-struct ArrowPendulumShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = rect.height
-
-        // Double arrow (left and right for Pendulum)
-        path.move(to: CGPoint(x: width * 0.2, y: height * 0.5))
-        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.35))
-        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.45))
-        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.45))
-        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.35))
-        path.addLine(to: CGPoint(x: width * 0.8, y: height * 0.5))
-        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.65))
-        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.55))
-        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.55))
-        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.65))
-        path.closeSubpath()
-
-        return path
     }
 }
