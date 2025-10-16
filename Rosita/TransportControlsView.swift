@@ -189,7 +189,7 @@ struct Transport6Buttons: View {
             // STEP EDIT button - toggles step edit mode for pitch editing
             RetroButton(
                 title: "STEP\nEDIT",
-                color: audioEngine.isStepEditMode ? Color(hex: "FFA500") : Color.white,
+                color: audioEngine.isStepEditMode ? Color(hex: "FFB6C1") : Color.white,
                 textColor: audioEngine.isStepEditMode ? .white : .black,
                 action: {
                     audioEngine.isStepEditMode.toggle()
@@ -211,8 +211,6 @@ struct Transport6Buttons: View {
                 height: 56,
                 fontSize: 12
             )
-            .animation(nil, value: audioEngine.isKitBrowserMode)
-            .transaction { t in t.animation = nil }
 
             // Mixer button
             RetroIconButton(
@@ -225,8 +223,6 @@ struct Transport6Buttons: View {
                 width: 56,
                 height: 56
             )
-            .animation(nil, value: audioEngine.isMixerMode)
-            .transaction { t in t.animation = nil }
 
             // Scale button - shows scale name
             RetroButton(
@@ -240,8 +236,6 @@ struct Transport6Buttons: View {
                 height: 56,
                 fontSize: 9
             )
-            .animation(nil, value: audioEngine.currentScale)
-            .transaction { t in t.animation = nil }
         }
     }
 

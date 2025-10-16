@@ -313,9 +313,50 @@ struct RetroIconButton<Icon: Shape>: View {
     var useStroke: Bool = false
 
     var body: some View {
-        Button(action: {
-            action()
-        }) {
+        ZStack {
+            // Background with 3D bevel
+            ZStack {
+                // Main button color
+                Rectangle()
+                    .fill(color)
+
+                // 3D bevel effect for retro look
+                // Top and left highlight
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.3))
+                        .frame(height: 2)
+                    Spacer()
+                }
+
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.3))
+                        .frame(width: 2)
+                    Spacer()
+                }
+
+                // Bottom and right shadow
+                VStack(spacing: 0) {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.black.opacity(0.5))
+                        .frame(height: 2)
+                }
+
+                HStack(spacing: 0) {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.black.opacity(0.5))
+                        .frame(width: 2)
+                }
+            }
+            .overlay(
+                Rectangle()
+                    .stroke(Color.black, lineWidth: 2)
+            )
+
+            // Icon overlay
             Group {
                 if useStroke {
                     icon
@@ -325,55 +366,12 @@ struct RetroIconButton<Icon: Shape>: View {
                         .fill(iconColor)
                 }
             }
-            .frame(width: width, height: height)
-                .drawingGroup()  // Force instant redraw
-                .background(
-                    ZStack {
-                        // Main button color
-                        Rectangle()
-                            .fill(color)
-
-                        // 3D bevel effect for retro look
-                        // Top and left highlight
-                        VStack(spacing: 0) {
-                            Rectangle()
-                                .fill(Color.white.opacity(0.3))
-                                .frame(height: 2)
-                            Spacer()
-                        }
-
-                        HStack(spacing: 0) {
-                            Rectangle()
-                                .fill(Color.white.opacity(0.3))
-                                .frame(width: 2)
-                            Spacer()
-                        }
-
-                        // Bottom and right shadow
-                        VStack(spacing: 0) {
-                            Spacer()
-                            Rectangle()
-                                .fill(Color.black.opacity(0.5))
-                                .frame(height: 2)
-                        }
-
-                        HStack(spacing: 0) {
-                            Spacer()
-                            Rectangle()
-                                .fill(Color.black.opacity(0.5))
-                                .frame(width: 2)
-                        }
-                    }
-                )
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.black, lineWidth: 2)
-                )
         }
-        .buttonStyle(PlainButtonStyle())
-        .animation(nil, value: color)  // Disable animation for instant updates
-        .animation(nil, value: iconColor)
-        .transaction { t in t.animation = nil }  // Force-disable inherited animations
+        .frame(width: width, height: height)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
     }
 }
 
@@ -391,67 +389,65 @@ struct RetroButton: View {
     @State private var isDown = false
 
     var body: some View {
-        Button(action: {
-            action()
-        }) {
+        ZStack {
+            // Background with 3D bevel
+            ZStack {
+                // Main button color
+                Rectangle()
+                    .fill(isDown ? Color.black.opacity(0.8) : color)
+
+                // 3D bevel effect for retro look
+                if !isDown {
+                    // Top and left highlight
+                    VStack(spacing: 0) {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.3))
+                            .frame(height: 2)
+                        Spacer()
+                    }
+
+                    HStack(spacing: 0) {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.3))
+                            .frame(width: 2)
+                        Spacer()
+                    }
+
+                    // Bottom and right shadow
+                    VStack(spacing: 0) {
+                        Spacer()
+                        Rectangle()
+                            .fill(Color.black.opacity(0.5))
+                            .frame(height: 2)
+                    }
+
+                    HStack(spacing: 0) {
+                        Spacer()
+                        Rectangle()
+                            .fill(Color.black.opacity(0.5))
+                            .frame(width: 2)
+                    }
+                }
+            }
+            .overlay(
+                Rectangle()
+                    .stroke(Color.black, lineWidth: 2)
+            )
+
+            // Text overlay
             Text(title)
                 .font(.system(size: fontSize, weight: .bold, design: .monospaced))
                 .foregroundColor(isDown ? .white : textColor)
-                .frame(width: width, height: height)
-                .drawingGroup()  // Force instant redraw
-                .background(
-                    ZStack {
-                        // Main button color
-                        Rectangle()
-                            .fill(isDown ? Color.black.opacity(0.8) : color)
-                        
-                        // 3D bevel effect for retro look
-                        if !isDown {
-                            // Top and left highlight
-                            VStack(spacing: 0) {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.3))
-                                    .frame(height: 2)
-                                Spacer()
-                            }
-                            
-                            HStack(spacing: 0) {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.3))
-                                    .frame(width: 2)
-                                Spacer()
-                            }
-                            
-                            // Bottom and right shadow
-                            VStack(spacing: 0) {
-                                Spacer()
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.5))
-                                    .frame(height: 2)
-                            }
-                            
-                            HStack(spacing: 0) {
-                                Spacer()
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.5))
-                                    .frame(width: 2)
-                            }
-                        }
-                    }
-                )
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.black, lineWidth: 2)
-                )
-                .offset(y: isDown ? 1 : 0)
+        }
+        .frame(width: width, height: height)
+        .offset(y: isDown ? 1 : 0)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
         }
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             isDown = pressing
         }, perform: {})
-        .animation(nil, value: color)  // Disable animation for instant updates
-        .animation(nil, value: textColor)
-        .animation(nil, value: isDown)
-        .transaction { t in t.animation = nil }  // Force-disable inherited animations
     }
 }
 

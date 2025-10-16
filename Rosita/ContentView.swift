@@ -484,14 +484,16 @@ struct ContentView: View {
             .overlay(
                 // KB/GRD Octave controls - independently draggable
                 HStack(spacing: 4) {
-                    // Mode toggle button - KB=orange, GRD=blue
+                    // Mode toggle button - KB=orange, GRD=blue, STP=pastel pink in step edit
                     RetroButton(
-                        title: octaveMode == .keyboard ? "KB" : "GRD",
-                        color: octaveMode == .keyboard ? Color(hex: "FFA500") : Color(hex: "1E90FF"),
+                        title: audioEngine.isStepEditMode ? "STP" : (octaveMode == .keyboard ? "KB" : "GRD"),
+                        color: audioEngine.isStepEditMode ? Color(hex: "FFB6C1") : (octaveMode == .keyboard ? Color(hex: "FFA500") : Color(hex: "1E90FF")),
                         textColor: .white,
                         action: {
-                            octaveMode = octaveMode == .keyboard ? .grid : .keyboard
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            if !audioEngine.isStepEditMode {
+                                octaveMode = octaveMode == .keyboard ? .grid : .keyboard
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            }
                         },
                         width: 46,
                         height: 36,
@@ -546,6 +548,7 @@ struct ContentView: View {
                 .animation(nil, value: octaveMode)
                 .animation(nil, value: audioEngine.transpose)
                 .animation(nil, value: audioEngine.trackOctaveOffsets)
+                .animation(nil, value: audioEngine.isStepEditMode)
                 .transaction { t in t.animation = nil }
                 .padding(8)
                 .background(
