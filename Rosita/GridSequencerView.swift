@@ -317,13 +317,18 @@ struct GridCell: View {
             Rectangle()
                 .fill(cellColor)
                 .overlay(
+                    // Pink shading when playing
+                    Rectangle()
+                        .fill(isPlaying ? Color(hex: "FF9999").opacity(0.3) : Color.clear)
+                )
+                .overlay(
                     Rectangle()
                         .stroke(isActive ? getActiveOutlineColor() : darkerColor.opacity(0.4), lineWidth: isActive ? 3 : 1)
                 )
                 .overlay(
-                    // Pastel pink/red outline for selected step in STEP EDIT mode
+                    // Pastel red outline for selected step in STEP EDIT mode
                     Rectangle()
-                        .stroke(isStepBeingEdited() ? Color(hex: "FFB6C1") : Color.clear, lineWidth: 3)
+                        .stroke(isStepBeingEdited() ? Color(hex: "FF9999") : Color.clear, lineWidth: 3)
                 )
                 .overlay(
                     // Playing indicator - clean white border with pulse

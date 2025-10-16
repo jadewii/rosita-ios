@@ -123,8 +123,8 @@ struct DupButton: View {
             // DUP button in normal mode
             RetroButton(
                 title: "DUP",
-                color: Color(hex: "9370DB"),
-                textColor: .black,
+                color: audioEngine.isDupMode ? Color.white : Color(hex: "9370DB"),
+                textColor: audioEngine.isDupMode ? .black : .black,
                 action: {
                     audioEngine.duplicatePattern()
                 },

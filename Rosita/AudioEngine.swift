@@ -1141,11 +1141,9 @@ class AudioEngine: ObservableObject {
             let key = "\(selectedInstrument)_\(row)_\(currentRecordingStep)"
             instrumentSteps[key] = true
 
-            // Store normalized note (base note for this row without keyboard octave offset)
-            // This ensures recorded notes match the color of manually placed notes
-            let baseNote = rowToNote(row: row, instrument: selectedInstrument)
-            let octaveOffset = trackOctaveOffsets[selectedInstrument] * 12
-            instrumentNotes[key] = baseNote + gridTranspose + octaveOffset
+            // Store the actual note played (what the user heard)
+            // This ensures the recorded note sounds the same as when it was played
+            instrumentNotes[key] = note
 
             // Move to next step
             currentRecordingStep += 1
@@ -1162,10 +1160,8 @@ class AudioEngine: ObservableObject {
                 let key = "\(selectedInstrument)_\(row)_\(currentPlayingStep)"
                 instrumentSteps[key] = true
 
-                // Store normalized note (base note for this row without keyboard octave offset)
-                let baseNote = rowToNote(row: row, instrument: selectedInstrument)
-                let octaveOffset = trackOctaveOffsets[selectedInstrument] * 12
-                instrumentNotes[key] = baseNote + gridTranspose + octaveOffset
+                // Store the actual note played (what the user heard)
+                instrumentNotes[key] = note
                 
                 // Mark this note as recently recorded to prevent double triggering
                 recentlyRecordedNotes.insert(key)

@@ -484,10 +484,10 @@ struct ContentView: View {
             .overlay(
                 // KB/GRD Octave controls - independently draggable
                 HStack(spacing: 4) {
-                    // Mode toggle button - KB=orange, GRD=blue, STP=pastel pink in step edit
+                    // Mode toggle button - KB=orange, GRD=blue, STP=pastel red in step edit
                     RetroButton(
                         title: audioEngine.isStepEditMode ? "STP" : (octaveMode == .keyboard ? "KB" : "GRD"),
-                        color: audioEngine.isStepEditMode ? Color(hex: "FFB6C1") : (octaveMode == .keyboard ? Color(hex: "FFA500") : Color(hex: "1E90FF")),
+                        color: audioEngine.isStepEditMode ? Color(hex: "FF9999") : (octaveMode == .keyboard ? Color(hex: "FFA500") : Color(hex: "1E90FF")),
                         textColor: .white,
                         action: {
                             if !audioEngine.isStepEditMode {
@@ -727,7 +727,7 @@ struct ContentView: View {
     }
 
     private func getOctaveButtonColor(isLowerButton: Bool) -> Color {
-        let baseColor = Color(hex: "FF69B4")  // Pink
+        let baseColor = Color(hex: "FF9999")  // Pastel red
         let octave = getCurrentOctave()
 
         // Determine if this button should be highlighted

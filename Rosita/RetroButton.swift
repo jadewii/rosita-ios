@@ -386,47 +386,43 @@ struct RetroButton: View {
     var fontSize: CGFloat = 11
     var isPressed: Bool = false
 
-    @State private var isDown = false
-
     var body: some View {
         ZStack {
             // Background with 3D bevel
             ZStack {
                 // Main button color
                 Rectangle()
-                    .fill(isDown ? Color.black.opacity(0.8) : color)
+                    .fill(color)
 
                 // 3D bevel effect for retro look
-                if !isDown {
-                    // Top and left highlight
-                    VStack(spacing: 0) {
-                        Rectangle()
-                            .fill(Color.white.opacity(0.3))
-                            .frame(height: 2)
-                        Spacer()
-                    }
+                // Top and left highlight
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.3))
+                        .frame(height: 2)
+                    Spacer()
+                }
 
-                    HStack(spacing: 0) {
-                        Rectangle()
-                            .fill(Color.white.opacity(0.3))
-                            .frame(width: 2)
-                        Spacer()
-                    }
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.3))
+                        .frame(width: 2)
+                    Spacer()
+                }
 
-                    // Bottom and right shadow
-                    VStack(spacing: 0) {
-                        Spacer()
-                        Rectangle()
-                            .fill(Color.black.opacity(0.5))
-                            .frame(height: 2)
-                    }
+                // Bottom and right shadow
+                VStack(spacing: 0) {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.black.opacity(0.5))
+                        .frame(height: 2)
+                }
 
-                    HStack(spacing: 0) {
-                        Spacer()
-                        Rectangle()
-                            .fill(Color.black.opacity(0.5))
-                            .frame(width: 2)
-                    }
+                HStack(spacing: 0) {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.black.opacity(0.5))
+                        .frame(width: 2)
                 }
             }
             .overlay(
@@ -437,17 +433,13 @@ struct RetroButton: View {
             // Text overlay
             Text(title)
                 .font(.system(size: fontSize, weight: .bold, design: .monospaced))
-                .foregroundColor(isDown ? .white : textColor)
+                .foregroundColor(textColor)
         }
         .frame(width: width, height: height)
-        .offset(y: isDown ? 1 : 0)
         .contentShape(Rectangle())
         .onTapGesture {
             action()
         }
-        .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
-            isDown = pressing
-        }, perform: {})
     }
 }
 

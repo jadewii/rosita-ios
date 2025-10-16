@@ -189,7 +189,7 @@ struct Transport6Buttons: View {
             // STEP EDIT button - toggles step edit mode for pitch editing
             RetroButton(
                 title: "STEP\nEDIT",
-                color: audioEngine.isStepEditMode ? Color(hex: "FFB6C1") : Color.white,
+                color: audioEngine.isStepEditMode ? Color(hex: "FF9999") : Color.white,
                 textColor: audioEngine.isStepEditMode ? .white : .black,
                 action: {
                     audioEngine.isStepEditMode.toggle()
