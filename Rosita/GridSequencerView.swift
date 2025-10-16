@@ -532,18 +532,12 @@ struct FXGridView: View {
                             col: col,
                             fxIndex: fxIndex,
                             isActive: audioEngine.activePerformanceFX == fxIndex,
-                            isPlaying: audioEngine.isPlaying && col == audioEngine.currentPlayingStep,
+                            isPlaying: false,  // Don't show sequence playback on FX page
                             color: getFXColor(row: row, col: col),
                             isBeatMarker: isBeatMarker
                         ) {
-                            // Toggle FX - only one can be active at a time
-                            if audioEngine.activePerformanceFX == fxIndex {
-                                // Deactivate FX - return to dry signal
-                                audioEngine.deactivatePerformanceFX()
-                            } else {
-                                // Activate this FX preset
-                                audioEngine.activatePerformanceFX(presetIndex: fxIndex)
-                            }
+                            // Select this FX preset (doesn't toggle off like tracks 1-4)
+                            audioEngine.activatePerformanceFX(presetIndex: fxIndex)
                         }
                     }
                 }
@@ -581,8 +575,9 @@ struct FXCell: View {
                 )
                 .aspectRatio(1.0, contentMode: .fit)
                 .scaleEffect(isPlaying ? 1.08 : 1.0)
+                .contentShape(Rectangle())  // Make entire button tappable
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(.borderless)  // Remove default button highlight
     }
 
     private var cellColor: Color {
