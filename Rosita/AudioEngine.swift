@@ -265,6 +265,7 @@ class AudioEngine: ObservableObject {
         playbackSteps = [0, 0, 0, 0]  // Reset all instrument playback positions
         pendulumDirections = [1, 1, 1, 1]  // Reset pendulum directions to forward
         trackStepCounters = [0, 0, 0, 0]  // Reset track speed counters
+        currentInstrumentPlayingStep = 0  // Initialize playback cursor to step 1 (index 0)
         startSequencer()
     }
 
@@ -512,6 +513,28 @@ class AudioEngine: ObservableObject {
         currentScale = newScale
         // No need to update notes - they will play differently automatically
     }
+
+    // Map keyboard key index (0-23 for 24 keys) to scale note
+    func keyboardIndexToScaleNote(index: Int) -> Int {
+        let scaleNotes: [Int]
+        switch currentScale {
+        case 0: scaleNotes = [0, 2, 4, 5, 7, 9, 11, 12] // Major
+        case 1: scaleNotes = [0, 2, 3, 5, 7, 8, 10, 12] // Minor
+        case 2: scaleNotes = [0, 2, 4, 7, 9, 12, 14, 16] // Pentatonic
+        case 3: scaleNotes = [0, 3, 5, 6, 7, 10, 12, 15] // Blues
+        case 4: scaleNotes = [0, 1, 2, 3, 4, 5, 6, 7]     // Chromatic
+        default: scaleNotes = [0, 2, 4, 5, 7, 9, 11, 12]
+        }
+
+        // Map key index to scale degree
+        // Each octave has 8 scale degrees
+        let octaveOffset = (index / 8) * 12  // Which octave (0, 12, 24)
+        let scaleIndex = index % 8           // Which degree within the scale (0-7)
+        let noteOffset = scaleNotes[scaleIndex]
+
+        let baseNote = 60 // C4
+        return baseNote + noteOffset + octaveOffset
+    }
     
     private func drumRowToNote(row: Int) -> Int {
         switch row {
@@ -685,22 +708,27 @@ class AudioEngine: ObservableObject {
     
     func selectPattern(_ index: Int) {
         guard index >= 0 && index < 8 else { return }
-        
+
         if isDupMode {
-            // Duplicate current pattern to selected slot
+            // Save current pattern to its own slot first (IMPORTANT!)
+            patterns[currentPatternSlot] = instrumentSteps
+            patternNotes[currentPatternSlot] = instrumentNotes
+            patternVelocities[currentPatternSlot] = instrumentVelocities
+
+            // Now duplicate current pattern to selected slot
             patterns[index] = instrumentSteps
             patternNotes[index] = instrumentNotes
             patternVelocities[index] = instrumentVelocities
             isDupMode = false
-            
-            // Now switch to the duplicated pattern
+
+            // Switch to the duplicated pattern
             currentPatternSlot = index
         } else {
             // Save current pattern
             patterns[currentPatternSlot] = instrumentSteps
             patternNotes[currentPatternSlot] = instrumentNotes
             patternVelocities[currentPatternSlot] = instrumentVelocities
-            
+
             // Load selected pattern
             currentPatternSlot = index
             instrumentSteps = patterns[index]

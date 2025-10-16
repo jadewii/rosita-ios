@@ -3,28 +3,32 @@ import SwiftUI
 struct PianoKeyboardView: View {
     @EnvironmentObject var audioEngine: AudioEngine
     @State private var pressedKeys: Set<Int> = []
-    
-    // Two full octaves: C4 to B5
-    let whiteKeys = [
-        60, 62, 64, 65, 67, 69, 71,  // C4-B4
-        72, 74, 76, 77, 79, 81, 83   // C5-B5
-    ]
-    
+
+    // Computed properties for scale-mapped keys
+    // All keys (white and black) play only notes from the current scale
+    var whiteKeys: [Int] {
+        // Map white key positions (0-13) to scale notes
+        (0..<14).map { audioEngine.keyboardIndexToScaleNote(index: $0) }
+    }
+
     // Define all black keys with their positions - proper 2-3 grouping
-    let blackKeys: [(note: Int, position: CGFloat)] = [
-        // First octave - 2 then 3 black keys
-        (61, 0.75),   // C#4
-        (63, 1.75),   // D#4
-        (66, 3.75),   // F#4
-        (68, 4.75),   // G#4
-        (70, 5.75),   // A#4
-        // Second octave - 2 then 3 black keys
-        (73, 7.75),   // C#5
-        (75, 8.75),   // D#5
-        (78, 10.75),  // F#5
-        (80, 11.75),  // G#5
-        (82, 12.75)   // A#5
-    ]
+    // Black keys now play the next set of scale notes (indices 14-23)
+    var blackKeys: [(note: Int, position: CGFloat)] {
+        [
+            // First octave - 2 then 3 black keys (scale indices 14-18)
+            (audioEngine.keyboardIndexToScaleNote(index: 14), 0.75),
+            (audioEngine.keyboardIndexToScaleNote(index: 15), 1.75),
+            (audioEngine.keyboardIndexToScaleNote(index: 16), 3.75),
+            (audioEngine.keyboardIndexToScaleNote(index: 17), 4.75),
+            (audioEngine.keyboardIndexToScaleNote(index: 18), 5.75),
+            // Second octave - 2 then 3 black keys (scale indices 19-23)
+            (audioEngine.keyboardIndexToScaleNote(index: 19), 7.75),
+            (audioEngine.keyboardIndexToScaleNote(index: 20), 8.75),
+            (audioEngine.keyboardIndexToScaleNote(index: 21), 10.75),
+            (audioEngine.keyboardIndexToScaleNote(index: 22), 11.75),
+            (audioEngine.keyboardIndexToScaleNote(index: 23), 12.75)
+        ]
+    }
     
     var body: some View {
         GeometryReader { geometry in

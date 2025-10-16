@@ -77,7 +77,7 @@ struct GridSequencerView: View {
                                 // Play the selected sample to preview it
                                 audioEngine.playNote(instrument: 3, note: [36, 38, 42, 46][drumType])
                             } else if audioEngine.isStepEditMode && audioEngine.getGridCell(row: track, col: step) {
-                                // In STEP EDIT mode, select step for editing instead of toggling
+                                // In STEP EDIT mode, select step for editing instead of toggling (no sound)
                                 if audioEngine.selectedInstrument == 3 && track < 4 {
                                     // Drums - start drum pitch edit
                                     audioEngine.startDrumPitchEdit(row: track, col: step)
@@ -85,17 +85,7 @@ struct GridSequencerView: View {
                                     // Melodic instruments - start melodic pitch edit
                                     audioEngine.startMelodicStepEdit(row: track, col: step)
                                 }
-
-                                // Play the note to preview
-                                let note: Int
-                                if audioEngine.selectedInstrument == 3 && track < 4 {
-                                    note = [36, 38, 42, 46][track]
-                                } else {
-                                    let baseNote = audioEngine.rowToNote(row: track, instrument: audioEngine.selectedInstrument)
-                                    let octaveOffset = audioEngine.trackOctaveOffsets[audioEngine.selectedInstrument] * 12
-                                    note = baseNote + audioEngine.gridTranspose + octaveOffset
-                                }
-                                audioEngine.playNote(instrument: audioEngine.selectedInstrument, note: note)
+                                // Note: Don't play sound when selecting in step edit mode
                             } else if audioEngine.isStepEditMode && !audioEngine.getGridCell(row: track, col: step) {
                                 // STEP EDIT mode but cell is empty - flash to indicate can't place steps
                                 // The flash effect is handled by the GridCell itself via isFlashing state
@@ -317,11 +307,6 @@ struct GridCell: View {
             Rectangle()
                 .fill(cellColor)
                 .overlay(
-                    // Pink shading when playing
-                    Rectangle()
-                        .fill(isPlaying ? Color(hex: "FF9999").opacity(0.3) : Color.clear)
-                )
-                .overlay(
                     Rectangle()
                         .stroke(isActive ? getActiveOutlineColor() : darkerColor.opacity(0.4), lineWidth: isActive ? 3 : 1)
                 )
@@ -331,14 +316,11 @@ struct GridCell: View {
                         .stroke(isStepBeingEdited() ? Color(hex: "FF9999") : Color.clear, lineWidth: 3)
                 )
                 .overlay(
-                    // Playing indicator - clean white border with pulse
+                    // Playback cursor - thick white border
                     Rectangle()
-                        .stroke(isPlaying ? Color.white : Color.clear, lineWidth: 2)
-                        .scaleEffect(isPlaying ? 1.05 : 1.0)
-                        .opacity(isPlaying ? 1.0 : 0.0)
+                        .stroke(isPlaying ? Color.white : Color.clear, lineWidth: 4)
                 )
                 .aspectRatio(1.0, contentMode: .fit)
-                .scaleEffect(isPlaying ? 1.08 : 1.0)
         }
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(

@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var playStopRecOffset = CGSize.zero
     @State private var transport6ButtonsOffset = CGSize.zero
     @State private var patternSlotsOffset = CGSize.zero  // Includes DUP button
+    @State private var allTransportControlsOffset = CGSize.zero  // Unified offset for Play through DUP
     @State private var bpmSliderOffset = CGSize.zero
     @State private var wavButtonOffset = CGSize.zero
     @State private var helpButtonOffset = CGSize.zero
@@ -41,6 +42,7 @@ struct ContentView: View {
     @State private var playStopRecBase = CGSize.zero
     @State private var transport6ButtonsBase = CGSize.zero
     @State private var patternSlotsBase = CGSize.zero  // Includes DUP button
+    @State private var allTransportControlsBase = CGSize.zero  // Unified base for Play through DUP
     @State private var bpmSliderBase = CGSize.zero
     @State private var wavButtonBase = CGSize.zero
     @State private var helpButtonBase = CGSize.zero
@@ -68,59 +70,41 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     // Transport controls row - all buttons in order
                     HStack(spacing: 8) {
-                        PlayStopRecButtons()
-                            .disabled(isEditMode)
-                            .padding(.leading, 12)
-                            .offset(playStopRecOffset)
-                            .animation(nil, value: playStopRecOffset)
-                            .overlay(
-                                isEditMode ?
-                                Rectangle()
-                                    .stroke(Color(hex: "FF1493"), lineWidth: 3)
-                                    .padding(.leading, 12)
-                                : nil
-                            )
-                            .simultaneousGesture(
-                                isEditMode ?
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { gesture in
-                                        playStopRecOffset = CGSize(
-                                            width: playStopRecBase.width + gesture.translation.width,
-                                            height: playStopRecBase.height + gesture.translation.height
-                                        )
-                                    }
-                                    .onEnded { gesture in
-                                        playStopRecBase = playStopRecOffset
-                                    }
-                                : nil
-                            )
-                            .zIndex(100)
+                        // All transport controls from Play to DUP as one unified draggable group
+                        HStack(spacing: 6) {
+                            PlayStopRecButtons()
+                                .disabled(isEditMode)
 
-                        Transport6Buttons()
-                            .disabled(isEditMode)
-                            .offset(transport6ButtonsOffset)
-                            .animation(nil, value: transport6ButtonsOffset)
-                            .overlay(
-                                isEditMode ?
-                                Rectangle()
-                                    .stroke(Color(hex: "FF1493"), lineWidth: 3)
-                                : nil
-                            )
-                            .simultaneousGesture(
-                                isEditMode ?
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { gesture in
-                                        transport6ButtonsOffset = CGSize(
-                                            width: transport6ButtonsBase.width + gesture.translation.width,
-                                            height: transport6ButtonsBase.height + gesture.translation.height
-                                        )
-                                    }
-                                    .onEnded { gesture in
-                                        transport6ButtonsBase = transport6ButtonsOffset
-                                    }
-                                : nil
-                            )
-                            .zIndex(100)
+                            Transport6Buttons()
+                                .disabled(isEditMode)
+
+                            // Pattern buttons + DUP
+                            Pattern8Buttons()
+                            DupButton()
+                        }
+                        .offset(allTransportControlsOffset)
+                        .animation(nil, value: allTransportControlsOffset)
+                        .overlay(
+                            isEditMode ?
+                            Rectangle()
+                                .stroke(Color(hex: "FF1493"), lineWidth: 3)
+                            : nil
+                        )
+                        .simultaneousGesture(
+                            isEditMode ?
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { gesture in
+                                    allTransportControlsOffset = CGSize(
+                                        width: allTransportControlsBase.width + gesture.translation.width,
+                                        height: allTransportControlsBase.height + gesture.translation.height
+                                    )
+                                }
+                                .onEnded { gesture in
+                                    allTransportControlsBase = allTransportControlsOffset
+                                }
+                            : nil
+                        )
+                        .zIndex(100)
 
                         Spacer()
 
@@ -243,38 +227,6 @@ struct ContentView: View {
                                 }
                                 .onEnded { gesture in
                                     bpmSliderBase = bpmSliderOffset
-                                }
-                            : nil
-                        )
-                        .zIndex(100)
-
-                        // Pattern buttons + DUP as one group
-                        HStack(spacing: 6) {
-                            Pattern8Buttons()
-                            DupButton()
-                        }
-                        .disabled(isEditMode)
-                        .padding(.trailing, 8)
-                        .offset(patternSlotsOffset)
-                        .animation(nil, value: patternSlotsOffset)
-                        .overlay(
-                            isEditMode ?
-                            Rectangle()
-                                .stroke(Color(hex: "FF1493"), lineWidth: 3)
-                                .padding(.trailing, 8)
-                            : nil
-                        )
-                        .simultaneousGesture(
-                            isEditMode ?
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { gesture in
-                                    patternSlotsOffset = CGSize(
-                                        width: patternSlotsBase.width + gesture.translation.width,
-                                        height: patternSlotsBase.height + gesture.translation.height
-                                    )
-                                }
-                                .onEnded { gesture in
-                                    patternSlotsBase = patternSlotsOffset
                                 }
                             : nil
                         )
@@ -780,15 +732,9 @@ struct ContentView: View {
         UserDefaults.standard.set(effectsOffset.width, forKey: "effectsX")
         UserDefaults.standard.set(effectsOffset.height, forKey: "effectsY")
 
-        // Transport controls
-        UserDefaults.standard.set(playStopRecOffset.width, forKey: "playStopRecX")
-        UserDefaults.standard.set(playStopRecOffset.height, forKey: "playStopRecY")
-        UserDefaults.standard.set(transport6ButtonsOffset.width, forKey: "transport6ButtonsX")
-        UserDefaults.standard.set(transport6ButtonsOffset.height, forKey: "transport6ButtonsY")
-
-        // Pattern controls (includes DUP button)
-        UserDefaults.standard.set(patternSlotsOffset.width, forKey: "patternSlotsX")
-        UserDefaults.standard.set(patternSlotsOffset.height, forKey: "patternSlotsY")
+        // Unified transport controls (Play through DUP)
+        UserDefaults.standard.set(allTransportControlsOffset.width, forKey: "allTransportControlsX")
+        UserDefaults.standard.set(allTransportControlsOffset.height, forKey: "allTransportControlsY")
 
         // BPM
         UserDefaults.standard.set(bpmSliderOffset.width, forKey: "bpmSliderX")
@@ -833,25 +779,12 @@ struct ContentView: View {
         )
         effectsBase = effectsOffset
 
-        // Transport controls
-        playStopRecOffset = CGSize(
-            width: UserDefaults.standard.double(forKey: "playStopRecX"),
-            height: UserDefaults.standard.double(forKey: "playStopRecY")
+        // Unified transport controls (Play through DUP)
+        allTransportControlsOffset = CGSize(
+            width: UserDefaults.standard.double(forKey: "allTransportControlsX"),
+            height: UserDefaults.standard.double(forKey: "allTransportControlsY")
         )
-        playStopRecBase = playStopRecOffset
-
-        transport6ButtonsOffset = CGSize(
-            width: UserDefaults.standard.double(forKey: "transport6ButtonsX"),
-            height: UserDefaults.standard.double(forKey: "transport6ButtonsY")
-        )
-        transport6ButtonsBase = transport6ButtonsOffset
-
-        // Pattern controls (includes DUP button)
-        patternSlotsOffset = CGSize(
-            width: UserDefaults.standard.double(forKey: "patternSlotsX"),
-            height: UserDefaults.standard.double(forKey: "patternSlotsY")
-        )
-        patternSlotsBase = patternSlotsOffset
+        allTransportControlsBase = allTransportControlsOffset
 
         // BPM
         bpmSliderOffset = CGSize(
@@ -859,19 +792,6 @@ struct ContentView: View {
             height: UserDefaults.standard.double(forKey: "bpmSliderY")
         )
         bpmSliderBase = bpmSliderOffset
-
-        // Individual utility buttons (legacy - kept for compatibility)
-        wavButtonOffset = CGSize(
-            width: UserDefaults.standard.double(forKey: "wavButtonX"),
-            height: UserDefaults.standard.double(forKey: "wavButtonY")
-        )
-        wavButtonBase = wavButtonOffset
-
-        helpButtonOffset = CGSize(
-            width: UserDefaults.standard.double(forKey: "helpButtonX"),
-            height: UserDefaults.standard.double(forKey: "helpButtonY")
-        )
-        helpButtonBase = helpButtonOffset
 
         // Utility button group
         utilityButtonsOffset = CGSize(
