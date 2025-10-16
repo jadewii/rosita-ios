@@ -6,7 +6,7 @@ struct ContentView: View {
     @State private var showExportAlert = false
     @State private var showLayoutEditor = false
     @State private var isEditMode = false
-    @State private var octaveMode: OctaveMode = .keyboard // KB or GRD mode
+    @State private var octaveMode: OctaveMode = .grid // GRD is default
     @State private var keyboardOffsetX: Double = 0
     @State private var keyboardOffsetY: Double = -72
     @State private var octaveButtonOffsetY: Double = -95
@@ -501,16 +501,15 @@ struct ContentView: View {
                     RetroButton(
                         title: "-",
                         color: getOctaveButtonColor(isLowerButton: true),
-                        textColor: getCurrentOctave() < 0 ? .white : (getCurrentOctave() == 0 ? .white : .black),
+                        textColor: getOctaveButtonColor(isLowerButton: true) == .black ? .white : .black,
                         action: {
                             if octaveMode == .keyboard {
                                 if audioEngine.transpose > -24 {
                                     audioEngine.transpose -= 12
                                 }
                             } else {
-                                if audioEngine.gridTranspose > -24 {
-                                    audioEngine.gridTranspose -= 12
-                                }
+                                // GRD mode: control current track octave
+                                audioEngine.decreaseTrackOctave()
                             }
                         },
                         width: 38,
@@ -527,16 +526,15 @@ struct ContentView: View {
                     RetroButton(
                         title: "+",
                         color: getOctaveButtonColor(isLowerButton: false),
-                        textColor: getCurrentOctave() > 0 ? .white : (getCurrentOctave() == 0 ? .white : .black),
+                        textColor: getOctaveButtonColor(isLowerButton: false) == .black ? .white : .black,
                         action: {
                             if octaveMode == .keyboard {
                                 if audioEngine.transpose < 24 {
                                     audioEngine.transpose += 12
                                 }
                             } else {
-                                if audioEngine.gridTranspose < 24 {
-                                    audioEngine.gridTranspose += 12
-                                }
+                                // GRD mode: control current track octave
+                                audioEngine.increaseTrackOctave()
                             }
                         },
                         width: 38,
@@ -547,7 +545,7 @@ struct ContentView: View {
                 .disabled(isEditMode)
                 .animation(nil, value: octaveMode)
                 .animation(nil, value: audioEngine.transpose)
-                .animation(nil, value: audioEngine.gridTranspose)
+                .animation(nil, value: audioEngine.trackOctaveOffsets)
                 .transaction { t in t.animation = nil }
                 .padding(8)
                 .background(
@@ -722,7 +720,7 @@ struct ContentView: View {
     }
 
     private func getCurrentOctave() -> Int {
-        return octaveMode == .keyboard ? audioEngine.transpose / 12 : audioEngine.gridTranspose / 12
+        return octaveMode == .keyboard ? audioEngine.transpose / 12 : audioEngine.trackOctaveOffsets[audioEngine.selectedInstrument]
     }
 
     private func getOctaveButtonColor(isLowerButton: Bool) -> Color {

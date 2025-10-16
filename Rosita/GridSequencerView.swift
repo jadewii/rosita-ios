@@ -321,9 +321,9 @@ struct GridCell: View {
                         .stroke(isActive ? getActiveOutlineColor() : darkerColor.opacity(0.4), lineWidth: isActive ? 3 : 1)
                 )
                 .overlay(
-                    // Orange outline for selected step in STEP EDIT mode
+                    // Pastel pink/red outline for selected step in STEP EDIT mode
                     Rectangle()
-                        .stroke(isStepBeingEdited() ? Color(hex: "FFA500") : Color.clear, lineWidth: 3)
+                        .stroke(isStepBeingEdited() ? Color(hex: "FFB6C1") : Color.clear, lineWidth: 3)
                 )
                 .overlay(
                     // Playing indicator - clean white border with pulse
