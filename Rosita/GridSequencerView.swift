@@ -465,59 +465,20 @@ struct GridCell: View {
 struct FXGridView: View {
     @EnvironmentObject var audioEngine: AudioEngine
 
-    // 128 unique FX colors - each step gets a different color!
+    // Polyend Play FX Colors (8 categories × 2 columns each = 16 columns)
     private func getFXColor(row: Int, col: Int) -> Color {
-        let fxIndex = row * 16 + col
-        let colors: [Color] = [
-            // Row 0: Time-based effects (Gold through Yellow)
-            Color(hex: "FFD700"), Color(hex: "FFC800"), Color(hex: "FFB900"), Color(hex: "FFAA00"),
-            Color(hex: "FF9B00"), Color(hex: "FF8C00"), Color(hex: "FF7D00"), Color(hex: "FF6E00"),
-            Color(hex: "FF5F00"), Color(hex: "FF5000"), Color(hex: "FF4100"), Color(hex: "FF3200"),
-            Color(hex: "FF2300"), Color(hex: "FF1400"), Color(hex: "FF0500"), Color(hex: "F60000"),
-
-            // Row 1: Distortion (Red through Pink)
-            Color(hex: "FF0000"), Color(hex: "FF1A1A"), Color(hex: "FF3333"), Color(hex: "FF4D4D"),
-            Color(hex: "FF6666"), Color(hex: "FF8080"), Color(hex: "FF9999"), Color(hex: "FFB3B3"),
-            Color(hex: "FFCCCC"), Color(hex: "FFB6C1"), Color(hex: "FF9EC1"), Color(hex: "FF86C1"),
-            Color(hex: "FF6EC1"), Color(hex: "FF56C1"), Color(hex: "FF3EC1"), Color(hex: "FF26C1"),
-
-            // Row 2: Pitch (Purple through Magenta)
-            Color(hex: "9370DB"), Color(hex: "9F7AE0"), Color(hex: "AB84E5"), Color(hex: "B78EEA"),
-            Color(hex: "C398EF"), Color(hex: "CFA2F4"), Color(hex: "DBACF9"), Color(hex: "E7B6FE"),
-            Color(hex: "F3C0FF"), Color(hex: "EEB4FF"), Color(hex: "E9A8FF"), Color(hex: "E49CFF"),
-            Color(hex: "DF90FF"), Color(hex: "DA84FF"), Color(hex: "D578FF"), Color(hex: "D06CFF"),
-
-            // Row 3: Speed (Green through Cyan)
-            Color(hex: "32CD32"), Color(hex: "3CD932"), Color(hex: "46E532"), Color(hex: "50F132"),
-            Color(hex: "5AFD32"), Color(hex: "64FF46"), Color(hex: "6EFF5A"), Color(hex: "78FF6E"),
-            Color(hex: "82FF82"), Color(hex: "8CFF96"), Color(hex: "96FFAA"), Color(hex: "A0FFBE"),
-            Color(hex: "AAFFD2"), Color(hex: "B4FFE6"), Color(hex: "BEFFF0"), Color(hex: "C8FFF5"),
-
-            // Row 4: Spatial (Cyan through Blue)
-            Color(hex: "00CED1"), Color(hex: "00C8E0"), Color(hex: "00C2EF"), Color(hex: "00BCFE"),
-            Color(hex: "00B6FF"), Color(hex: "00A8FF"), Color(hex: "009AFF"), Color(hex: "008CFF"),
-            Color(hex: "007EFF"), Color(hex: "0070FF"), Color(hex: "0062FF"), Color(hex: "0054FF"),
-            Color(hex: "0046FF"), Color(hex: "0038FF"), Color(hex: "002AFF"), Color(hex: "001CFF"),
-
-            // Row 5: Random (Blue through Purple)
-            Color(hex: "1E90FF"), Color(hex: "3286FF"), Color(hex: "467CFF"), Color(hex: "5A72FF"),
-            Color(hex: "6E68FF"), Color(hex: "825EFF"), Color(hex: "9654FF"), Color(hex: "AA4AFF"),
-            Color(hex: "BE40FF"), Color(hex: "C83EFF"), Color(hex: "D23CFF"), Color(hex: "DC3AFF"),
-            Color(hex: "E638FF"), Color(hex: "F036FF"), Color(hex: "FA34FF"), Color(hex: "FF32FA"),
-
-            // Row 6: Dynamics (Orange through Brown)
-            Color(hex: "FFA500"), Color(hex: "FF9E00"), Color(hex: "FF9700"), Color(hex: "FF9000"),
-            Color(hex: "FF8900"), Color(hex: "FF8200"), Color(hex: "FF7B00"), Color(hex: "FF7400"),
-            Color(hex: "FF6D00"), Color(hex: "FF6600"), Color(hex: "E65C00"), Color(hex: "CC5200"),
-            Color(hex: "B34800"), Color(hex: "993E00"), Color(hex: "803400"), Color(hex: "662A00"),
-
-            // Row 7: Pattern (Mixed spectrum)
-            Color(hex: "FF1493"), Color(hex: "FF6347"), Color(hex: "FFD700"), Color(hex: "32CD32"),
-            Color(hex: "00CED1"), Color(hex: "1E90FF"), Color(hex: "9370DB"), Color(hex: "FF69B4"),
-            Color(hex: "87CEEB"), Color(hex: "DDA0DD"), Color(hex: "F0E68C"), Color(hex: "98FB98"),
-            Color(hex: "AFEEEE"), Color(hex: "DB7093"), Color(hex: "FFDAB9"), Color(hex: "E6E6FA")
-        ]
-        return colors[fxIndex]
+        // Map column to effect category (2 columns per category)
+        switch col {
+        case 0, 1:   return Color(hex: "FF3B30")  // Red - Tune
+        case 2, 3:   return Color(hex: "FF9500")  // Orange - Filters
+        case 4, 5:   return Color(hex: "FFCC00")  // Yellow - Overdrive/Bit
+        case 6, 7:   return Color(hex: "34C759")  // Green - Rearrange
+        case 8, 9:   return Color(hex: "00C7BE")  // Cyan - Repeat
+        case 10, 11: return Color(hex: "5E5CE6")  // Violet - Delay
+        case 12, 13: return Color(hex: "AF52DE")  // Purple - Reverb
+        case 14, 15: return Color(hex: "FF2D55")  // Pink - Loop
+        default:     return Color.gray
+        }
     }
 
     var body: some View {
@@ -536,8 +497,14 @@ struct FXGridView: View {
                             color: getFXColor(row: row, col: col),
                             isBeatMarker: isBeatMarker
                         ) {
-                            // Select this FX preset (doesn't toggle off like tracks 1-4)
-                            audioEngine.activatePerformanceFX(presetIndex: fxIndex)
+                            // Toggle FX on/off
+                            if audioEngine.activePerformanceFX == fxIndex {
+                                // Already active - turn off
+                                audioEngine.deactivatePerformanceFX()
+                            } else {
+                                // Activate this FX preset
+                                audioEngine.activatePerformanceFX(presetIndex: fxIndex)
+                            }
                         }
                     }
                 }
@@ -559,25 +526,17 @@ struct FXCell: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Rectangle()
-                .fill(cellColor)
-                .overlay(
-                    Rectangle()
-                        .stroke(Color.white, lineWidth: isActive ? 3 : 1)
-                )
-                .overlay(
-                    // Playing indicator
-                    Rectangle()
-                        .stroke(isPlaying ? Color.white : Color.clear, lineWidth: 2)
-                        .scaleEffect(isPlaying ? 1.05 : 1.0)
-                        .opacity(isPlaying ? 1.0 : 0.0)
-                )
-                .aspectRatio(1.0, contentMode: .fit)
-                .scaleEffect(isPlaying ? 1.08 : 1.0)
-                .contentShape(Rectangle())  // Make entire button tappable
-        }
-        .buttonStyle(.borderless)  // Remove default button highlight
+        Rectangle()
+            .fill(cellColor)
+            .overlay(
+                Rectangle()
+                    .stroke(Color.white, lineWidth: isActive ? 3 : 1)
+            )
+            .aspectRatio(1.0, contentMode: .fit)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                action()
+            }
     }
 
     private var cellColor: Color {
