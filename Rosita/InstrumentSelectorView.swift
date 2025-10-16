@@ -29,6 +29,18 @@ struct InstrumentSelectorView: View {
                         }
                     }
                 }
+
+                // FX button
+                RetroFXButton(
+                    isSelected: audioEngine.isFXMode
+                ) {
+                    audioEngine.isFXMode.toggle()
+                    if audioEngine.isFXMode {
+                        // Deselect kit browser and mixer when entering FX mode
+                        audioEngine.isKitBrowserMode = false
+                        audioEngine.isMixerMode = false
+                    }
+                }
             }
         }
         .padding(4)
@@ -302,6 +314,61 @@ struct OctaveButton: View {
                 Text(symbol)
                     .font(.system(size: 16, weight: .bold, design: .monospaced))
                     .foregroundColor(octaveOffset != 0 ? .black : .white)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// FX Button
+struct RetroFXButton: View {
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Rectangle()
+                    .fill(isSelected ? Color(hex: "9370DB") : Color.black)  // Purple when active
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        ZStack {
+                            // 3D bevel effect when selected
+                            if isSelected {
+                                VStack(spacing: 0) {
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.4))
+                                        .frame(height: 2)
+                                    Spacer()
+                                }
+                                HStack(spacing: 0) {
+                                    Rectangle()
+                                        .fill(Color.white.opacity(0.4))
+                                        .frame(width: 2)
+                                    Spacer()
+                                }
+                                VStack(spacing: 0) {
+                                    Spacer()
+                                    Rectangle()
+                                        .fill(Color.black.opacity(0.6))
+                                        .frame(height: 2)
+                                }
+                                HStack(spacing: 0) {
+                                    Spacer()
+                                    Rectangle()
+                                        .fill(Color.black.opacity(0.6))
+                                        .frame(width: 2)
+                                }
+                            }
+                            Rectangle()
+                                .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                        }
+                    )
+
+                // FX label
+                Text("FX")
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundColor(isSelected ? .black : .white)
             }
         }
         .buttonStyle(PlainButtonStyle())

@@ -20,6 +20,8 @@ class AudioEngine: ObservableObject {
     // Sequencer - High-precision audio-thread scheduling
     private var sequencerTimer: DispatchSourceTimer?
     private var currentStep = 0
+    private var playbackSteps = [0, 0, 0, 0]  // Per-instrument playback step counters
+    private var pendulumDirections = [1, 1, 1, 1]  // 1=forward, -1=backward for pendulum mode
     private var nextSampleTime: AVAudioFramePosition = 0
     private let sampleRate: Double = 44100.0
     private let audioQueue = DispatchQueue(label: "com.rosita.audio", qos: .userInteractive)
@@ -89,6 +91,8 @@ class AudioEngine: ObservableObject {
     // UI Modes
     @Published var isMixerMode = false
     @Published var isKitBrowserMode = false
+    @Published var isFXMode = false
+    @Published var activePerformanceFX: Int? = nil  // nil = no FX active, 0-63 = grid position
 
     // Drum sample selection (which sample variant is selected for each drum type)
     @Published var selectedDrumSamples = [0, 0, 0, 0] // [kick, snare, hat, perc]
@@ -213,12 +217,15 @@ class AudioEngine: ObservableObject {
 
         isPlaying = true
         currentStep = 0
+        playbackSteps = [0, 0, 0, 0]  // Reset all instrument playback positions
+        pendulumDirections = [1, 1, 1, 1]  // Reset pendulum directions to forward
         startSequencer()
     }
-    
+
     func stop() {
         isPlaying = false
         currentStep = 0
+        playbackSteps = [0, 0, 0, 0]  // Reset all instrument playback positions
         currentPlayingStep = -1
 
         // Cancel dispatch timer properly
@@ -306,41 +313,88 @@ class AudioEngine: ObservableObject {
         }
     }
 
+    // Get next step for an instrument based on its sequence direction
+    private func advanceInstrumentStep(_ instrument: Int) {
+        let direction = sequenceDirections[instrument]
+        let trackLength = trackLengths[instrument]
+
+        switch direction {
+        case 0: // Forward
+            playbackSteps[instrument] = (playbackSteps[instrument] + 1) % trackLength
+        case 1: // Backward
+            playbackSteps[instrument] = playbackSteps[instrument] - 1
+            if playbackSteps[instrument] < 0 {
+                playbackSteps[instrument] = trackLength - 1
+            }
+        case 2: // Pendulum
+            if pendulumDirections[instrument] == 1 {
+                // Going forward
+                playbackSteps[instrument] += 1
+                if playbackSteps[instrument] >= trackLength {
+                    playbackSteps[instrument] = trackLength - 2
+                    pendulumDirections[instrument] = -1  // Reverse direction
+                    if playbackSteps[instrument] < 0 {
+                        playbackSteps[instrument] = 0
+                    }
+                }
+            } else {
+                // Going backward
+                playbackSteps[instrument] -= 1
+                if playbackSteps[instrument] < 0 {
+                    playbackSteps[instrument] = 1
+                    pendulumDirections[instrument] = 1  // Reverse direction
+                    if playbackSteps[instrument] >= trackLength {
+                        playbackSteps[instrument] = trackLength - 1
+                    }
+                }
+            }
+        case 3: // Random
+            playbackSteps[instrument] = Int.random(in: 0..<trackLength)
+        default:
+            playbackSteps[instrument] = (playbackSteps[instrument] + 1) % trackLength
+        }
+    }
+
     private func scheduleNotesForStep(_ step: Int, at sampleTime: AVAudioFramePosition) {
-        // Play notes for all instruments at this step
+        // Play notes for all instruments at their individual steps
         for instrument in 0..<4 {
+            let instrumentStep = playbackSteps[instrument]
+
             // Skip if this step is beyond the track's length
-            if step >= trackLengths[instrument] {
+            if instrumentStep >= trackLengths[instrument] {
                 continue
             }
 
             for row in 0..<8 {
-                let key = "\(instrument)_\(row)_\(step)"
+                let key = "\(instrument)_\(row)_\(instrumentStep)"
 
                 // Skip if this was just recorded to prevent double triggering
                 if recentlyRecordedNotes.contains(key) {
                     continue
                 }
 
-                if instrumentSteps[key] == true {
+                if self.instrumentSteps[key] == true {
                     if instrument == 3 {
                         // Drums - with pitch
                         let drumNote = drumRowToNote(row: row)
-                        let pitch = getDrumPitch(row: row, col: step)
+                        let pitch = getDrumPitch(row: row, col: instrumentStep)
                         playDrumSound(drumType: drumNote, pitch: pitch)
                     } else {
                         // Melodic instruments - use stored note or default
                         let baseNote = instrumentNotes[key] ?? rowToNote(row: row, instrument: instrument)
                         let octaveOffset = trackOctaveOffsets[instrument] * 12  // Apply per-track octave offset
-                        let pitchOffset = Int(getMelodicPitch(row: row, col: step, instrument: instrument))  // Apply per-step pitch offset
+                        let pitchOffset = Int(getMelodicPitch(row: row, col: instrumentStep, instrument: instrument))  // Apply per-step pitch offset
                         let note = baseNote + gridTranspose + octaveOffset + pitchOffset  // Apply all offsets
 
                         // Get per-step ADSR for this note
-                        let stepADSR = getStepADSR(row: row, col: step, instrument: instrument)
+                        let stepADSR = getStepADSR(row: row, col: instrumentStep, instrument: instrument)
                         playNote(instrument: instrument, note: note, adsr: stepADSR)
                     }
                 }
             }
+
+            // Advance this instrument's step
+            advanceInstrumentStep(instrument)
         }
     }
     

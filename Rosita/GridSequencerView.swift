@@ -35,7 +35,10 @@ struct GridSequencerView: View {
     }
     
     var body: some View {
-        if audioEngine.isKitBrowserMode {
+        if audioEngine.isFXMode {
+            // FX mode - show performance effects grid
+            FXGridView()
+        } else if audioEngine.isKitBrowserMode {
             // Kit Browser mode - show kit selector + 4 drum tracks
             KitBrowserView()
         } else {
@@ -455,5 +458,89 @@ struct GridCell: View {
                 }
             }
         }
+    }
+}
+
+// FX Grid View - 8x8 grid of performance effects
+struct FXGridView: View {
+    @EnvironmentObject var audioEngine: AudioEngine
+
+    // Define all 64 performance effects
+    let fxNames: [[String]] = [
+        ["DELAY", "REVERB", "FILT LP", "FILT HP", "ECHO", "CHORUS", "FLANGE", "PHASE"],
+        ["DIST", "CRUSH", "RING", "GLITCH", "STUTTER", "REPEAT", "SLICE", "GATE"],
+        ["PITCH+", "PITCH-", "SHIFT", "HARM", "VIBRATO", "TREMOLO", "WARP", "BEND"],
+        ["SLOW", "FAST", "HALF", "DBL", "REVERSE", "TAPE", "VINYL", "LOFI"],
+        ["PAN L", "PAN R", "AUTO", "WIDTH", "FREEZE", "HOLD", "ROLL", "REGEN"],
+        ["RND P", "RND V", "RND T", "CHANCE", "SCATTER", "CHAOS", "MUTATE", "EVOLVE"],
+        ["COMP", "LIMIT", "SAT", "WARM", "BRIGHT", "DARK", "BOOST", "REDUCE"],
+        ["SEQ+", "SEQ-", "SKIP", "FILL", "SHIFT>", "SHIFT<", "ROTATE", "MIRROR"]
+    ]
+
+    // Colors for each row
+    let rowColors: [Color] = [
+        Color(hex: "FFD700"),  // Row 1 - Gold (Time-based)
+        Color(hex: "FF6347"),  // Row 2 - Tomato (Distortion)
+        Color(hex: "9370DB"),  // Row 3 - Purple (Pitch)
+        Color(hex: "32CD32"),  // Row 4 - Green (Speed)
+        Color(hex: "FF69B4"),  // Row 5 - Hot Pink (Spatial)
+        Color(hex: "FF8C00"),  // Row 6 - Dark Orange (Random)
+        Color(hex: "87CEEB"),  // Row 7 - Sky Blue (Dynamics)
+        Color(hex: "DDA0DD")   // Row 8 - Plum (Pattern)
+    ]
+
+    var body: some View {
+        VStack(spacing: 2) {
+            ForEach(0..<8) { row in
+                HStack(spacing: 2) {
+                    ForEach(0..<8) { col in
+                        let fxIndex = row * 8 + col
+                        FXButton(
+                            label: fxNames[row][col],
+                            fxIndex: fxIndex,
+                            isActive: audioEngine.activePerformanceFX == fxIndex,
+                            color: rowColors[row]
+                        ) {
+                            // Toggle FX - only one can be active at a time
+                            if audioEngine.activePerformanceFX == fxIndex {
+                                audioEngine.activePerformanceFX = nil
+                            } else {
+                                audioEngine.activePerformanceFX = fxIndex
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(EdgeInsets(top: 0, leading: 8, bottom: 8, trailing: 8))
+    }
+}
+
+// FX Button
+struct FXButton: View {
+    let label: String
+    let fxIndex: Int
+    let isActive: Bool
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Rectangle()
+                .fill(isActive ? color : Color.black)
+                .overlay(
+                    Text(label)
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundColor(isActive ? .black : .white)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                )
+                .overlay(
+                    Rectangle()
+                        .stroke(isActive ? Color.white : color.opacity(0.5), lineWidth: isActive ? 3 : 1)
+                )
+                .aspectRatio(1.0, contentMode: .fit)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }

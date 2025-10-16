@@ -8,17 +8,14 @@ struct Pattern8Buttons: View {
         HStack(spacing: 6) {
             ForEach(0..<8) { slot in
                 if audioEngine.isStepEditMode && slot < 4 {
-                    // First 4 buttons become sequence direction buttons in STEP EDIT mode
-                    RetroButton(
-                        title: getSequenceDirectionName(slot),
+                    // First 4 buttons become sequence direction icon buttons in STEP EDIT mode
+                    SequenceDirectionButton(
+                        direction: slot,
                         color: getSequenceDirectionColor(slot),
-                        textColor: audioEngine.sequenceDirections[audioEngine.selectedInstrument] == slot ? .white : .black,
+                        iconColor: audioEngine.sequenceDirections[audioEngine.selectedInstrument] == slot ? .white : .black,
                         action: {
                             audioEngine.sequenceDirections[audioEngine.selectedInstrument] = slot
-                        },
-                        width: 56,
-                        height: 56,
-                        fontSize: 10
+                        }
                     )
                 } else {
                     RetroPatternButton(
@@ -38,17 +35,6 @@ struct Pattern8Buttons: View {
                     )
                 }
             }
-        }
-    }
-
-    // Get sequence direction name
-    private func getSequenceDirectionName(_ direction: Int) -> String {
-        switch direction {
-        case 0: return "FWD"
-        case 1: return "BWD"
-        case 2: return "PEND"
-        case 3: return "RND"
-        default: return "FWD"
         }
     }
 
@@ -125,6 +111,69 @@ struct DupButton: View {
         case 3: return Color(hex: "FF8C00")  // Orange for 3x
         default: return Color.white
         }
+    }
+}
+
+// Sequence Direction Button with icon
+struct SequenceDirectionButton: View {
+    let direction: Int
+    let color: Color
+    let iconColor: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Rectangle()
+                    .fill(color)
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        ZStack {
+                            // 3D bevel effect
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 2)
+                                Spacer()
+                            }
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(width: 2)
+                                Spacer()
+                            }
+                            VStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(height: 2)
+                            }
+                            HStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(width: 2)
+                            }
+                            Rectangle()
+                                .stroke(Color.white, lineWidth: 2)
+                        }
+                    )
+
+                // Icon
+                Group {
+                    switch direction {
+                    case 0: ArrowRightShape()
+                    case 1: ArrowLeftShape()
+                    case 2: ArrowPendulumShape()
+                    case 3: RandomIconShape()
+                    default: ArrowRightShape()
+                    }
+                }
+                .fill(iconColor)
+                .frame(width: 40, height: 40)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

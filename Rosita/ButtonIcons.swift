@@ -160,3 +160,67 @@ struct ArrowDownShape: Shape {
         return path
     }
 }
+
+struct ArrowRightShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let height = rect.height
+
+        // Right arrow (for Forward)
+        path.move(to: CGPoint(x: width * 0.75, y: height * 0.5))
+        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.75))
+        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.6))
+        path.addLine(to: CGPoint(x: width * 0.25, y: height * 0.6))
+        path.addLine(to: CGPoint(x: width * 0.25, y: height * 0.4))
+        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.4))
+        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.25))
+        path.closeSubpath()
+
+        return path
+    }
+}
+
+struct ArrowLeftShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let height = rect.height
+
+        // Left arrow (for Backward)
+        path.move(to: CGPoint(x: width * 0.25, y: height * 0.5))
+        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.75))
+        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.6))
+        path.addLine(to: CGPoint(x: width * 0.75, y: height * 0.6))
+        path.addLine(to: CGPoint(x: width * 0.75, y: height * 0.4))
+        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.4))
+        path.addLine(to: CGPoint(x: width * 0.5, y: height * 0.25))
+        path.closeSubpath()
+
+        return path
+    }
+}
+
+struct ArrowPendulumShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let height = rect.height
+
+        // Double arrow (left and right for Pendulum)
+        // Left arrow
+        path.move(to: CGPoint(x: width * 0.2, y: height * 0.5))
+        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.35))
+        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.45))
+        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.45))
+        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.35))
+        path.addLine(to: CGPoint(x: width * 0.8, y: height * 0.5))
+        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.65))
+        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.55))
+        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.55))
+        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.65))
+        path.closeSubpath()
+
+        return path
+    }
+}
