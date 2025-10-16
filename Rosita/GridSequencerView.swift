@@ -538,9 +538,11 @@ struct FXGridView: View {
                         ) {
                             // Toggle FX - only one can be active at a time
                             if audioEngine.activePerformanceFX == fxIndex {
-                                audioEngine.activePerformanceFX = nil
+                                // Deactivate FX - return to dry signal
+                                audioEngine.deactivatePerformanceFX()
                             } else {
-                                audioEngine.activePerformanceFX = fxIndex
+                                // Activate this FX preset
+                                audioEngine.activatePerformanceFX(presetIndex: fxIndex)
                             }
                         }
                     }

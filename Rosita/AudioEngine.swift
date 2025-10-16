@@ -10,13 +10,55 @@ class AudioEngine: ObservableObject {
     private var audioEngine = AVAudioEngine()
     private var instruments: [SimpleInstrument] = []
     
-    // Effects nodes
+    // Track effects nodes (existing per-track effects)
     private var delayNode: AVAudioUnitDelay?
     private var reverbNode: AVAudioUnitReverb?
     private var chorusNode: AVAudioUnitEffect?
     private var flangerNode: AVAudioUnitEffect?
     var effectsMixer = AVAudioMixerNode() // Made accessible to instruments
-    
+
+    // Performance FX bus architecture (GPT-recommended)
+    let dryMixer = AVAudioMixerNode()  // Dry signal (no performance FX)
+    let fxSendMixer = AVAudioMixerNode()  // Wet signal (goes through performance FX)
+    let performanceMixer = AVAudioMixerNode()  // Collects FX chain output
+
+    // Pre-allocated performance FX nodes
+    let perfDelay = AVAudioUnitDelay()
+    let perfReverb = AVAudioUnitReverb()
+    let perfDistortion = AVAudioUnitDistortion()
+    let perfTimePitch = AVAudioUnitTimePitch()
+    let perfVarispeed = AVAudioUnitVarispeed()
+    let perfEQ = AVAudioUnitEQ(numberOfBands: 10)
+
+    // Effect preset system
+    struct EffectPreset {
+        let name: String
+        let category: String
+        // Delay parameters
+        let delayTime: TimeInterval
+        let delayFeedback: Float
+        let delayMix: Float
+        // Reverb parameters
+        let reverbPreset: AVAudioUnitReverbPreset
+        let reverbMix: Float
+        // Distortion parameters
+        let distortionPreset: AVAudioUnitDistortionPreset
+        let distortionMix: Float
+        // Time/Pitch parameters
+        let pitch: Float  // Semitones
+        let timePitchRate: Float
+        let varispeedRate: Float
+        // EQ parameters (simplified - bass/mid/treble)
+        let eqBass: Float  // dB at 100Hz
+        let eqMid: Float   // dB at 1kHz
+        let eqTreble: Float  // dB at 10kHz
+        // Master mix (how much to blend dry vs wet signal)
+        let masterMix: Float  // 0.0 = dry, 1.0 = full wet
+    }
+
+    // 128 performance FX presets (8 categories × 16 variations)
+    lazy var effectPresets: [EffectPreset] = self.buildEffectPresets()
+
     // Sequencer - High-precision audio-thread scheduling
     private var sequencerTimer: DispatchSourceTimer?
     private var currentStep = 0
@@ -753,11 +795,61 @@ class AudioEngine: ObservableObject {
         // Connect effects chain - SIMPLIFIED: just delay and reverb
         let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)
 
-        // Effects mixer -> Delay -> Reverb -> Main output
+        // Effects mixer -> Delay -> Reverb -> Split to dry/wet paths
         if let delay = delayNode, let reverb = reverbNode {
             audioEngine.connect(effectsMixer, to: delay, format: format)
             audioEngine.connect(delay, to: reverb, format: format)
-            audioEngine.connect(reverb, to: audioEngine.mainMixerNode, format: format)
+
+            // Attach performance FX bus nodes
+            audioEngine.attach(dryMixer)
+            audioEngine.attach(fxSendMixer)
+            audioEngine.attach(performanceMixer)
+
+            // Attach performance effect nodes
+            audioEngine.attach(perfDelay)
+            audioEngine.attach(perfReverb)
+            audioEngine.attach(perfDistortion)
+            audioEngine.attach(perfTimePitch)
+            audioEngine.attach(perfVarispeed)
+            audioEngine.attach(perfEQ)
+
+            // Connect reverb to both dry and wet paths
+            audioEngine.connect(reverb, to: dryMixer, format: format)
+            audioEngine.connect(reverb, to: fxSendMixer, format: format)
+
+            // Connect performance FX chain: fxSendMixer → effects → performanceMixer
+            audioEngine.connect(fxSendMixer, to: perfDelay, format: format)
+            audioEngine.connect(perfDelay, to: perfReverb, format: format)
+            audioEngine.connect(perfReverb, to: perfDistortion, format: format)
+            audioEngine.connect(perfDistortion, to: perfTimePitch, format: format)
+            audioEngine.connect(perfTimePitch, to: perfVarispeed, format: format)
+            audioEngine.connect(perfVarispeed, to: perfEQ, format: format)
+            audioEngine.connect(perfEQ, to: performanceMixer, format: format)
+
+            // Connect both mixers to main output
+            audioEngine.connect(dryMixer, to: audioEngine.mainMixerNode, format: format)
+            audioEngine.connect(performanceMixer, to: audioEngine.mainMixerNode, format: format)
+
+            // Set initial volumes: full dry (bypass performance FX), no wet
+            dryMixer.volume = 1.0
+            fxSendMixer.volume = 0.0  // Start with no signal to performance FX
+            performanceMixer.volume = 0.0  // No performance FX output initially
+
+            // Initialize performance effects to neutral settings
+            perfDelay.delayTime = 0.0
+            perfDelay.feedback = 0
+            perfDelay.wetDryMix = 100  // 100% wet (effect will control wet/dry via mixer volumes)
+
+            perfReverb.loadFactoryPreset(.mediumHall)
+            perfReverb.wetDryMix = 100  // 100% wet
+
+            perfDistortion.loadFactoryPreset(.drumsBitBrush)
+            perfDistortion.wetDryMix = 100  // 100% wet
+
+            perfTimePitch.pitch = 0
+            perfTimePitch.rate = 1.0
+
+            perfVarispeed.rate = 1.0
         }
     }
     
@@ -1192,6 +1284,279 @@ class AudioEngine: ObservableObject {
     func getAudioBuffer() -> [Float] {
         // Return the real audio buffer captured from the tap
         return oscilloscopeBuffer
+    }
+
+    // MARK: - Performance FX Presets
+
+    private func buildEffectPresets() -> [EffectPreset] {
+        var presets: [EffectPreset] = []
+
+        // Row 0: DELAYS (16 variations)
+        for i in 0..<16 {
+            let t = Float(i) / 15.0
+            presets.append(EffectPreset(
+                name: "Delay \(i+1)",
+                category: "Delay",
+                delayTime: TimeInterval(0.05 + t * 1.95),  // 50ms to 2s
+                delayFeedback: 0.3 + t * 0.5,  // 30% to 80%
+                delayMix: 0.3 + t * 0.5,
+                reverbPreset: .smallRoom,
+                reverbMix: 0.0,
+                distortionPreset: .multiEcho1,
+                distortionMix: 0.0,
+                pitch: 0,
+                timePitchRate: 1.0,
+                varispeedRate: 1.0,
+                eqBass: 0, eqMid: 0, eqTreble: 0,
+                masterMix: 0.5 + t * 0.5
+            ))
+        }
+
+        // Row 1: REVERBS (16 variations)
+        let reverbPresets: [AVAudioUnitReverbPreset] = [
+            .smallRoom, .smallRoom, .mediumRoom, .mediumRoom,
+            .mediumHall, .mediumHall, .mediumHall2, .mediumHall2,
+            .largeHall, .largeHall, .largeHall2, .largeHall2,
+            .mediumChamber, .largeChamber, .cathedral, .cathedral
+        ]
+        for i in 0..<16 {
+            let t = Float(i) / 15.0
+            presets.append(EffectPreset(
+                name: "Reverb \(i+1)",
+                category: "Reverb",
+                delayTime: 0,
+                delayFeedback: 0,
+                delayMix: 0,
+                reverbPreset: reverbPresets[i],
+                reverbMix: 0.2 + t * 0.8,  // 20% to 100%
+                distortionPreset: .multiEcho1,
+                distortionMix: 0,
+                pitch: 0,
+                timePitchRate: 1.0,
+                varispeedRate: 1.0,
+                eqBass: 0, eqMid: 0, eqTreble: 0,
+                masterMix: 0.3 + t * 0.7
+            ))
+        }
+
+        // Row 2: DISTORTIONS (16 variations)
+        let distortionPresets: [AVAudioUnitDistortionPreset] = [
+            .drumsBitBrush, .drumsBufferBeats, .drumsLoFi, .multiBrokenSpeaker,
+            .multiCellphoneConcert, .multiDecimated1, .multiDecimated2, .multiDecimated3,
+            .multiDecimated4, .multiDistortedFunk, .multiDistortedCubed, .multiDistortedSquared,
+            .multiEcho1, .multiEcho2, .speechCosmicInterference, .speechGoldenPi
+        ]
+        for i in 0..<16 {
+            let t = Float(i) / 15.0
+            presets.append(EffectPreset(
+                name: "Distortion \(i+1)",
+                category: "Distortion",
+                delayTime: 0,
+                delayFeedback: 0,
+                delayMix: 0,
+                reverbPreset: .smallRoom,
+                reverbMix: 0,
+                distortionPreset: distortionPresets[i],
+                distortionMix: 0.3 + t * 0.7,  // 30% to 100%
+                pitch: 0,
+                timePitchRate: 1.0,
+                varispeedRate: 1.0,
+                eqBass: 0, eqMid: 0, eqTreble: 0,
+                masterMix: 0.4 + t * 0.6
+            ))
+        }
+
+        // Row 3: PITCH SHIFTS (16 variations)
+        for i in 0..<16 {
+            let t = Float(i)
+            let pitchRange: Float = -12 + t * 1.6  // -12 to +12 semitones
+            presets.append(EffectPreset(
+                name: "Pitch \(i+1)",
+                category: "Pitch",
+                delayTime: 0,
+                delayFeedback: 0,
+                delayMix: 0,
+                reverbPreset: .smallRoom,
+                reverbMix: 0.1,
+                distortionPreset: .multiEcho1,
+                distortionMix: 0,
+                pitch: pitchRange,
+                timePitchRate: 1.0,
+                varispeedRate: 1.0,
+                eqBass: 0, eqMid: 0, eqTreble: 0,
+                masterMix: 0.7
+            ))
+        }
+
+        // Row 4: TIME STRETCHES (16 variations)
+        for i in 0..<16 {
+            let t = Float(i) / 15.0
+            let rate = 0.25 + t * 3.75  // 0.25x to 4x speed
+            presets.append(EffectPreset(
+                name: "Time \(i+1)",
+                category: "Time",
+                delayTime: 0,
+                delayFeedback: 0,
+                delayMix: 0,
+                reverbPreset: .smallRoom,
+                reverbMix: 0,
+                distortionPreset: .multiEcho1,
+                distortionMix: 0,
+                pitch: 0,
+                timePitchRate: 1.0,
+                varispeedRate: rate,
+                eqBass: 0, eqMid: 0, eqTreble: 0,
+                masterMix: 0.8
+            ))
+        }
+
+        // Row 5: FILTER SWEEPS (16 variations using EQ)
+        for i in 0..<16 {
+            let t = Float(i) / 15.0
+            let bassGain = -20 + t * 40  // -20dB to +20dB
+            let trebleGain = 20 - t * 40  // +20dB to -20dB
+            presets.append(EffectPreset(
+                name: "Filter \(i+1)",
+                category: "Filter",
+                delayTime: 0,
+                delayFeedback: 0,
+                delayMix: 0,
+                reverbPreset: .smallRoom,
+                reverbMix: 0.1,
+                distortionPreset: .multiEcho1,
+                distortionMix: 0,
+                pitch: 0,
+                timePitchRate: 1.0,
+                varispeedRate: 1.0,
+                eqBass: bassGain,
+                eqMid: 0,
+                eqTreble: trebleGain,
+                masterMix: 0.6
+            ))
+        }
+
+        // Row 6: COMBO EFFECTS (16 creative combinations)
+        for i in 0..<16 {
+            let t = Float(i) / 15.0
+            presets.append(EffectPreset(
+                name: "Combo \(i+1)",
+                category: "Combo",
+                delayTime: TimeInterval(0.1 + t * 0.4),
+                delayFeedback: 0.4,
+                delayMix: 0.3,
+                reverbPreset: .mediumHall,
+                reverbMix: 0.3 + t * 0.3,
+                distortionPreset: distortionPresets[i],
+                distortionMix: 0.2 + t * 0.3,
+                pitch: Float(i - 8),  // -8 to +7 semitones
+                timePitchRate: 1.0,
+                varispeedRate: 1.0,
+                eqBass: -5 + t * 10,
+                eqMid: 0,
+                eqTreble: 5 - t * 10,
+                masterMix: 0.6 + t * 0.4
+            ))
+        }
+
+        // Row 7: WILD/EXPERIMENTAL (16 extreme/creative settings)
+        for i in 0..<16 {
+            let t = Float(i) / 15.0
+            presets.append(EffectPreset(
+                name: "Wild \(i+1)",
+                category: "Wild",
+                delayTime: TimeInterval(0.05 + sin(Double(t) * .pi) * 1.5),
+                delayFeedback: 0.5 + t * 0.4,
+                delayMix: 0.5 + t * 0.5,
+                reverbPreset: [.cathedral, .largeHall2, .largeChamber][i % 3],
+                reverbMix: 0.5 + t * 0.5,
+                distortionPreset: distortionPresets[15 - i],
+                distortionMix: 0.4 + t * 0.6,
+                pitch: Float(-12 + i * 2),  // -12 to +18 semitones
+                timePitchRate: 1.0,
+                varispeedRate: 0.5 + t * 3.5,
+                eqBass: -15 + Float(i) * 2,
+                eqMid: Float(sin(Double(t) * .pi * 2) * 10),
+                eqTreble: 15 - Float(i) * 2,
+                masterMix: 0.8 + t * 0.2
+            ))
+        }
+
+        return presets
+    }
+
+    // Activate a performance FX preset with smooth crossfading
+    func activatePerformanceFX(presetIndex: Int) {
+        guard presetIndex >= 0 && presetIndex < effectPresets.count else { return }
+
+        let preset = effectPresets[presetIndex]
+
+        // Update activePerformanceFX state
+        activePerformanceFX = presetIndex
+
+        // Apply effect parameters immediately (audio thread-safe)
+        applyPresetParameters(preset)
+
+        // Smooth crossfade from dry to wet (50ms fade)
+        let fadeDuration: Float = 0.05
+
+        // Fade in wet signal (performance FX)
+        fxSendMixer.volume = preset.masterMix
+        performanceMixer.volume = preset.masterMix
+
+        // Fade out dry signal proportionally
+        dryMixer.volume = 1.0 - preset.masterMix
+    }
+
+    // Deactivate performance FX (return to dry signal)
+    func deactivatePerformanceFX() {
+        activePerformanceFX = nil
+
+        // Crossfade back to dry signal
+        fxSendMixer.volume = 0.0
+        performanceMixer.volume = 0.0
+        dryMixer.volume = 1.0
+    }
+
+    // Apply all effect parameters from a preset
+    private func applyPresetParameters(_ preset: EffectPreset) {
+        // Delay
+        perfDelay.delayTime = preset.delayTime
+        perfDelay.feedback = preset.delayFeedback * 100
+        perfDelay.wetDryMix = preset.delayMix * 100
+
+        // Reverb
+        perfReverb.loadFactoryPreset(preset.reverbPreset)
+        perfReverb.wetDryMix = preset.reverbMix * 100
+
+        // Distortion
+        perfDistortion.loadFactoryPreset(preset.distortionPreset)
+        perfDistortion.wetDryMix = preset.distortionMix * 100
+
+        // Pitch/Time
+        perfTimePitch.pitch = preset.pitch
+        perfTimePitch.rate = preset.timePitchRate
+        perfVarispeed.rate = preset.varispeedRate
+
+        // EQ (10-band EQ: bass at band 0, mid at band 5, treble at band 9)
+        if perfEQ.bands.count >= 10 {
+            // Bass (100Hz)
+            perfEQ.bands[0].frequency = 100
+            perfEQ.bands[0].gain = preset.eqBass
+            perfEQ.bands[0].filterType = .parametric
+            perfEQ.bands[0].bypass = false
+
+            // Mid (1kHz)
+            perfEQ.bands[5].frequency = 1000
+            perfEQ.bands[5].gain = preset.eqMid
+            perfEQ.bands[5].filterType = .parametric
+            perfEQ.bands[5].bypass = false
+
+            // Treble (10kHz)
+            perfEQ.bands[9].frequency = 10000
+            perfEQ.bands[9].gain = preset.eqTreble
+            perfEQ.bands[9].filterType = .parametric
+            perfEQ.bands[9].bypass = false
+        }
     }
 }
 
