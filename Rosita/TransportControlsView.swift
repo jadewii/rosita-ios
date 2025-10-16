@@ -211,6 +211,8 @@ struct Transport6Buttons: View {
                 height: 56,
                 fontSize: 12
             )
+            .animation(nil, value: audioEngine.isKitBrowserMode)
+            .transaction { t in t.animation = nil }
 
             // Mixer button
             RetroIconButton(
@@ -223,6 +225,8 @@ struct Transport6Buttons: View {
                 width: 56,
                 height: 56
             )
+            .animation(nil, value: audioEngine.isMixerMode)
+            .transaction { t in t.animation = nil }
 
             // Scale button - shows scale name
             RetroButton(
@@ -236,6 +240,8 @@ struct Transport6Buttons: View {
                 height: 56,
                 fontSize: 9
             )
+            .animation(nil, value: audioEngine.currentScale)
+            .transaction { t in t.animation = nil }
         }
     }
 

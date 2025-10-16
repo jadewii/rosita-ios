@@ -119,6 +119,9 @@ struct DupButton: View {
                 height: 56,
                 fontSize: 10
             )
+            .animation(nil, value: audioEngine.currentRetrigCount)
+            .animation(nil, value: audioEngine.isStepEditMode)
+            .transaction { t in t.animation = nil }
         } else {
             // DUP button in normal mode
             RetroButton(
@@ -132,6 +135,8 @@ struct DupButton: View {
                 height: 56,
                 fontSize: 12
             )
+            .animation(nil, value: audioEngine.isStepEditMode)
+            .transaction { t in t.animation = nil }
         }
     }
 
