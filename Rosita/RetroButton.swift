@@ -463,25 +463,22 @@ struct RetroPatternButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: {
-            action()
-        }) {
-            Text("\(number)")
-                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                .foregroundColor(isSelected ? .black : (isDupTarget ? .yellow : .black))
-                .frame(width: 56, height: 56)
-                .background(
-                    Rectangle()
-                        .fill(isSelected ? Color.yellow : (isDupTarget ? Color.black : Color.white))
-                        .overlay(
-                            Rectangle()
-                                .stroke(isDupTarget ? Color.yellow : Color.black, lineWidth: isSelected ? 3 : 2)
-                        )
-                )
-        }
-        .animation(nil, value: isSelected)  // Disable animation for instant updates
-        .animation(nil, value: isDupTarget)
-        .transaction { t in t.animation = nil }  // Force-disable inherited animations
+        Text("\(number)")
+            .font(.system(size: 16, weight: .bold, design: .monospaced))
+            .foregroundColor(isSelected ? .black : (isDupTarget ? .yellow : .black))
+            .frame(width: 56, height: 56)
+            .background(
+                Rectangle()
+                    .fill(isSelected ? Color.yellow : (isDupTarget ? Color.black : Color.white))
+                    .overlay(
+                        Rectangle()
+                            .stroke(isDupTarget ? Color.yellow : Color.black, lineWidth: isSelected ? 3 : 2)
+                    )
+            )
+            .contentShape(Rectangle())
+            .onTapGesture {
+                action()
+            }
     }
 }
 

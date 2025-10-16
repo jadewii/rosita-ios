@@ -153,49 +153,50 @@ struct SequenceDirectionButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            ZStack {
-                Rectangle()
-                    .fill(color)
-                    .frame(width: 56, height: 56)
-                    .overlay(
-                        ZStack {
-                            // 3D bevel effect
-                            VStack(spacing: 0) {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.4))
-                                    .frame(height: 2)
-                                Spacer()
-                            }
-                            HStack(spacing: 0) {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.4))
-                                    .frame(width: 2)
-                                Spacer()
-                            }
-                            VStack(spacing: 0) {
-                                Spacer()
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.6))
-                                    .frame(height: 2)
-                            }
-                            HStack(spacing: 0) {
-                                Spacer()
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.6))
-                                    .frame(width: 2)
-                            }
+        ZStack {
+            Rectangle()
+                .fill(color)
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect
+                        VStack(spacing: 0) {
                             Rectangle()
-                                .stroke(Color.white, lineWidth: 2)
+                                .fill(Color.white.opacity(0.4))
+                                .frame(height: 2)
+                            Spacer()
                         }
-                    )
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.4))
+                                .frame(width: 2)
+                            Spacer()
+                        }
+                        VStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(height: 2)
+                        }
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(width: 2)
+                        }
+                        Rectangle()
+                            .stroke(Color.white, lineWidth: 2)
+                    }
+                )
 
-                // Icon
-                getDirectionIcon()
-                    .frame(width: 40, height: 40)
-            }
+            // Icon
+            getDirectionIcon()
+                .frame(width: 40, height: 40)
         }
-        .buttonStyle(PlainButtonStyle())
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
     }
 
     @ViewBuilder
@@ -233,50 +234,51 @@ struct TrackSpeedButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            ZStack {
-                Rectangle()
-                    .fill(color)
-                    .frame(width: 56, height: 56)
-                    .overlay(
-                        ZStack {
-                            // 3D bevel effect
-                            VStack(spacing: 0) {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.4))
-                                    .frame(height: 2)
-                                Spacer()
-                            }
-                            HStack(spacing: 0) {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.4))
-                                    .frame(width: 2)
-                                Spacer()
-                            }
-                            VStack(spacing: 0) {
-                                Spacer()
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.6))
-                                    .frame(height: 2)
-                            }
-                            HStack(spacing: 0) {
-                                Spacer()
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.6))
-                                    .frame(width: 2)
-                            }
+        ZStack {
+            Rectangle()
+                .fill(color)
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect
+                        VStack(spacing: 0) {
                             Rectangle()
-                                .stroke(Color.white, lineWidth: 2)
+                                .fill(Color.white.opacity(0.4))
+                                .frame(height: 2)
+                            Spacer()
                         }
-                    )
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.4))
+                                .frame(width: 2)
+                            Spacer()
+                        }
+                        VStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(height: 2)
+                        }
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(width: 2)
+                        }
+                        Rectangle()
+                            .stroke(Color.white, lineWidth: 2)
+                    }
+                )
 
-                // Speed label
-                Text(getSpeedLabel())
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundColor(textColor)
-            }
+            // Speed label
+            Text(getSpeedLabel())
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(textColor)
         }
-        .buttonStyle(PlainButtonStyle())
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
     }
 
     private func getSpeedLabel() -> String {

@@ -158,30 +158,14 @@ struct RetroInstrumentButton: View {
     }
 
     var body: some View {
-        Button(action: {
-            // A) Wrap state change in no-animation Transaction
-            var t = Transaction()
-            t.disablesAnimations = true
-            withTransaction(t) {
-                action()
-            }
-        }) {
-            buttonBody
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-
-    // B) Block transitions/fades on the button's view itself
-    private var buttonBody: some View {
         ZStack {
-            // Background - single view, only fill changes
+            // Background
             Rectangle()
                 .fill(isSelected ? getWaveformColor() : Color.black)
                 .frame(width: 56, height: 56)
                 .overlay(
                     ZStack {
-                        // 3D bevel effect - always present, just opacity changes
-                        // Top and left highlight
+                        // 3D bevel effect
                         VStack(spacing: 0) {
                             Rectangle()
                                 .fill(Color.white.opacity(isSelected ? 0.4 : 0.0))
@@ -196,7 +180,6 @@ struct RetroInstrumentButton: View {
                             Spacer()
                         }
 
-                        // Bottom and right shadow
                         VStack(spacing: 0) {
                             Spacer()
                             Rectangle()
@@ -219,10 +202,10 @@ struct RetroInstrumentButton: View {
             // Waveform shape in center
             getWaveformShape()
         }
-        .contentTransition(.identity)           // iOS 17+: no cross-fade
-        .transaction { $0.animation = nil }     // override any ancestor animation
-        .animation(nil, value: isSelected)      // block state-tied animations
-        .drawingGroup()                         // Force instant redraw
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
     }
 }
 
@@ -278,57 +261,56 @@ struct OctaveButton: View {
     }
 
     var body: some View {
-        Button(action: action) {
-            ZStack {
-                Rectangle()
-                    .fill(getButtonColor())
-                    .frame(width: 56, height: 35)
-                    .overlay(
-                        ZStack {
-                            // 3D bevel effect when active
-                            if octaveOffset != 0 {
-                                // Top and left highlight
-                                VStack(spacing: 0) {
-                                    Rectangle()
-                                        .fill(Color.white.opacity(0.4))
-                                        .frame(height: 2)
-                                    Spacer()
-                                }
-
-                                HStack(spacing: 0) {
-                                    Rectangle()
-                                        .fill(Color.white.opacity(0.4))
-                                        .frame(width: 2)
-                                    Spacer()
-                                }
-
-                                // Bottom and right shadow
-                                VStack(spacing: 0) {
-                                    Spacer()
-                                    Rectangle()
-                                        .fill(Color.black.opacity(0.6))
-                                        .frame(height: 2)
-                                }
-
-                                HStack(spacing: 0) {
-                                    Spacer()
-                                    Rectangle()
-                                        .fill(Color.black.opacity(0.6))
-                                        .frame(width: 2)
-                                }
+        ZStack {
+            Rectangle()
+                .fill(getButtonColor())
+                .frame(width: 56, height: 35)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect when active
+                        if octaveOffset != 0 {
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 2)
+                                Spacer()
                             }
 
-                            Rectangle()
-                                .stroke(octaveOffset != 0 ? Color.white : Color.gray, lineWidth: 2)
-                        }
-                    )
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(width: 2)
+                                Spacer()
+                            }
 
-                Text(symbol)
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
-                    .foregroundColor(octaveOffset != 0 ? .black : .white)
-            }
+                            VStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(height: 2)
+                            }
+
+                            HStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(width: 2)
+                            }
+                        }
+
+                        Rectangle()
+                            .stroke(octaveOffset != 0 ? Color.white : Color.gray, lineWidth: 2)
+                    }
+                )
+
+            Text(symbol)
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .foregroundColor(octaveOffset != 0 ? .black : .white)
         }
-        .buttonStyle(PlainButtonStyle())
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
     }
 }
 
@@ -338,51 +320,51 @@ struct RetroFXButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            ZStack {
-                Rectangle()
-                    .fill(isSelected ? Color(hex: "9370DB") : Color.black)  // Purple when active
-                    .frame(width: 56, height: 56)
-                    .overlay(
-                        ZStack {
-                            // 3D bevel effect when selected
-                            if isSelected {
-                                VStack(spacing: 0) {
-                                    Rectangle()
-                                        .fill(Color.white.opacity(0.4))
-                                        .frame(height: 2)
-                                    Spacer()
-                                }
-                                HStack(spacing: 0) {
-                                    Rectangle()
-                                        .fill(Color.white.opacity(0.4))
-                                        .frame(width: 2)
-                                    Spacer()
-                                }
-                                VStack(spacing: 0) {
-                                    Spacer()
-                                    Rectangle()
-                                        .fill(Color.black.opacity(0.6))
-                                        .frame(height: 2)
-                                }
-                                HStack(spacing: 0) {
-                                    Spacer()
-                                    Rectangle()
-                                        .fill(Color.black.opacity(0.6))
-                                        .frame(width: 2)
-                                }
+        ZStack {
+            Rectangle()
+                .fill(isSelected ? Color(hex: "9370DB") : Color.black)
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect when selected
+                        if isSelected {
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 2)
+                                Spacer()
                             }
-                            Rectangle()
-                                .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(width: 2)
+                                Spacer()
+                            }
+                            VStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(height: 2)
+                            }
+                            HStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(width: 2)
+                            }
                         }
-                    )
+                        Rectangle()
+                            .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                    }
+                )
 
-                // FX label
-                Text("FX")
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
-                    .foregroundColor(isSelected ? .black : .white)
-            }
+            Text("FX")
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .foregroundColor(isSelected ? .black : .white)
         }
-        .buttonStyle(PlainButtonStyle())
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
     }
 }
