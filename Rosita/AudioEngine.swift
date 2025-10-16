@@ -43,7 +43,8 @@ class AudioEngine: ObservableObject {
     @Published var transpose = 0  // Keyboard transpose
     @Published var gridTranspose = 0  // Grid transpose
     @Published var arpeggiatorMode = 0
-    @Published var currentPlayingStep = -1 // Track current step for UI
+    @Published var currentPlayingStep = -1 // Track current step for UI (global forward step)
+    @Published var currentInstrumentPlayingStep = -1 // Playback step for selected instrument
     
     // Track waveform/kit for each instrument
     @Published var instrumentWaveforms = [0, 0, 0, 0] // 0=square, 1=saw, 2=triangle, 3=sine, 4=reverse saw
@@ -397,6 +398,13 @@ class AudioEngine: ObservableObject {
 
             // Advance this instrument's step
             advanceInstrumentStep(instrument)
+
+            // Update UI with selected instrument's current step
+            if instrument == selectedInstrument {
+                DispatchQueue.main.async {
+                    self.currentInstrumentPlayingStep = self.playbackSteps[instrument]
+                }
+            }
         }
     }
     

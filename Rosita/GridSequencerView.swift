@@ -52,7 +52,7 @@ struct GridSequencerView: View {
                                 row: track,
                                 col: step,
                                 isActive: audioEngine.getGridCell(row: track, col: step),
-                                isPlaying: audioEngine.isPlaying && step == audioEngine.currentPlayingStep,
+                                isPlaying: audioEngine.isPlaying && step == audioEngine.currentInstrumentPlayingStep,
                                 selectedInstrument: audioEngine.selectedInstrument,
                                 instrumentColor: getInstrumentColor(for: audioEngine.selectedInstrument),
                                 darkerColor: getDarkerShade(of: getInstrumentColor(for: audioEngine.selectedInstrument)),
@@ -461,45 +461,80 @@ struct GridCell: View {
     }
 }
 
-// FX Grid View - 8x8 grid of performance effects
+// FX Grid View - 8x16 grid matching main grid layout
 struct FXGridView: View {
     @EnvironmentObject var audioEngine: AudioEngine
 
-    // Define all 64 performance effects
-    let fxNames: [[String]] = [
-        ["DELAY", "REVERB", "FILT LP", "FILT HP", "ECHO", "CHORUS", "FLANGE", "PHASE"],
-        ["DIST", "CRUSH", "RING", "GLITCH", "STUTTER", "REPEAT", "SLICE", "GATE"],
-        ["PITCH+", "PITCH-", "SHIFT", "HARM", "VIBRATO", "TREMOLO", "WARP", "BEND"],
-        ["SLOW", "FAST", "HALF", "DBL", "REVERSE", "TAPE", "VINYL", "LOFI"],
-        ["PAN L", "PAN R", "AUTO", "WIDTH", "FREEZE", "HOLD", "ROLL", "REGEN"],
-        ["RND P", "RND V", "RND T", "CHANCE", "SCATTER", "CHAOS", "MUTATE", "EVOLVE"],
-        ["COMP", "LIMIT", "SAT", "WARM", "BRIGHT", "DARK", "BOOST", "REDUCE"],
-        ["SEQ+", "SEQ-", "SKIP", "FILL", "SHIFT>", "SHIFT<", "ROTATE", "MIRROR"]
-    ]
+    // 128 unique FX colors - each step gets a different color!
+    private func getFXColor(row: Int, col: Int) -> Color {
+        let fxIndex = row * 16 + col
+        let colors: [Color] = [
+            // Row 0: Time-based effects (Gold through Yellow)
+            Color(hex: "FFD700"), Color(hex: "FFC800"), Color(hex: "FFB900"), Color(hex: "FFAA00"),
+            Color(hex: "FF9B00"), Color(hex: "FF8C00"), Color(hex: "FF7D00"), Color(hex: "FF6E00"),
+            Color(hex: "FF5F00"), Color(hex: "FF5000"), Color(hex: "FF4100"), Color(hex: "FF3200"),
+            Color(hex: "FF2300"), Color(hex: "FF1400"), Color(hex: "FF0500"), Color(hex: "F60000"),
 
-    // Colors for each row
-    let rowColors: [Color] = [
-        Color(hex: "FFD700"),  // Row 1 - Gold (Time-based)
-        Color(hex: "FF6347"),  // Row 2 - Tomato (Distortion)
-        Color(hex: "9370DB"),  // Row 3 - Purple (Pitch)
-        Color(hex: "32CD32"),  // Row 4 - Green (Speed)
-        Color(hex: "FF69B4"),  // Row 5 - Hot Pink (Spatial)
-        Color(hex: "FF8C00"),  // Row 6 - Dark Orange (Random)
-        Color(hex: "87CEEB"),  // Row 7 - Sky Blue (Dynamics)
-        Color(hex: "DDA0DD")   // Row 8 - Plum (Pattern)
-    ]
+            // Row 1: Distortion (Red through Pink)
+            Color(hex: "FF0000"), Color(hex: "FF1A1A"), Color(hex: "FF3333"), Color(hex: "FF4D4D"),
+            Color(hex: "FF6666"), Color(hex: "FF8080"), Color(hex: "FF9999"), Color(hex: "FFB3B3"),
+            Color(hex: "FFCCCC"), Color(hex: "FFB6C1"), Color(hex: "FF9EC1"), Color(hex: "FF86C1"),
+            Color(hex: "FF6EC1"), Color(hex: "FF56C1"), Color(hex: "FF3EC1"), Color(hex: "FF26C1"),
+
+            // Row 2: Pitch (Purple through Magenta)
+            Color(hex: "9370DB"), Color(hex: "9F7AE0"), Color(hex: "AB84E5"), Color(hex: "B78EEA"),
+            Color(hex: "C398EF"), Color(hex: "CFA2F4"), Color(hex: "DBACF9"), Color(hex: "E7B6FE"),
+            Color(hex: "F3C0FF"), Color(hex: "EEB4FF"), Color(hex: "E9A8FF"), Color(hex: "E49CFF"),
+            Color(hex: "DF90FF"), Color(hex: "DA84FF"), Color(hex: "D578FF"), Color(hex: "D06CFF"),
+
+            // Row 3: Speed (Green through Cyan)
+            Color(hex: "32CD32"), Color(hex: "3CD932"), Color(hex: "46E532"), Color(hex: "50F132"),
+            Color(hex: "5AFD32"), Color(hex: "64FF46"), Color(hex: "6EFF5A"), Color(hex: "78FF6E"),
+            Color(hex: "82FF82"), Color(hex: "8CFF96"), Color(hex: "96FFAA"), Color(hex: "A0FFBE"),
+            Color(hex: "AAFFD2"), Color(hex: "B4FFE6"), Color(hex: "BEFFF0"), Color(hex: "C8FFF5"),
+
+            // Row 4: Spatial (Cyan through Blue)
+            Color(hex: "00CED1"), Color(hex: "00C8E0"), Color(hex: "00C2EF"), Color(hex: "00BCFE"),
+            Color(hex: "00B6FF"), Color(hex: "00A8FF"), Color(hex: "009AFF"), Color(hex: "008CFF"),
+            Color(hex: "007EFF"), Color(hex: "0070FF"), Color(hex: "0062FF"), Color(hex: "0054FF"),
+            Color(hex: "0046FF"), Color(hex: "0038FF"), Color(hex: "002AFF"), Color(hex: "001CFF"),
+
+            // Row 5: Random (Blue through Purple)
+            Color(hex: "1E90FF"), Color(hex: "3286FF"), Color(hex: "467CFF"), Color(hex: "5A72FF"),
+            Color(hex: "6E68FF"), Color(hex: "825EFF"), Color(hex: "9654FF"), Color(hex: "AA4AFF"),
+            Color(hex: "BE40FF"), Color(hex: "C83EFF"), Color(hex: "D23CFF"), Color(hex: "DC3AFF"),
+            Color(hex: "E638FF"), Color(hex: "F036FF"), Color(hex: "FA34FF"), Color(hex: "FF32FA"),
+
+            // Row 6: Dynamics (Orange through Brown)
+            Color(hex: "FFA500"), Color(hex: "FF9E00"), Color(hex: "FF9700"), Color(hex: "FF9000"),
+            Color(hex: "FF8900"), Color(hex: "FF8200"), Color(hex: "FF7B00"), Color(hex: "FF7400"),
+            Color(hex: "FF6D00"), Color(hex: "FF6600"), Color(hex: "E65C00"), Color(hex: "CC5200"),
+            Color(hex: "B34800"), Color(hex: "993E00"), Color(hex: "803400"), Color(hex: "662A00"),
+
+            // Row 7: Pattern (Mixed spectrum)
+            Color(hex: "FF1493"), Color(hex: "FF6347"), Color(hex: "FFD700"), Color(hex: "32CD32"),
+            Color(hex: "00CED1"), Color(hex: "1E90FF"), Color(hex: "9370DB"), Color(hex: "FF69B4"),
+            Color(hex: "87CEEB"), Color(hex: "DDA0DD"), Color(hex: "F0E68C"), Color(hex: "98FB98"),
+            Color(hex: "AFEEEE"), Color(hex: "DB7093"), Color(hex: "FFDAB9"), Color(hex: "E6E6FA")
+        ]
+        return colors[fxIndex]
+    }
 
     var body: some View {
         VStack(spacing: 2) {
             ForEach(0..<8) { row in
                 HStack(spacing: 2) {
-                    ForEach(0..<8) { col in
-                        let fxIndex = row * 8 + col
-                        FXButton(
-                            label: fxNames[row][col],
+                    ForEach(0..<16) { col in
+                        let fxIndex = row * 16 + col
+                        let isBeatMarker = (col % 4 == 0)
+                        FXCell(
+                            row: row,
+                            col: col,
                             fxIndex: fxIndex,
                             isActive: audioEngine.activePerformanceFX == fxIndex,
-                            color: rowColors[row]
+                            isPlaying: audioEngine.isPlaying && col == audioEngine.currentPlayingStep,
+                            color: getFXColor(row: row, col: col),
+                            isBeatMarker: isBeatMarker
                         ) {
                             // Toggle FX - only one can be active at a time
                             if audioEngine.activePerformanceFX == fxIndex {
@@ -516,31 +551,47 @@ struct FXGridView: View {
     }
 }
 
-// FX Button
-struct FXButton: View {
-    let label: String
+// FX Cell - matching GridCell style
+struct FXCell: View {
+    let row: Int
+    let col: Int
     let fxIndex: Int
     let isActive: Bool
+    let isPlaying: Bool
     let color: Color
+    let isBeatMarker: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Rectangle()
-                .fill(isActive ? color : Color.black)
-                .overlay(
-                    Text(label)
-                        .font(.system(size: 8, weight: .bold, design: .monospaced))
-                        .foregroundColor(isActive ? .black : .white)
-                        .minimumScaleFactor(0.5)
-                        .lineLimit(1)
-                )
+                .fill(cellColor)
                 .overlay(
                     Rectangle()
                         .stroke(isActive ? Color.white : color.opacity(0.5), lineWidth: isActive ? 3 : 1)
                 )
+                .overlay(
+                    // Playing indicator
+                    Rectangle()
+                        .stroke(isPlaying ? Color.white : Color.clear, lineWidth: 2)
+                        .scaleEffect(isPlaying ? 1.05 : 1.0)
+                        .opacity(isPlaying ? 1.0 : 0.0)
+                )
                 .aspectRatio(1.0, contentMode: .fit)
+                .scaleEffect(isPlaying ? 1.08 : 1.0)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+
+    private var cellColor: Color {
+        if isActive {
+            return color
+        } else {
+            if isBeatMarker {
+                return color.opacity(0.15)
+            } else {
+                return color.opacity(0.3)
+            }
+        }
     }
 }
