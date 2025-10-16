@@ -568,7 +568,7 @@ struct FXCell: View {
                 .fill(cellColor)
                 .overlay(
                     Rectangle()
-                        .stroke(isActive ? Color.white : color.opacity(0.5), lineWidth: isActive ? 3 : 1)
+                        .stroke(Color.white, lineWidth: isActive ? 3 : 1)
                 )
                 .overlay(
                     // Playing indicator

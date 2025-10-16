@@ -42,6 +42,8 @@ struct InstrumentSelectorView: View {
                     }
                 }
             }
+            .contentTransition(.identity)
+            .transaction { $0.animation = nil }
         }
         .padding(4)
         .background(
@@ -156,61 +158,70 @@ struct RetroInstrumentButton: View {
 
     var body: some View {
         Button(action: {
-            action()
-        }) {
-            ZStack {
-                // Background
-                Rectangle()
-                    .fill(isSelected ? getWaveformColor() : Color.black)
-                    .frame(width: 56, height: 56)
-                    .animation(nil, value: isSelected)
-                    .overlay(
-                        ZStack {
-                            // 3D bevel effect
-                            if isSelected {
-                                // Top and left highlight
-                                VStack(spacing: 0) {
-                                    Rectangle()
-                                        .fill(Color.white.opacity(0.4))
-                                        .frame(height: 2)
-                                    Spacer()
-                                }
-
-                                HStack(spacing: 0) {
-                                    Rectangle()
-                                        .fill(Color.white.opacity(0.4))
-                                        .frame(width: 2)
-                                    Spacer()
-                                }
-
-                                // Bottom and right shadow
-                                VStack(spacing: 0) {
-                                    Spacer()
-                                    Rectangle()
-                                        .fill(Color.black.opacity(0.6))
-                                        .frame(height: 2)
-                                }
-
-                                HStack(spacing: 0) {
-                                    Spacer()
-                                    Rectangle()
-                                        .fill(Color.black.opacity(0.6))
-                                        .frame(width: 2)
-                                }
-                            }
-
-                            Rectangle()
-                                .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
-                        }
-                    )
-
-                // Waveform shape in center (replaces number)
-                getWaveformShape()
+            // A) Wrap state change in no-animation Transaction
+            var t = Transaction()
+            t.disablesAnimations = true
+            withTransaction(t) {
+                action()
             }
-            .drawingGroup()  // Force instant redraw, no layer blending fade
+        }) {
+            buttonBody
         }
         .buttonStyle(PlainButtonStyle())
-        .transaction { t in t.animation = nil }  // Force-disable inherited animations
+    }
+
+    // B) Block transitions/fades on the button's view itself
+    private var buttonBody: some View {
+        ZStack {
+            // Background - single view, only fill changes
+            Rectangle()
+                .fill(isSelected ? getWaveformColor() : Color.black)
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect - always present, just opacity changes
+                        // Top and left highlight
+                        VStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(isSelected ? 0.4 : 0.0))
+                                .frame(height: 2)
+                            Spacer()
+                        }
+
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(isSelected ? 0.4 : 0.0))
+                                .frame(width: 2)
+                            Spacer()
+                        }
+
+                        // Bottom and right shadow
+                        VStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(isSelected ? 0.6 : 0.0))
+                                .frame(height: 2)
+                        }
+
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(isSelected ? 0.6 : 0.0))
+                                .frame(width: 2)
+                        }
+
+                        Rectangle()
+                            .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                    }
+                )
+
+            // Waveform shape in center
+            getWaveformShape()
+        }
+        .contentTransition(.identity)           // iOS 17+: no cross-fade
+        .transaction { $0.animation = nil }     // override any ancestor animation
+        .animation(nil, value: isSelected)      // block state-tied animations
+        .drawingGroup()                         // Force instant redraw
     }
 }
 
