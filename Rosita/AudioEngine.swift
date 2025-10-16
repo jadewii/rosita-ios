@@ -1129,22 +1129,27 @@ class AudioEngine: ObservableObject {
     
     func recordNoteToStep(note: Int) {
         guard isRecording else { return }
-        
+
         if recordingMode == .trStyle {
             // TR-style step recording
             guard currentRecordingStep < 16 else { return }
-            
+
             // Convert MIDI note to grid row for the selected instrument
             let row = noteToGridRow(note: note, instrument: selectedInstrument)
-            
+
             // Set the step in the grid
             let key = "\(selectedInstrument)_\(row)_\(currentRecordingStep)"
             instrumentSteps[key] = true
-            instrumentNotes[key] = note  // Store the actual note value
-            
+
+            // Store normalized note (base note for this row without keyboard octave offset)
+            // This ensures recorded notes match the color of manually placed notes
+            let baseNote = rowToNote(row: row, instrument: selectedInstrument)
+            let octaveOffset = trackOctaveOffsets[selectedInstrument] * 12
+            instrumentNotes[key] = baseNote + gridTranspose + octaveOffset
+
             // Move to next step
             currentRecordingStep += 1
-            
+
             // Stop recording when we reach step 16
             if currentRecordingStep >= 16 {
                 isRecording = false
@@ -1156,7 +1161,11 @@ class AudioEngine: ObservableObject {
                 let row = noteToGridRow(note: note, instrument: selectedInstrument)
                 let key = "\(selectedInstrument)_\(row)_\(currentPlayingStep)"
                 instrumentSteps[key] = true
-                instrumentNotes[key] = note  // Store the actual note value
+
+                // Store normalized note (base note for this row without keyboard octave offset)
+                let baseNote = rowToNote(row: row, instrument: selectedInstrument)
+                let octaveOffset = trackOctaveOffsets[selectedInstrument] * 12
+                instrumentNotes[key] = baseNote + gridTranspose + octaveOffset
                 
                 // Mark this note as recently recorded to prevent double triggering
                 recentlyRecordedNotes.insert(key)
