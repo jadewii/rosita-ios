@@ -909,6 +909,15 @@ class AudioEngine: ObservableObject {
         }
     }
 
+    // Convenience functions for current track
+    func increaseTrackOctave() {
+        increaseOctave(for: selectedInstrument)
+    }
+
+    func decreaseTrackOctave() {
+        decreaseOctave(for: selectedInstrument)
+    }
+
     // MARK: - Drum Pitch Control
 
     func startDrumPitchEdit(row: Int, col: Int) {
