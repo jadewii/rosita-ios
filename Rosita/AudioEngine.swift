@@ -104,6 +104,9 @@ class AudioEngine: ObservableObject {
     // Sequence direction - per track (0=Forward, 1=Backward, 2=Pendulum, 3=Random)
     @Published var sequenceDirections = [0, 0, 0, 0]  // One for each instrument
 
+    // Track speed/scale - per track (0=1/2x, 1=1x, 2=2x, 3=4x)
+    @Published var trackSpeeds = [1, 1, 1, 1]  // Default to 1x (normal speed)
+
     // Drum pitch editing mode
     @Published var isDrumPitchEditMode = false
     @Published var editingDrumStep: (row: Int, col: Int)? = nil

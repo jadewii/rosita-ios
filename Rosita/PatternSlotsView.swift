@@ -19,16 +19,28 @@ struct Pattern8Buttons: View {
                             print("🎯 Directions array is now: \(audioEngine.sequenceDirections)")
                         }
                     )
+                } else if audioEngine.isStepEditMode && slot >= 4 && slot < 8 {
+                    // Buttons 5-8 (slots 4-7) become track speed buttons in STEP EDIT mode
+                    let speedIndex = slot - 4  // Map to 0-3
+                    TrackSpeedButton(
+                        speedIndex: speedIndex,
+                        color: getTrackSpeedColor(speedIndex),
+                        textColor: audioEngine.trackSpeeds[audioEngine.selectedInstrument] == speedIndex ? .white : .black,
+                        action: {
+                            print("🎯 Setting track speed for instrument \(audioEngine.selectedInstrument) to \(speedIndex)")
+                            audioEngine.trackSpeeds[audioEngine.selectedInstrument] = speedIndex
+                            print("🎯 Track speeds array is now: \(audioEngine.trackSpeeds)")
+                        }
+                    )
                 } else {
                     RetroPatternButton(
                         number: slot + 1,
-                        isSelected: audioEngine.isStepEditMode ? (trackLengthForSlot(slot) == audioEngine.trackLengths[audioEngine.selectedInstrument]) : (audioEngine.currentPatternSlot == slot),
+                        isSelected: audioEngine.isStepEditMode ? false : (audioEngine.currentPatternSlot == slot),
                         isDupTarget: audioEngine.isDupMode && !audioEngine.isStepEditMode,
                         action: {
                             if audioEngine.isStepEditMode {
-                                // In STEP EDIT mode, set track length
-                                let length = trackLengthForSlot(slot)
-                                audioEngine.setTrackLength(track: audioEngine.selectedInstrument, length: length)
+                                // In STEP EDIT mode, buttons 1-4 are direction, 5-8 are speed, no pattern selection
+                                return
                             } else {
                                 // Normal mode, select pattern
                                 audioEngine.selectPattern(slot)
@@ -50,6 +62,23 @@ struct Pattern8Buttons: View {
             case 1: return Color(hex: "FF6347")  // Backward - Tomato Red
             case 2: return Color(hex: "FFD700")  // Pendulum - Gold
             case 3: return Color(hex: "9370DB")  // Random - Purple
+            default: return Color.white
+            }
+        } else {
+            return Color.white
+        }
+    }
+
+    // Get track speed color
+    private func getTrackSpeedColor(_ speedIndex: Int) -> Color {
+        let currentSpeed = audioEngine.trackSpeeds[audioEngine.selectedInstrument]
+        if currentSpeed == speedIndex {
+            // Active colors
+            switch speedIndex {
+            case 0: return Color(hex: "FF6347")  // 1/2x - Tomato Red (slower)
+            case 1: return Color(hex: "32CD32")  // 1x - Green (normal)
+            case 2: return Color(hex: "FFD700")  // 2x - Gold (faster)
+            case 3: return Color(hex: "FF4500")  // 4x - Orange Red (fastest)
             default: return Color.white
             }
         } else {
@@ -192,6 +221,71 @@ struct SequenceDirectionButton: View {
             Text("→")
                 .font(.system(size: 28))
                 .foregroundColor(iconColor)
+        }
+    }
+}
+
+// Track Speed Button with label
+struct TrackSpeedButton: View {
+    let speedIndex: Int
+    let color: Color
+    let textColor: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Rectangle()
+                    .fill(color)
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        ZStack {
+                            // 3D bevel effect
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 2)
+                                Spacer()
+                            }
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(width: 2)
+                                Spacer()
+                            }
+                            VStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(height: 2)
+                            }
+                            HStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(width: 2)
+                            }
+                            Rectangle()
+                                .stroke(Color.white, lineWidth: 2)
+                        }
+                    )
+
+                // Speed label
+                Text(getSpeedLabel())
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(textColor)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private func getSpeedLabel() -> String {
+        switch speedIndex {
+        case 0: return "1/2x"
+        case 1: return "1x"
+        case 2: return "2x"
+        case 3: return "4x"
+        default: return "1x"
         }
     }
 }
