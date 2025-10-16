@@ -16,16 +16,19 @@ struct InstrumentSelectorView: View {
                 ForEach(0..<4) { index in
                     RetroInstrumentButton(
                         index: index,
-                        isSelected: audioEngine.selectedInstrument == index,
+                        isSelected: audioEngine.selectedInstrument == index && !audioEngine.isFXMode,
                         type: InstrumentType(rawValue: index) ?? .synth,
                         waveformIndex: audioEngine.instrumentWaveforms[index]
                     ) {
-                        if audioEngine.selectedInstrument == index {
+                        if audioEngine.selectedInstrument == index && !audioEngine.isFXMode {
                             // Already selected - cycle waveform
                             audioEngine.cycleInstrumentWaveform(index)
                         } else {
-                            // Select this instrument
+                            // Select this instrument and exit FX mode
                             audioEngine.selectedInstrument = index
+                            audioEngine.isFXMode = false
+                            audioEngine.isKitBrowserMode = false
+                            audioEngine.isMixerMode = false
                         }
                     }
                 }
@@ -34,12 +37,10 @@ struct InstrumentSelectorView: View {
                 RetroFXButton(
                     isSelected: audioEngine.isFXMode
                 ) {
-                    audioEngine.isFXMode.toggle()
-                    if audioEngine.isFXMode {
-                        // Deselect kit browser and mixer when entering FX mode
-                        audioEngine.isKitBrowserMode = false
-                        audioEngine.isMixerMode = false
-                    }
+                    // Select FX mode (like selecting a track)
+                    audioEngine.isFXMode = true
+                    audioEngine.isKitBrowserMode = false
+                    audioEngine.isMixerMode = false
                 }
             }
             .contentTransition(.identity)
