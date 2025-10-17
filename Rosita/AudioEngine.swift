@@ -1206,8 +1206,8 @@ class AudioEngine: ObservableObject {
             let currentPitch = melodicPitches[key] ?? 0.0
             let newPitch = currentPitch + Double(semitones)
 
-            // Clamp to reasonable range (-24 to +24 semitones)
-            let clampedPitch = max(-24.0, min(24.0, newPitch))
+            // Clamp to range (-12 to +12 semitones)
+            let clampedPitch = max(-12.0, min(12.0, newPitch))
             melodicPitches[key] = clampedPitch
         }
     }

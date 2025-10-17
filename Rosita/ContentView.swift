@@ -498,7 +498,7 @@ struct ContentView: View {
                             if audioEngine.isStepEditMode {
                                 // STP mode: adjust octave of selected steps only
                                 if !audioEngine.selectedSteps.isEmpty {
-                                    audioEngine.adjustSelectedStepsOctave(by: -12)
+                                    audioEngine.adjustSelectedStepsOctave(by: -6)
                                 }
                             } else if octaveMode == .keyboard {
                                 // KB mode: control keyboard transpose
@@ -535,7 +535,7 @@ struct ContentView: View {
                             if audioEngine.isStepEditMode {
                                 // STP mode: adjust octave of selected steps only
                                 if !audioEngine.selectedSteps.isEmpty {
-                                    audioEngine.adjustSelectedStepsOctave(by: +12)
+                                    audioEngine.adjustSelectedStepsOctave(by: +6)
                                 }
                             } else if octaveMode == .keyboard {
                                 // KB mode: control keyboard transpose
