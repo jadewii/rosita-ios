@@ -7,14 +7,22 @@ struct Pattern8Buttons: View {
     var body: some View {
         HStack(spacing: 6) {
             ForEach(0..<8) { slot in
-                if audioEngine.isScaleSelectionMode && slot < 5 {
-                    // First 5 buttons show scale names in SCALE SELECTION mode
+                if audioEngine.isMixerMode {
+                    // MIXER MODE - 8 mute buttons
+                    MuteButton(
+                        trackIndex: slot
+                    )
+                } else if audioEngine.isScaleSelectionMode {
+                    // All 8 buttons show scale names in SCALE SELECTION mode
                     ScaleButton(
                         scaleIndex: slot,
                         isSelected: audioEngine.currentScale == slot,
                         action: {
                             audioEngine.changeScale(to: slot)
-                            audioEngine.isScaleSelectionMode = false
+                            // Only close scale selection if not locked
+                            if !audioEngine.isScaleSelectionLocked {
+                                audioEngine.isScaleSelectionMode = false
+                            }
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         }
                     )
@@ -49,8 +57,13 @@ struct Pattern8Buttons: View {
                         isSelected: audioEngine.isScaleSelectionMode ? false : (audioEngine.isStepEditMode ? false : (audioEngine.currentPatternSlot == slot)),
                         isDupTarget: audioEngine.isDupMode && !audioEngine.isStepEditMode && !audioEngine.isScaleSelectionMode,
                         action: {
+                            // Exit solo mode if active
+                            if audioEngine.soloedTrack != nil {
+                                audioEngine.soloedTrack = nil
+                            }
+
                             if audioEngine.isScaleSelectionMode {
-                                // In SCALE SELECTION mode, only first 5 buttons work
+                                // In SCALE SELECTION mode, all 8 buttons show scales
                                 return
                             } else if audioEngine.isStepEditMode {
                                 // In STEP EDIT mode, buttons 1-4 are direction, 5-8 are speed, no pattern selection
@@ -159,6 +172,150 @@ struct DupButton: View {
     }
 }
 
+// Mute Button for mixer mode
+struct MuteButton: View {
+    let trackIndex: Int
+    @EnvironmentObject var audioEngine: AudioEngine
+
+    @State private var longPressTimer: Timer?
+    @State private var isLongPressing = false
+
+    var body: some View {
+        let isMuted = getMuteState()
+        let isSoloed = (audioEngine.soloedTrack == trackIndex)
+        let label = getLabel()
+        let fontSize = trackIndex == 7 ? 10 : 12
+
+        ZStack {
+            Rectangle()
+                .fill(isSoloed ? Color(hex: "FFD700") : (isMuted ? Color(hex: "FF9999") : Color(hex: "32CD32")))
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect
+                        VStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.4))
+                                .frame(height: 2)
+                            Spacer()
+                        }
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.4))
+                                .frame(width: 2)
+                            Spacer()
+                        }
+                        VStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(height: 2)
+                        }
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(width: 2)
+                        }
+                        Rectangle()
+                            .stroke(Color.black, lineWidth: 2)
+                    }
+                )
+
+            // Label
+            Text(label)
+                .font(.system(size: CGFloat(fontSize), weight: .bold, design: .monospaced))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !isLongPressing {
+                // If solo mode is active, exit it
+                if audioEngine.soloedTrack != nil {
+                    audioEngine.soloedTrack = nil
+                } else {
+                    // Normal tap - toggle mute
+                    toggleMute()
+                }
+            }
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if longPressTimer == nil {
+                        // Start timer on press
+                        longPressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+                            // Long press detected - activate solo
+                            isLongPressing = true
+                            audioEngine.soloedTrack = trackIndex
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        }
+                    }
+                }
+                .onEnded { _ in
+                    // Cancel timer and reset
+                    longPressTimer?.invalidate()
+                    longPressTimer = nil
+
+                    // Reset long press flag after a short delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        isLongPressing = false
+                    }
+                }
+        )
+    }
+
+    private func getMuteState() -> Bool {
+        switch trackIndex {
+        case 0...2:
+            // Melodic tracks
+            return audioEngine.trackMuted[trackIndex]
+        case 3...6:
+            // Individual drum rows
+            let drumRow = trackIndex - 3
+            return audioEngine.drumRowsMuted[drumRow]
+        case 7:
+            // All drums
+            return audioEngine.allDrumsMuted
+        default:
+            return false
+        }
+    }
+
+    private func toggleMute() {
+        switch trackIndex {
+        case 0...2:
+            // Toggle melodic track mute
+            audioEngine.trackMuted[trackIndex].toggle()
+        case 3...6:
+            // Toggle individual drum row mute
+            let drumRow = trackIndex - 3
+            audioEngine.drumRowsMuted[drumRow].toggle()
+        case 7:
+            // Toggle all drums mute
+            audioEngine.allDrumsMuted.toggle()
+        default:
+            break
+        }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
+    private func getLabel() -> String {
+        switch trackIndex {
+        case 0: return "TRK\n1"
+        case 1: return "TRK\n2"
+        case 2: return "TRK\n3"
+        case 3: return "KICK"
+        case 4: return "SNARE"
+        case 5: return "HAT"
+        case 6: return "PERC"
+        case 7: return "ALL\nDRUMS"
+        default: return ""
+        }
+    }
+}
+
 // Sequence Direction Button with icon
 struct SequenceDirectionButton: View {
     let direction: Int
@@ -199,7 +356,7 @@ struct SequenceDirectionButton: View {
                                 .frame(width: 2)
                         }
                         Rectangle()
-                            .stroke(Color.white, lineWidth: 2)
+                            .stroke(Color.black, lineWidth: 2)
                     }
                 )
 
@@ -280,7 +437,7 @@ struct TrackSpeedButton: View {
                                 .frame(width: 2)
                         }
                         Rectangle()
-                            .stroke(Color.white, lineWidth: 2)
+                            .stroke(Color.black, lineWidth: 2)
                     }
                 )
 
@@ -367,6 +524,9 @@ struct ScaleButton: View {
         case 2: return "PENT"
         case 3: return "BLUE"
         case 4: return "CHRO"
+        case 5: return "DOR"
+        case 6: return "MIX"
+        case 7: return "H-MIN"
         default: return ""
         }
     }
@@ -378,6 +538,9 @@ struct ScaleButton: View {
         case 2: return Color(hex: "32CD32") // Pentatonic - Lime Green
         case 3: return Color(hex: "1E90FF") // Blues - Dodger Blue
         case 4: return Color(hex: "FFD700") // Chromatic - Gold
+        case 5: return Color(hex: "FF6347") // Dorian - Tomato
+        case 6: return Color(hex: "FF8C00") // Mixolydian - Dark Orange
+        case 7: return Color(hex: "8A2BE2") // Harmonic Minor - Blue Violet
         default: return Color.gray
         }
     }

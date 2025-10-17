@@ -61,6 +61,7 @@ class AudioEngine: ObservableObject {
     private var pendulumDirections = [1, 1, 1, 1]  // 1=forward, -1=backward for pendulum mode
     private var trackStepCounters = [0, 0, 0, 0]  // Counters for track speed implementation
     private var nextSampleTime: AVAudioFramePosition = 0
+    private var isFirstScheduleTick = true  // Flag to handle initial timing correctly
     private let sampleRate: Double = 44100.0
     private let audioQueue = DispatchQueue(label: "com.rosita.audio", qos: .userInteractive)
     
@@ -133,8 +134,23 @@ class AudioEngine: ObservableObject {
     @Published var isFXMode = false
     @Published var activePerformanceFX: Int? = nil  // nil = no FX active, 0-63 = grid position
 
+    // FX Grid Controls
+    @Published var activeFXPitchRow: Int? = nil  // Column 0: Pitch control (+12 to -12)
+    @Published var activeFXFilterRow: Int? = nil  // Column 1: Low pass filter (open to closed)
+
     // Drum sample selection (which sample variant is selected for each drum type)
     @Published var selectedDrumSamples = [0, 0, 0, 0] // [kick, snare, hat, perc]
+
+    // Drum kit system - 16 kits, each storing 4 sound indices
+    @Published var currentKitIndex = 0 // Currently selected kit (0-15)
+    @Published var drumKits: [[Int]] = {
+        // Initialize 16 kits with default sounds [0, 0, 0, 0]
+        var kits = [[Int]]()
+        for _ in 0..<16 {
+            kits.append([0, 0, 0, 0]) // Default: first sample for each drum type
+        }
+        return kits
+    }()
 
     // Continuous random mode - per track
     @Published var continuousRandomEnabled = [false, false, false, false]  // One for each instrument
@@ -144,6 +160,14 @@ class AudioEngine: ObservableObject {
 
     // Track speed/scale - per track (0=1/2x, 1=1x, 2=2x, 3=4x)
     @Published var trackSpeeds = [1, 1, 1, 1]  // Default to 1x (normal speed)
+
+    // Mute state - per track (melodic: 0-2, drums: 3, individual drum rows: 0-3 within drums)
+    @Published var trackMuted = [false, false, false, false]  // Melodic tracks 1-3 + drums track
+    @Published var drumRowsMuted = [false, false, false, false]  // Individual drum rows: Kick, Snare, Hat, Perc
+    @Published var allDrumsMuted = false  // Master mute for all drums
+
+    // Solo state - which track is soloed (0-7 for buttons 1-8, nil if none)
+    @Published var soloedTrack: Int? = nil
 
     // Drum pitch editing mode
     @Published var isDrumPitchEditMode = false
@@ -158,8 +182,12 @@ class AudioEngine: ObservableObject {
     @Published var editingStep: (row: Int, col: Int)? = nil
     @Published var stepPitch: Double = 0.0 // -24 to +24 semitones (octave changes only)
 
-    // Scale selection mode (activated by long press on SCALE button)
+    // Multi-select in step edit mode
+    @Published var selectedSteps: Set<String> = [] // Set of "row_col" keys for selected steps
+
+    // Scale selection mode (activated by tap on SCALE button)
     @Published var isScaleSelectionMode = false
+    @Published var isScaleSelectionLocked = false  // Green border, stays open until scale button pressed again
 
     // Storage for melodic step pitches
     private var melodicPitches: [String: Double] = [:] // key: "instrument_row_col", value: pitch offset in semitones
@@ -266,6 +294,7 @@ class AudioEngine: ObservableObject {
         pendulumDirections = [1, 1, 1, 1]  // Reset pendulum directions to forward
         trackStepCounters = [0, 0, 0, 0]  // Reset track speed counters
         currentInstrumentPlayingStep = 0  // Initialize playback cursor to step 1 (index 0)
+        isFirstScheduleTick = true  // Reset first tick flag
         startSequencer()
     }
 
@@ -329,7 +358,14 @@ class AudioEngine: ObservableObject {
 
         // Initialize nextSampleTime on first run
         if nextSampleTime == 0 && currentSampleTime > 0 {
-            nextSampleTime = currentSampleTime
+            if isFirstScheduleTick {
+                // On the very first tick, start ahead by one step duration
+                // This prevents rushing through multiple steps on startup
+                nextSampleTime = currentSampleTime + samplesPerStep
+                isFirstScheduleTick = false
+            } else {
+                nextSampleTime = currentSampleTime
+            }
         }
 
         // Schedule all upcoming notes within the lookahead window
@@ -337,10 +373,13 @@ class AudioEngine: ObservableObject {
             // Schedule notes for this step
             scheduleNotesForStep(currentStep, at: nextSampleTime)
 
-            // Update UI on main thread (slightly ahead for visual feedback)
-            let stepToDisplay = currentStep
-            DispatchQueue.main.async {
-                self.currentPlayingStep = stepToDisplay
+            // Update UI immediately for the FIRST scheduled step (the one actually playing now)
+            // This ensures step 0 doesn't get skipped visually
+            if nextSampleTime <= currentSampleTime + samplesPerStep {
+                let stepToDisplay = currentStep
+                DispatchQueue.main.async {
+                    self.currentPlayingStep = stepToDisplay
+                }
             }
 
             // Advance to next step
@@ -449,21 +488,57 @@ class AudioEngine: ObservableObject {
                     }
 
                     if self.instrumentSteps[key] == true {
-                        if instrument == 3 {
-                            // Drums - with pitch
-                            let drumNote = drumRowToNote(row: row)
-                            let pitch = getDrumPitch(row: row, col: instrumentStep)
-                            playDrumSound(drumType: drumNote, pitch: pitch)
-                        } else {
-                            // Melodic instruments - use stored note or default
-                            let baseNote = instrumentNotes[key] ?? rowToNote(row: row, instrument: instrument)
-                            let octaveOffset = trackOctaveOffsets[instrument] * 12  // Apply per-track octave offset
-                            let pitchOffset = Int(getMelodicPitch(row: row, col: instrumentStep, instrument: instrument))  // Apply per-step pitch offset
-                            let note = baseNote + gridTranspose + octaveOffset + pitchOffset  // Apply all offsets
+                        // Check mute state
+                        var isMuted = trackMuted[instrument]
 
-                            // Get per-step ADSR for this note
-                            let stepADSR = getStepADSR(row: row, col: instrumentStep, instrument: instrument)
-                            playNote(instrument: instrument, note: note, adsr: stepADSR)
+                        // Check solo state
+                        if let soloed = soloedTrack {
+                            // Solo mode is active
+                            if instrument == 3 {
+                                // Drums
+                                if soloed == 7 {
+                                    // Button 8 (index 7) = all drums soloed, so drums are not muted
+                                    isMuted = false
+                                } else if soloed >= 3 && soloed <= 6 {
+                                    // Buttons 4-7 (indices 3-6) = individual drum rows
+                                    let soloedDrumRow = soloed - 3
+                                    isMuted = (row != soloedDrumRow)
+                                } else {
+                                    // Melodic track is soloed, mute all drums
+                                    isMuted = true
+                                }
+                            } else {
+                                // Melodic instruments (0-2)
+                                isMuted = (instrument != soloed)
+                            }
+                        } else {
+                            // No solo - use normal mute logic
+                            if instrument == 3 {
+                                // Drums - check both all drums mute and individual drum row mute
+                                isMuted = isMuted || allDrumsMuted || (row < 4 && drumRowsMuted[row])
+                            }
+                        }
+
+                        if instrument == 3 {
+
+                            if !isMuted {
+                                let drumNote = drumRowToNote(row: row)
+                                let pitch = getDrumPitch(row: row, col: instrumentStep)
+                                playDrumSound(drumType: drumNote, pitch: pitch)
+                            }
+                        } else {
+                            // Melodic instruments
+                            if !isMuted {
+                                let baseNote = instrumentNotes[key] ?? rowToNote(row: row, instrument: instrument)
+                                let octaveOffset = trackOctaveOffsets[instrument] * 12  // Apply per-track octave offset
+                                let pitchOffset = Int(getMelodicPitch(row: row, col: instrumentStep, instrument: instrument))  // Apply per-step pitch offset
+                                let fxPitchOffset = getFXPitchOffset()  // Apply FX pitch control from column 0
+                                let note = baseNote + gridTranspose + octaveOffset + pitchOffset + fxPitchOffset  // Apply all offsets
+
+                                // Get per-step ADSR for this note
+                                let stepADSR = getStepADSR(row: row, col: instrumentStep, instrument: instrument)
+                                playNote(instrument: instrument, note: note, adsr: stepADSR)
+                            }
                         }
                     }
                 }
@@ -523,6 +598,9 @@ class AudioEngine: ObservableObject {
         case 2: scaleNotes = [0, 2, 4, 7, 9, 12, 14, 16] // Pentatonic
         case 3: scaleNotes = [0, 3, 5, 6, 7, 10, 12, 15] // Blues
         case 4: scaleNotes = [0, 1, 2, 3, 4, 5, 6, 7]     // Chromatic
+        case 5: scaleNotes = [0, 2, 3, 5, 7, 9, 10, 12] // Dorian
+        case 6: scaleNotes = [0, 2, 4, 5, 7, 9, 10, 12] // Mixolydian
+        case 7: scaleNotes = [0, 2, 3, 5, 7, 8, 11, 12] // Harmonic Minor
         default: scaleNotes = [0, 2, 4, 5, 7, 9, 11, 12]
         }
 
@@ -592,7 +670,31 @@ class AudioEngine: ObservableObject {
         // Play the drum using the drums instrument with pitch
         instruments[3].playDrum(sound: drumSound, pitch: pitch)
     }
-    
+
+    // MARK: - Drum Kit Management
+
+    // Select a kit and load its sounds
+    func selectKit(_ kitIndex: Int) {
+        guard kitIndex >= 0 && kitIndex < 16 else { return }
+        currentKitIndex = kitIndex
+        // Load this kit's sounds into selectedDrumSamples
+        selectedDrumSamples = drumKits[kitIndex]
+    }
+
+    // Update a specific drum sound for the current kit
+    func updateCurrentKitSound(drumType: Int, sampleIndex: Int) {
+        guard drumType >= 0 && drumType < 4 else { return }
+        // Update the kit's sound
+        drumKits[currentKitIndex][drumType] = sampleIndex
+        // Update selectedDrumSamples to reflect the change
+        selectedDrumSamples[drumType] = sampleIndex
+    }
+
+    // Get the current kit's sounds
+    func getCurrentKitSounds() -> [Int] {
+        return drumKits[currentKitIndex]
+    }
+
     func noteOn(note: Int) {
         startAudioEngineIfNeeded()
         
@@ -745,7 +847,7 @@ class AudioEngine: ObservableObject {
     
     func toggleGridCell(row: Int, col: Int) {
         guard row >= 0 && row < 8 && col >= 0 && col < 16 else { return }
-        
+
         // For the simplified version, we'll use the row/col directly
         // but store per instrument
         let key = "\(selectedInstrument)_\(row)_\(col)"
@@ -1054,6 +1156,95 @@ class AudioEngine: ObservableObject {
         let roundedPitch = round(pitch / 12.0) * 12.0
         melodicPitches[key] = roundedPitch
         stepPitch = roundedPitch
+    }
+
+    // MARK: - Multi-Select Step Functions
+
+    func toggleStepSelection(row: Int, col: Int) {
+        let key = "\(row)_\(col)"
+        if selectedSteps.contains(key) {
+            selectedSteps.remove(key)
+        } else {
+            selectedSteps.insert(key)
+        }
+    }
+
+    func isStepSelected(row: Int, col: Int) -> Bool {
+        let key = "\(row)_\(col)"
+        return selectedSteps.contains(key)
+    }
+
+    func clearStepSelection() {
+        selectedSteps.removeAll()
+    }
+
+    func selectAllActiveSteps() {
+        // Select all active steps in the current instrument's pattern
+        selectedSteps.removeAll()
+
+        for row in 0..<8 {
+            for col in 0..<16 {
+                if getGridCell(row: row, col: col) {
+                    let key = "\(row)_\(col)"
+                    selectedSteps.insert(key)
+                }
+            }
+        }
+    }
+
+    func adjustSelectedStepsOctave(by semitones: Int) {
+        guard !selectedSteps.isEmpty else { return }
+
+        // Adjust pitch for all selected steps
+        for stepKey in selectedSteps {
+            let components = stepKey.split(separator: "_")
+            guard components.count == 2,
+                  let row = Int(components[0]),
+                  let col = Int(components[1]) else { continue }
+
+            let key = "\(selectedInstrument)_\(row)_\(col)"
+            let currentPitch = melodicPitches[key] ?? 0.0
+            let newPitch = currentPitch + Double(semitones)
+
+            // Clamp to reasonable range (-24 to +24 semitones)
+            let clampedPitch = max(-24.0, min(24.0, newPitch))
+            melodicPitches[key] = clampedPitch
+        }
+    }
+
+    func resetSelectedStepsPitch() {
+        guard !selectedSteps.isEmpty else { return }
+
+        // Reset pitch to 0 for all selected steps
+        for stepKey in selectedSteps {
+            let components = stepKey.split(separator: "_")
+            guard components.count == 2,
+                  let row = Int(components[0]),
+                  let col = Int(components[1]) else { continue }
+
+            let key = "\(selectedInstrument)_\(row)_\(col)"
+            melodicPitches[key] = 0.0
+        }
+    }
+
+    func getAverageSelectedStepsPitch() -> Int {
+        guard !selectedSteps.isEmpty else { return 0 }
+
+        var totalPitch: Double = 0.0
+        var count = 0
+
+        for stepKey in selectedSteps {
+            let components = stepKey.split(separator: "_")
+            guard components.count == 2,
+                  let row = Int(components[0]),
+                  let col = Int(components[1]) else { continue }
+
+            let key = "\(selectedInstrument)_\(row)_\(col)"
+            totalPitch += melodicPitches[key] ?? 0.0
+            count += 1
+        }
+
+        return count > 0 ? Int(totalPitch / Double(count)) : 0
     }
 
     // MARK: - Per-Step ADSR Control (STEP EDIT mode)
@@ -1453,6 +1644,51 @@ class AudioEngine: ObservableObject {
                 perfEQ.bands[i].bypass = true
             }
         }
+    }
+
+    // Get FX pitch offset from active row
+    // Row 0 = +12 semitones, Row 7 = -12 semitones, linear interpolation
+    func getFXPitchOffset() -> Int {
+        guard let row = activeFXPitchRow else { return 0 }
+        // Map row 0-7 to +12 to -12 semitones
+        // row 0 → +12
+        // row 7 → -12
+        // Formula: pitch = 12 - (row * 3)
+        let pitch = 12 - (row * 3)
+        return pitch
+    }
+
+    // Apply low pass filter based on row
+    // Row 0 = fully open (20kHz), Row 7 = closed (200Hz)
+    func applyLowPassFilter(row: Int) {
+        guard perfEQ.bands.count >= 10 else { return }
+
+        // Map row 0-7 to cutoff frequency (20000Hz to 200Hz)
+        // Logarithmic scaling for more natural sound
+        let minFreq: Float = 200.0   // Row 7 - very muffled
+        let maxFreq: Float = 20000.0 // Row 0 - fully open
+
+        // Invert row so row 0 = high freq, row 7 = low freq
+        let normalizedRow = Float(7 - row) / 7.0
+
+        // Logarithmic interpolation
+        let logMin = log10(minFreq)
+        let logMax = log10(maxFreq)
+        let logFreq = logMin + (logMax - logMin) * normalizedRow
+        let cutoffFreq = pow(10, logFreq)
+
+        // Apply low pass filter using EQ band 9 (highest frequency band)
+        perfEQ.bands[9].filterType = .lowPass
+        perfEQ.bands[9].frequency = cutoffFreq
+        perfEQ.bands[9].bandwidth = 0.5
+        perfEQ.bands[9].bypass = false
+        perfEQ.bands[9].gain = 0
+    }
+
+    // Clear low pass filter
+    func clearLowPassFilter() {
+        guard perfEQ.bands.count >= 10 else { return }
+        perfEQ.bands[9].bypass = true
     }
 
     // Apply all effect parameters from a preset

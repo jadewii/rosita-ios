@@ -7,6 +7,10 @@ struct ContentView: View {
     @State private var showLayoutEditor = false
     @State private var isEditMode = false
     @State private var octaveMode: OctaveMode = .grid // GRD is default
+    @State private var stpLongPressTimer: Timer?
+    @State private var stpFlashPurple = false
+    @State private var plusButtonPressed = false
+    @State private var minusButtonPressed = false
     @State private var keyboardOffsetX: Double = 0
     @State private var keyboardOffsetY: Double = -72
     @State private var octaveButtonOffsetY: Double = -95
@@ -436,48 +440,81 @@ struct ContentView: View {
             .background(Color(hex: "FFB6C1"))
             .overlay(overlaysView)
             .overlay(
-                // KB/GRD/STP/SEQ Octave controls - independently draggable
+                // KB/GRD/STP Octave controls - independently draggable
                 HStack(spacing: 4) {
-                    // Mode toggle button - KB=orange, GRD=blue, STP=pastel red, SEQ=purple
+                    // Mode toggle button - KB=orange, GRD=blue, STP=pastel red (no toggle in step edit)
                     RetroButton(
-                        title: audioEngine.isStepEditMode ? (octaveMode == .stepEdit ? "STP" : "SEQ") : (octaveMode == .keyboard ? "KB" : "GRD"),
-                        color: audioEngine.isStepEditMode ? (octaveMode == .stepEdit ? Color(hex: "FF9999") : Color(hex: "9370DB")) : (octaveMode == .keyboard ? Color(hex: "FFA500") : Color(hex: "1E90FF")),
+                        title: audioEngine.isStepEditMode ? "STP" : (octaveMode == .keyboard ? "KB" : "GRD"),
+                        color: audioEngine.isStepEditMode ? (stpFlashPurple ? Color(hex: "9370DB") : Color(hex: "FF9999")) : (octaveMode == .keyboard ? Color(hex: "FFA500") : Color(hex: "1E90FF")),
                         textColor: .white,
                         action: {
-                            if audioEngine.isStepEditMode {
-                                // Toggle between STP (stepEdit) and SEQ (sequence) in step edit mode
-                                octaveMode = octaveMode == .stepEdit ? .sequence : .stepEdit
-                            } else {
-                                // Toggle between KB and GRD in normal mode
+                            if !audioEngine.isStepEditMode {
+                                // Toggle between KB and GRD in normal mode only
                                 octaveMode = octaveMode == .keyboard ? .grid : .keyboard
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             }
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            // In step edit mode: tap does nothing (long press resets pitch)
                         },
                         width: 46,
                         height: 36,
                         fontSize: 11
                     )
+                    .animation(.easeInOut(duration: 0.2), value: stpFlashPurple)
+                    .simultaneousGesture(
+                        audioEngine.isStepEditMode ?
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in
+                                if stpLongPressTimer == nil {
+                                    stpLongPressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+                                        // Long press detected - reset pitch of selected notes
+                                        audioEngine.resetSelectedStepsPitch()
+                                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+                                        // Flash purple
+                                        stpFlashPurple = true
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                            stpFlashPurple = false
+                                        }
+                                    }
+                                }
+                            }
+                            .onEnded { _ in
+                                stpLongPressTimer?.invalidate()
+                                stpLongPressTimer = nil
+                            }
+                        : nil
+                    )
 
                     RetroButton(
                         title: "-",
-                        color: getOctaveButtonColor(isLowerButton: true),
-                        textColor: getOctaveButtonColor(isLowerButton: true) == .black ? .white : .black,
+                        color: getMinusButtonColor(),
+                        textColor: getMinusButtonColor() == .black ? .white : .black,
                         action: {
-                            if octaveMode == .keyboard {
+                            minusButtonPressed = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                minusButtonPressed = false
+                            }
+
+                            if audioEngine.isStepEditMode {
+                                // STP mode: adjust octave of selected steps only
+                                if !audioEngine.selectedSteps.isEmpty {
+                                    audioEngine.adjustSelectedStepsOctave(by: -12)
+                                }
+                            } else if octaveMode == .keyboard {
                                 // KB mode: control keyboard transpose
                                 if audioEngine.transpose > -24 {
                                     audioEngine.transpose -= 12
                                 }
-                            } else if octaveMode == .grid || octaveMode == .sequence {
-                                // GRD or SEQ mode: control current track octave
+                            } else if octaveMode == .grid {
+                                // GRD mode: control current track octave
                                 audioEngine.decreaseTrackOctave()
                             }
-                            // STP mode: does nothing (individual step pitch controlled by slider)
                         },
                         width: 38,
                         height: 36,
                         fontSize: 16
                     )
+                    .animation(.easeInOut(duration: 0.15), value: minusButtonPressed)
 
                     Text("\(getCurrentOctave())")
                         .font(.system(size: 13, weight: .bold, design: .monospaced))
@@ -487,24 +524,34 @@ struct ContentView: View {
 
                     RetroButton(
                         title: "+",
-                        color: getOctaveButtonColor(isLowerButton: false),
-                        textColor: getOctaveButtonColor(isLowerButton: false) == .black ? .white : .black,
+                        color: getPlusButtonColor(),
+                        textColor: getPlusButtonColor() == .black ? .white : .black,
                         action: {
-                            if octaveMode == .keyboard {
+                            plusButtonPressed = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                plusButtonPressed = false
+                            }
+
+                            if audioEngine.isStepEditMode {
+                                // STP mode: adjust octave of selected steps only
+                                if !audioEngine.selectedSteps.isEmpty {
+                                    audioEngine.adjustSelectedStepsOctave(by: +12)
+                                }
+                            } else if octaveMode == .keyboard {
                                 // KB mode: control keyboard transpose
                                 if audioEngine.transpose < 24 {
                                     audioEngine.transpose += 12
                                 }
-                            } else if octaveMode == .grid || octaveMode == .sequence {
-                                // GRD or SEQ mode: control current track octave
+                            } else if octaveMode == .grid {
+                                // GRD mode: control current track octave
                                 audioEngine.increaseTrackOctave()
                             }
-                            // STP mode: does nothing (individual step pitch controlled by slider)
                         },
                         width: 38,
                         height: 36,
                         fontSize: 16
                     )
+                    .animation(.easeInOut(duration: 0.15), value: plusButtonPressed)
                 }
                 .disabled(isEditMode)
                 .animation(nil, value: octaveMode)
@@ -659,12 +706,9 @@ struct ContentView: View {
             loadElementPositions()
         }
         .onChange(of: audioEngine.isStepEditMode) { isStepEdit in
-            // When entering step edit mode, default to STP mode (stepEdit)
-            if isStepEdit {
-                octaveMode = .stepEdit
-            } else {
-                // When exiting step edit mode, return to GRD mode
-                octaveMode = .grid
+            // When exiting step edit mode, clear selection
+            if !isStepEdit {
+                audioEngine.clearStepSelection()
             }
         }
         .alert("WAV Export", isPresented: $showExportAlert) {
@@ -694,13 +738,16 @@ struct ContentView: View {
     }
 
     private func getCurrentOctave() -> Int {
+        if audioEngine.isStepEditMode {
+            // STP mode: show average pitch of selected notes in semitones
+            return audioEngine.getAverageSelectedStepsPitch()
+        }
+
         switch octaveMode {
         case .keyboard:
             return audioEngine.transpose / 12
-        case .grid, .sequence:
+        case .grid, .sequence, .stepEdit:
             return audioEngine.trackOctaveOffsets[audioEngine.selectedInstrument]
-        case .stepEdit:
-            return 0  // STP mode doesn't show octave (step pitch controlled by slider)
         }
     }
 
@@ -745,6 +792,38 @@ struct ContentView: View {
 
         let newBrightness = max(0, min(1, brightness + amount))
         return Color(hue: Double(hue), saturation: Double(saturation), brightness: Double(newBrightness), opacity: Double(alpha))
+    }
+
+    private func getTrackColor() -> Color {
+        let trackColors: [Color] = [
+            Color(hex: "FF69B4"),  // Track 1 - Hot Pink
+            Color(hex: "9370DB"),  // Track 2 - Purple
+            Color(hex: "32CD32"),  // Track 3 - Lime Green
+            Color(hex: "1E90FF"),  // Track 4 - Dodger Blue
+            Color(hex: "FFD700"),  // Track 5 - Gold
+            Color(hex: "FF6347"),  // Track 6 - Tomato
+            Color(hex: "FF8C00"),  // Track 7 - Dark Orange
+            Color(hex: "FFA500")   // Track 8 - Orange
+        ]
+        return trackColors[audioEngine.selectedInstrument]
+    }
+
+    private func getPlusButtonColor() -> Color {
+        if audioEngine.isStepEditMode {
+            // In STP mode, use track color, lighter when pressed
+            let trackColor = getTrackColor()
+            return plusButtonPressed ? adjustBrightness(trackColor, by: 0.25) : trackColor
+        }
+        return getOctaveButtonColor(isLowerButton: false)
+    }
+
+    private func getMinusButtonColor() -> Color {
+        if audioEngine.isStepEditMode {
+            // In STP mode, use track color, darker when pressed
+            let trackColor = getTrackColor()
+            return minusButtonPressed ? adjustBrightness(trackColor, by: -0.25) : trackColor
+        }
+        return getOctaveButtonColor(isLowerButton: true)
     }
 
     private func saveElementPositions() {
@@ -812,11 +891,8 @@ struct ContentView: View {
         )
         allTransportControlsBase = allTransportControlsOffset
 
-        // BPM
-        bpmSliderOffset = CGSize(
-            width: UserDefaults.standard.double(forKey: "bpmSliderX"),
-            height: UserDefaults.standard.double(forKey: "bpmSliderY")
-        )
+        // BPM - position below oscilloscope
+        bpmSliderOffset = CGSize(width: 0, height: 105)
         bpmSliderBase = bpmSliderOffset
 
         // Utility button group
@@ -840,7 +916,7 @@ struct ContentView: View {
     }
 
     private func cycleScale() {
-        let newScale = (audioEngine.currentScale + 1) % 5
+        let newScale = (audioEngine.currentScale + 1) % 8
         audioEngine.changeScale(to: newScale)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
@@ -852,6 +928,9 @@ struct ContentView: View {
         case 2: return Color(hex: "32CD32") // Pentatonic - Lime Green
         case 3: return Color(hex: "1E90FF") // Blues - Dodger Blue
         case 4: return Color(hex: "FFD700") // Chromatic - Gold
+        case 5: return Color(hex: "FF6347") // Dorian - Tomato
+        case 6: return Color(hex: "FF8C00") // Mixolydian - Dark Orange
+        case 7: return Color(hex: "8A2BE2") // Harmonic Minor - Blue Violet
         default: return Color.gray
         }
     }

@@ -190,9 +190,9 @@ struct Transport6Buttons: View {
                 }
             }
 
-            // STEP EDIT button - toggles step edit mode for pitch editing
+            // EDIT button - toggles step edit mode for pitch editing
             RetroButton(
-                title: "STEP\nEDIT",
+                title: "EDIT",
                 color: audioEngine.isStepEditMode ? Color(hex: "FF9999") : Color.white,
                 textColor: audioEngine.isStepEditMode ? .white : .black,
                 action: {
@@ -200,7 +200,7 @@ struct Transport6Buttons: View {
                 },
                 width: 56,
                 height: 56,
-                fontSize: 10
+                fontSize: 12
             )
 
             // KIT button - for drum kit browsing
@@ -228,44 +228,62 @@ struct Transport6Buttons: View {
                 height: 56
             )
 
-            // Scale button - tap to cycle, long press to enter scale selection mode
-            RetroButton(
-                title: getScaleName(),
-                color: getScaleColor(),
-                textColor: .black,
-                action: {
-                    if !isScaleLongPressing {
-                        cycleScale()
-                    }
-                },
-                width: 56,
-                height: 56,
-                fontSize: 9
-            )
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        if scaleLongPressTimer == nil {
-                            scaleLongPressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
-                                isScaleLongPressing = true
-                                audioEngine.isScaleSelectionMode = true
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            // Scale button - tap to toggle scale selection, long press to lock selection mode
+            ZStack {
+                RetroButton(
+                    title: getScaleName(),
+                    color: getScaleColor(),
+                    textColor: .black,
+                    action: {
+                        if !isScaleLongPressing {
+                            // Tap: toggle scale selection mode
+                            audioEngine.isScaleSelectionMode.toggle()
+                            if !audioEngine.isScaleSelectionMode {
+                                // Turning off selection mode also unlocks it
+                                audioEngine.isScaleSelectionLocked = false
                             }
                         }
-                    }
-                    .onEnded { _ in
-                        scaleLongPressTimer?.invalidate()
-                        scaleLongPressTimer = nil
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            isScaleLongPressing = false
+                    },
+                    width: 56,
+                    height: 56,
+                    fontSize: 9
+                )
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in
+                            if scaleLongPressTimer == nil {
+                                // Long press: open scale selection and lock it
+                                scaleLongPressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+                                    isScaleLongPressing = true
+                                    // Enable scale selection mode and lock it
+                                    audioEngine.isScaleSelectionMode = true
+                                    audioEngine.isScaleSelectionLocked = true
+                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                }
+                            }
                         }
-                    }
-            )
+                        .onEnded { _ in
+                            scaleLongPressTimer?.invalidate()
+                            scaleLongPressTimer = nil
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                isScaleLongPressing = false
+                            }
+                        }
+                )
+
+                // Yellow border when locked
+                if audioEngine.isScaleSelectionLocked {
+                    Rectangle()
+                        .stroke(Color(hex: "FFD700"), lineWidth: 4)
+                        .frame(width: 56, height: 56)
+                        .allowsHitTesting(false)
+                }
+            }
         }
     }
 
     private func cycleScale() {
-        let newScale = (audioEngine.currentScale + 1) % 5
+        let newScale = (audioEngine.currentScale + 1) % 8
         audioEngine.changeScale(to: newScale)
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
@@ -277,6 +295,9 @@ struct Transport6Buttons: View {
         case 2: return "PENT"
         case 3: return "BLUE"
         case 4: return "CHRO"
+        case 5: return "DOR"
+        case 6: return "MIX"
+        case 7: return "H-MIN"
         default: return "MAJ"
         }
     }
@@ -288,6 +309,9 @@ struct Transport6Buttons: View {
         case 2: return Color(hex: "32CD32") // Pentatonic - Lime Green
         case 3: return Color(hex: "1E90FF") // Blues - Dodger Blue
         case 4: return Color(hex: "FFD700") // Chromatic - Gold
+        case 5: return Color(hex: "FF6347") // Dorian - Tomato
+        case 6: return Color(hex: "FF8C00") // Mixolydian - Dark Orange
+        case 7: return Color(hex: "8A2BE2") // Harmonic Minor - Blue Violet
         default: return Color.gray
         }
     }

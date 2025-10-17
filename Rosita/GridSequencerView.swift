@@ -74,17 +74,14 @@ struct GridSequencerView: View {
                                 let sampleIndex = step % maxSamples[drumType]
                                 audioEngine.selectedDrumSamples[drumType] = sampleIndex
 
-                                // Play the selected sample to preview it
-                                audioEngine.playNote(instrument: 3, note: [36, 38, 42, 46][drumType])
-                            } else if audioEngine.isStepEditMode && audioEngine.getGridCell(row: track, col: step) {
-                                // In STEP EDIT mode, select step for editing instead of toggling (no sound)
-                                if audioEngine.selectedInstrument == 3 && track < 4 {
-                                    // Drums - start drum pitch edit
-                                    audioEngine.startDrumPitchEdit(row: track, col: step)
-                                } else {
-                                    // Melodic instruments - start melodic pitch edit
-                                    audioEngine.startMelodicStepEdit(row: track, col: step)
+                                // Play the selected sample to preview it (only if sequencer is NOT playing)
+                                if !audioEngine.isPlaying {
+                                    audioEngine.playNote(instrument: 3, note: [36, 38, 42, 46][drumType])
                                 }
+                            } else if audioEngine.isStepEditMode && audioEngine.getGridCell(row: track, col: step) {
+                                // In STEP EDIT mode, toggle step selection for multi-select octave adjustment
+                                audioEngine.toggleStepSelection(row: track, col: step)
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 // Note: Don't play sound when selecting in step edit mode
                             } else if audioEngine.isStepEditMode && !audioEngine.getGridCell(row: track, col: step) {
                                 // STEP EDIT mode but cell is empty - flash to indicate can't place steps
@@ -94,8 +91,8 @@ struct GridSequencerView: View {
                                 // Normal mode: toggle grid cell
                                 audioEngine.toggleGridCell(row: track, col: step)
 
-                                // Play sound when placing a step
-                                if audioEngine.getGridCell(row: track, col: step) {
+                                // Play sound when placing a step (only if sequencer is NOT playing)
+                                if audioEngine.getGridCell(row: track, col: step) && !audioEngine.isPlaying {
                                     // For drums (rows 0-3), use drum MIDI notes
                                     let note: Int
                                     if audioEngine.selectedInstrument == 3 && track < 4 {
@@ -122,29 +119,29 @@ struct GridSequencerView: View {
     }
 }
 
-// Kit Browser View - shows kit selector + drum tracks
+// Kit Browser View - shows kit selector + drum sound selection
 struct KitBrowserView: View {
     @EnvironmentObject var audioEngine: AudioEngine
 
-    // 16 kit colors - gradient from gold through orange to red
+    // 16 kit colors - pastel rainbow colors matching drum grid aesthetic
     private func getKitColor(_ index: Int) -> Color {
         let colors: [Color] = [
-            Color(hex: "FFD700"),  // Gold
-            Color(hex: "FFC700"),
-            Color(hex: "FFB700"),
-            Color(hex: "FFA700"),
-            Color(hex: "FF9700"),  // Orange
-            Color(hex: "FF8700"),
-            Color(hex: "FF7700"),
-            Color(hex: "FF6700"),
-            Color(hex: "FF5700"),  // Orange-Red
-            Color(hex: "FF4700"),
-            Color(hex: "FF3700"),
-            Color(hex: "FF2700"),
-            Color(hex: "FF1700"),  // Red
-            Color(hex: "FF0700"),
-            Color(hex: "F70000"),
-            Color(hex: "E70000")
+            Color(hex: "FFB6C1"),  // Light Pink
+            Color(hex: "FFE4B5"),  // Moccasin
+            Color(hex: "FFDAB9"),  // Peach Puff
+            Color(hex: "E0BBE4"),  // Lavender
+            Color(hex: "C7CEEA"),  // Periwinkle
+            Color(hex: "B5E7E7"),  // Light Cyan
+            Color(hex: "D4F1F4"),  // Light Sky Blue
+            Color(hex: "C1FFC1"),  // Pale Green
+            Color(hex: "FFFACD"),  // Lemon Chiffon
+            Color(hex: "FFE5CC"),  // Champagne
+            Color(hex: "FFD6E8"),  // Light Rose
+            Color(hex: "E6E6FA"),  // Lavender Blue
+            Color(hex: "F0E68C"),  // Khaki
+            Color(hex: "DDA0DD"),  // Plum
+            Color(hex: "87CEEB"),  // Sky Blue
+            Color(hex: "FFD700")   // Gold
         ]
         return colors[index]
     }
@@ -166,21 +163,24 @@ struct KitBrowserView: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            // Row 0: Kit selector (16 normal-sized squares)
+            // Row 0: Kit selector (16 normal-sized squares with pink gridlines)
             HStack(spacing: 2) {
                 ForEach(0..<16) { kitIndex in
                     Button(action: {
-                        // Select this kit
-                        audioEngine.instrumentWaveforms[3] = kitIndex
-                        // Play a preview sound
-                        audioEngine.playNote(instrument: 3, note: 36)
+                        // Select this kit and load its sounds
+                        audioEngine.selectKit(kitIndex)
+                        // Play a preview sound (kick) only if sequencer is NOT playing
+                        if !audioEngine.isPlaying {
+                            audioEngine.playNote(instrument: 3, note: 36)
+                        }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     }) {
                         Rectangle()
                             .fill(getKitColor(kitIndex))
                             .overlay(
                                 Rectangle()
-                                    .stroke(audioEngine.instrumentWaveforms[3] == kitIndex ? Color.white : Color.black.opacity(0.3),
-                                           lineWidth: audioEngine.instrumentWaveforms[3] == kitIndex ? 3 : 1)
+                                    .stroke(audioEngine.currentKitIndex == kitIndex ? Color.white : Color(hex: "9370DB").opacity(0.6),
+                                           lineWidth: audioEngine.currentKitIndex == kitIndex ? 3 : 2)
                             )
                             .aspectRatio(1.0, contentMode: .fit)
                     }
@@ -189,34 +189,67 @@ struct KitBrowserView: View {
                 }
             }
 
-            // Rows 1-4: Drum tracks (kick, snare, hat, perc) - 16 steps each
-            ForEach(0..<4) { drumTrack in
+            // Rows 1-4: Sound selection for current kit (kick, snare, hat, perc)
+            ForEach(0..<4) { drumType in
                 HStack(spacing: 2) {
                     ForEach(0..<16) { step in
-                        let isBeatMarker = (step % 4 == 0)
-                        KitGridCell(
-                            drumTrack: drumTrack,
-                            step: step,
-                            isActive: audioEngine.getGridCell(row: drumTrack, col: step),
-                            isPlaying: audioEngine.isPlaying && step == audioEngine.currentPlayingStep,
-                            drumColor: drumColors[drumTrack],
-                            darkerColor: drumDarkerColors[drumTrack],
-                            isBeatMarker: isBeatMarker
-                        ) {
-                            // Toggle drum step
-                            audioEngine.toggleGridCell(row: drumTrack, col: step)
+                        let maxSamples = [15, 16, 16, 10]  // Max samples per drum type
+                        let sampleIndex = step % maxSamples[drumType]
+                        let isSelected = audioEngine.getCurrentKitSounds()[drumType] == sampleIndex
 
-                            // Play sound when placing a step
-                            if audioEngine.getGridCell(row: drumTrack, col: step) {
-                                let note = [36, 38, 42, 46][drumTrack]
+                        KitSoundCell(
+                            drumType: drumType,
+                            sampleIndex: sampleIndex,
+                            isSelected: isSelected,
+                            drumColor: drumColors[drumType],
+                            darkerColor: drumDarkerColors[drumType]
+                        ) {
+                            // Select this sound for the current kit
+                            audioEngine.updateCurrentKitSound(drumType: drumType, sampleIndex: sampleIndex)
+
+                            // Play the selected sample to preview it (only if sequencer is NOT playing)
+                            if !audioEngine.isPlaying {
+                                let note = [36, 38, 42, 46][drumType]
                                 audioEngine.playNote(instrument: 3, note: note)
                             }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         }
                     }
                 }
             }
         }
         .padding(EdgeInsets(top: 0, leading: 8, bottom: 8, trailing: 8))
+    }
+}
+
+// Kit Sound Cell - shows sound selection for kits (pink selection with white gridlines)
+struct KitSoundCell: View {
+    let drumType: Int
+    let sampleIndex: Int
+    let isSelected: Bool
+    let drumColor: Color
+    let darkerColor: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Rectangle()
+                .fill(cellColor)
+                .overlay(
+                    Rectangle()
+                        .stroke(Color.white.opacity(0.4), lineWidth: 1)  // White gridlines
+                )
+                .aspectRatio(1.0, contentMode: .fit)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var cellColor: Color {
+        if isSelected {
+            return Color(hex: "FFB6C1") // Pink for selected sample - same as drum track
+        } else {
+            return Color.white.opacity(0.6) // Lighter white for unselected - same as drum track
+        }
     }
 }
 
@@ -235,6 +268,11 @@ struct KitGridCell: View {
         Button(action: action) {
             Rectangle()
                 .fill(cellColor)
+                .overlay(
+                    // White flash when active step is playing
+                    Rectangle()
+                        .fill(Color.white.opacity(isActive && isPlaying ? 0.7 : 0))
+                )
                 .overlay(
                     Rectangle()
                         .stroke(isActive ? darkerColor.opacity(0.8) : darkerColor.opacity(0.4), lineWidth: isActive ? 3 : 1)
@@ -307,6 +345,11 @@ struct GridCell: View {
             Rectangle()
                 .fill(cellColor)
                 .overlay(
+                    // White flash when active step is playing
+                    Rectangle()
+                        .fill(Color.white.opacity(isActive && isPlaying ? 0.7 : 0))
+                )
+                .overlay(
                     Rectangle()
                         .stroke(isActive ? getActiveOutlineColor() : darkerColor.opacity(0.4), lineWidth: isActive ? 3 : 1)
                 )
@@ -314,6 +357,11 @@ struct GridCell: View {
                     // Pastel red outline for selected step in STEP EDIT mode
                     Rectangle()
                         .stroke(isStepBeingEdited() ? Color(hex: "FF9999") : Color.clear, lineWidth: 3)
+                )
+                .overlay(
+                    // Purple outline for multi-selected steps
+                    Rectangle()
+                        .stroke(audioEngine.isStepSelected(row: row, col: col) ? Color(hex: "9370DB") : Color.clear, lineWidth: 3)
                 )
                 .overlay(
                     // Playback cursor - thick white border
@@ -404,8 +452,18 @@ struct GridCell: View {
                     return darkerColor
                 }
             } else {
-                // Show white when inactive
+                // Show white when inactive, but with bar indicators every 4 steps
                 if row < 4 {
+                    // Beat indicators every 4 steps with different colors
+                    if isBeatMarker {
+                        switch col {
+                        case 0: return Color(hex: "32CD32").opacity(0.3)  // Step 0 - Green
+                        case 4: return Color(hex: "FFD700").opacity(0.3)  // Step 4 - Gold
+                        case 8: return Color(hex: "FF6347").opacity(0.3)  // Step 8 - Tomato
+                        case 12: return Color(hex: "9370DB").opacity(0.3) // Step 12 - Purple
+                        default: return Color.white.opacity(0.9)
+                        }
+                    }
                     return Color.white.opacity(0.9) // Rows 0-3: White background
                 } else {
                     // Rows 4-7: Sample selection area - lighter white background, pink for selected
@@ -452,11 +510,11 @@ struct GridCell: View {
 struct FXGridView: View {
     @EnvironmentObject var audioEngine: AudioEngine
 
-    // Polyend Play FX Colors (8 categories × 2 columns each = 16 columns)
+    // FX Colors - First two columns are red for Pitch and Filter
     private func getFXColor(row: Int, col: Int) -> Color {
-        // Map column to effect category (2 columns per category)
         switch col {
-        case 0, 1:   return Color(hex: "FF3B30")  // Red - Tune
+        case 0:      return Color(hex: "FF3B30")  // Red - Pitch (+12 to -12)
+        case 1:      return Color(hex: "FF3B30")  // Red - Low Pass Filter
         case 2, 3:   return Color(hex: "FF9500")  // Orange - Filters
         case 4, 5:   return Color(hex: "FFCC00")  // Yellow - Overdrive/Bit
         case 6, 7:   return Color(hex: "34C759")  // Green - Rearrange
@@ -475,22 +533,40 @@ struct FXGridView: View {
                     ForEach(0..<16) { col in
                         let fxIndex = row * 16 + col
                         let isBeatMarker = (col % 4 == 0)
+                        let isActive = col == 0 ? (audioEngine.activeFXPitchRow == row) : (col == 1 ? (audioEngine.activeFXFilterRow == row) : (audioEngine.activePerformanceFX == fxIndex))
+
                         FXCell(
                             row: row,
                             col: col,
                             fxIndex: fxIndex,
-                            isActive: audioEngine.activePerformanceFX == fxIndex,
+                            isActive: isActive,
                             isPlaying: false,  // Don't show sequence playback on FX page
                             color: getFXColor(row: row, col: col),
                             isBeatMarker: isBeatMarker
                         ) {
-                            // Toggle FX on/off
-                            if audioEngine.activePerformanceFX == fxIndex {
-                                // Already active - turn off
-                                audioEngine.deactivatePerformanceFX()
+                            if col == 0 {
+                                // Column 0: Pitch control
+                                if audioEngine.activeFXPitchRow == row {
+                                    audioEngine.activeFXPitchRow = nil
+                                } else {
+                                    audioEngine.activeFXPitchRow = row
+                                }
+                            } else if col == 1 {
+                                // Column 1: Filter control
+                                if audioEngine.activeFXFilterRow == row {
+                                    audioEngine.activeFXFilterRow = nil
+                                    audioEngine.clearLowPassFilter()
+                                } else {
+                                    audioEngine.activeFXFilterRow = row
+                                    audioEngine.applyLowPassFilter(row: row)
+                                }
                             } else {
-                                // Activate this FX preset
-                                audioEngine.activatePerformanceFX(presetIndex: fxIndex)
+                                // Other columns: old performance FX system
+                                if audioEngine.activePerformanceFX == fxIndex {
+                                    audioEngine.deactivatePerformanceFX()
+                                } else {
+                                    audioEngine.activatePerformanceFX(presetIndex: fxIndex)
+                                }
                             }
                         }
                     }

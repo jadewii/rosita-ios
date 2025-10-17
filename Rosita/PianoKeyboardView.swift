@@ -73,7 +73,7 @@ struct PianoKeyboardView: View {
                 }
                 
                 // Black keys layer - positioned absolutely
-                ForEach(blackKeys, id: \.note) { blackKey in
+                ForEach(Array(blackKeys.enumerated()), id: \.offset) { index, blackKey in
                     BlackKey(
                         isPressed: pressedKeys.contains(blackKey.note),
                         width: blackKeyWidth,

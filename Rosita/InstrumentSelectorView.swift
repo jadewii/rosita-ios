@@ -33,14 +33,21 @@ struct InstrumentSelectorView: View {
                     }
                 }
 
-                // FX button
+                // FX button - toggles between FX and KIT modes
                 RetroFXButton(
                     isSelected: audioEngine.isFXMode
                 ) {
-                    // Select FX mode (like selecting a track)
-                    audioEngine.isFXMode = true
-                    audioEngine.isKitBrowserMode = false
-                    audioEngine.isMixerMode = false
+                    if audioEngine.isFXMode {
+                        // Currently in FX mode - switch to KIT mode
+                        audioEngine.isFXMode = false
+                        audioEngine.isKitBrowserMode = true
+                        audioEngine.isMixerMode = false
+                    } else {
+                        // Not in FX mode - switch to FX mode
+                        audioEngine.isFXMode = true
+                        audioEngine.isKitBrowserMode = false
+                        audioEngine.isMixerMode = false
+                    }
                 }
             }
             .contentTransition(.identity)
