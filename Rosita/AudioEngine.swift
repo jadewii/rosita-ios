@@ -5,6 +5,45 @@ import AVFoundation
 // import SoundpipeAudioKit
 // import AudioKitEX
 
+// XY Pad Effect Types
+enum XYEffectType: Int, CaseIterable {
+    case filterDelay = 0      // Y: Filter, X: Delay (default)
+    case reverbDistortion = 1 // Y: Reverb, X: Distortion
+    case pitchFilter = 2      // Y: Pitch, X: High-pass filter
+
+    var name: String {
+        switch self {
+        case .filterDelay: return "FILTER\nDELAY"
+        case .reverbDistortion: return "REVERB\nDIST"
+        case .pitchFilter: return "PITCH\nFILTER"
+        }
+    }
+
+    var yAxisName: String {
+        switch self {
+        case .filterDelay: return "FILTER"
+        case .reverbDistortion: return "REVERB"
+        case .pitchFilter: return "PITCH"
+        }
+    }
+
+    var xAxisName: String {
+        switch self {
+        case .filterDelay: return "DELAY"
+        case .reverbDistortion: return "DIST"
+        case .pitchFilter: return "FILTER"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .filterDelay: return Color(hex: "9370DB")     // Purple
+        case .reverbDistortion: return Color(hex: "FF69B4") // Hot Pink
+        case .pitchFilter: return Color(hex: "32CD32")     // Lime Green
+        }
+    }
+}
+
 class AudioEngine: ObservableObject {
     // Simplified audio engine for UI testing
     private var audioEngine = AVAudioEngine()
@@ -79,6 +118,7 @@ class AudioEngine: ObservableObject {
         }
     }
     @Published var selectedInstrument = 0
+    @Published var lastMelodicInstrument = 0  // Last non-drum instrument (0-2) for KIT button toggle
     @Published var transpose = 0  // Keyboard transpose
     @Published var gridTranspose = 0  // Grid transpose
     @Published var arpeggiatorMode = 0
@@ -132,7 +172,12 @@ class AudioEngine: ObservableObject {
     @Published var isMixerMode = false
     @Published var isKitBrowserMode = false
     @Published var isFXMode = false
+    @Published var isXYPadMode = false  // XY pad for performance effects
     @Published var activePerformanceFX: Int? = nil  // nil = no FX active, 0-63 = grid position
+
+    // XY Pad state
+    @Published var xyPadPosition: CGPoint = .zero  // Current XY position (-1 to 1, -1 to 1)
+    @Published var selectedXYEffect: XYEffectType = .filterDelay  // Currently selected XY effect
 
     // FX Grid Controls
     @Published var activeFXPitchRow: Int? = nil  // Column 0: Pitch control (+12 to -12)
@@ -629,9 +674,6 @@ class AudioEngine: ObservableObject {
     func playNote(instrument: Int, note: Int, adsr: [Double]? = nil) {
         guard instrument < instruments.count else { return }
 
-        // Update effects for the instrument being played
-        updateTrackEffects(track: instrument)
-
         // Special handling for drums
         if instrument == 3 {
             // For drums, the note determines which drum sound to play
@@ -697,10 +739,7 @@ class AudioEngine: ObservableObject {
 
     func noteOn(note: Int) {
         startAudioEngineIfNeeded()
-        
-        // Update effects for the current instrument
-        updateTrackEffects(track: selectedInstrument)
-        
+
         let adjustedNote = note + transpose
         instruments[selectedInstrument].play(note: adjustedNote, velocity: 127)
     }
@@ -1059,7 +1098,7 @@ class AudioEngine: ObservableObject {
 
     func increaseOctave(for track: Int) {
         guard track >= 0 && track < 4 else { return }
-        if trackOctaveOffsets[track] < 2 {
+        if trackOctaveOffsets[track] < 4 {
             trackOctaveOffsets[track] += 1
         }
     }
@@ -1650,11 +1689,11 @@ class AudioEngine: ObservableObject {
     // Row 0 = +12 semitones, Row 7 = -12 semitones, linear interpolation
     func getFXPitchOffset() -> Int {
         guard let row = activeFXPitchRow else { return 0 }
-        // Map row 0-7 to +12 to -12 semitones
+        // Map row 0-7 to +12 to -12 semitones (24 semitones over 7 steps)
         // row 0 → +12
         // row 7 → -12
-        // Formula: pitch = 12 - (row * 3)
-        let pitch = 12 - (row * 3)
+        // Formula: pitch = 12 - round(row * 24/7)
+        let pitch = 12 - Int(round(Float(row) * 24.0 / 7.0))
         return pitch
     }
 
@@ -1689,6 +1728,167 @@ class AudioEngine: ObservableObject {
     func clearLowPassFilter() {
         guard perfEQ.bands.count >= 10 else { return }
         perfEQ.bands[9].bypass = true
+    }
+
+    // Apply XY pad effects based on position in grid (zoned approach)
+    // Different quadrants apply different effect combinations
+    func applyXYPadEffects(x: Double, y: Double) {
+        guard perfEQ.bands.count >= 10 else { return }
+
+        // Y-axis always controls filter (top = open, bottom = closed)
+        let filterAmount = (y + 1.0) / 2.0  // Convert -1...1 to 0...1
+        let minFreq: Float = 200.0
+        let maxFreq: Float = 20000.0
+        let logMin = log10(minFreq)
+        let logMax = log10(maxFreq)
+        let logFreq = logMin + (logMax - logMin) * Float(filterAmount)
+        let cutoffFreq = pow(10, logFreq)
+
+        perfEQ.bands[9].filterType = .lowPass
+        perfEQ.bands[9].frequency = cutoffFreq
+        perfEQ.bands[9].bandwidth = 0.5
+        perfEQ.bands[9].bypass = false
+        perfEQ.bands[9].gain = 0
+
+        // Determine zone based on both X and Y position
+        let absX = abs(x)
+        let absY = abs(y)
+
+        // TOP HALF (y > 0)
+        if y > 0.3 {
+            if absX < 0.4 {
+                // TOP CENTER: Delay + slight pitch up
+                if let delay = delayNode {
+                    let delayAmount = absX / 0.4
+                    if delayAmount > 0.05 {
+                        let tempo = bpm / 60.0
+                        let delayBeats = 0.125 + (delayAmount * 0.25)
+                        delay.delayTime = delayBeats / tempo
+                        delay.feedback = Float(20 + delayAmount * 30)
+                        delay.wetDryMix = Float(delayAmount * 40)
+                        delay.lowPassCutoff = Float(2000 + delayAmount * 6000)
+                    } else {
+                        delay.delayTime = 0.0
+                        delay.feedback = 0
+                        delay.wetDryMix = 0
+                    }
+                }
+                perfTimePitch.pitch = Float(y * 6.0)  // Subtle pitch shift up
+                perfReverb.wetDryMix = 0
+                perfDistortion.wetDryMix = 0
+                perfDistortion.preGain = 0
+            } else {
+                // TOP SIDES: Reverb + chorus effect (simulated with short delay)
+                let sideAmount = (absX - 0.4) / 0.6
+                perfReverb.wetDryMix = Float(sideAmount * 70 + y * 20)
+
+                if let delay = delayNode {
+                    // Short delay for chorus effect
+                    delay.delayTime = 0.02
+                    delay.feedback = 10
+                    delay.wetDryMix = Float(sideAmount * 20)
+                    delay.lowPassCutoff = 8000
+                }
+                perfTimePitch.pitch = 0
+                perfDistortion.wetDryMix = 0
+                perfDistortion.preGain = 0
+            }
+        }
+        // MIDDLE BAND (-0.3 < y < 0.3)
+        else if y > -0.3 {
+            if absX < 0.5 {
+                // CENTER: Clean with just filter + very subtle delay
+                if let delay = delayNode {
+                    let delayAmount = absX / 0.5
+                    if delayAmount > 0.1 {
+                        let tempo = bpm / 60.0
+                        delay.delayTime = 0.125 / tempo
+                        delay.feedback = Float(15 + delayAmount * 15)
+                        delay.wetDryMix = Float(delayAmount * 25)
+                        delay.lowPassCutoff = 4000
+                    } else {
+                        delay.delayTime = 0.0
+                        delay.feedback = 0
+                        delay.wetDryMix = 0
+                    }
+                }
+                perfReverb.wetDryMix = 0
+                perfDistortion.wetDryMix = 0
+                perfDistortion.preGain = 0
+                perfTimePitch.pitch = 0
+            } else {
+                // SIDES: Distortion + delay combo
+                let sideAmount = (absX - 0.5) / 0.5
+                perfDistortion.wetDryMix = Float(sideAmount * 50)
+                perfDistortion.preGain = Float(sideAmount * 15)
+
+                if let delay = delayNode {
+                    delay.delayTime = 0.25
+                    delay.feedback = Float(sideAmount * 25)
+                    delay.wetDryMix = Float(sideAmount * 20)
+                    delay.lowPassCutoff = 3000
+                }
+                perfReverb.wetDryMix = 0
+                perfTimePitch.pitch = 0
+            }
+        }
+        // BOTTOM HALF (y < -0.3)
+        else {
+            if absX < 0.4 {
+                // BOTTOM CENTER: Heavy delay + pitch down
+                if let delay = delayNode {
+                    let delayAmount = absX / 0.4 + 0.3
+                    let tempo = bpm / 60.0
+                    let delayBeats = 0.25 + (delayAmount * 0.5)
+                    delay.delayTime = delayBeats / tempo
+                    delay.feedback = Float(30 + delayAmount * 40)
+                    delay.wetDryMix = Float(delayAmount * 50)
+                    delay.lowPassCutoff = Float(1000 + delayAmount * 3000)
+                }
+                perfTimePitch.pitch = Float(y * 6.0)  // Pitch shift down
+                perfReverb.wetDryMix = 0
+                perfDistortion.wetDryMix = 0
+                perfDistortion.preGain = 0
+            } else {
+                // BOTTOM SIDES: Heavy distortion + reverb
+                let sideAmount = (absX - 0.4) / 0.6
+                let depthAmount = abs(y)
+
+                perfDistortion.wetDryMix = Float(sideAmount * 70 + depthAmount * 20)
+                perfDistortion.preGain = Float(sideAmount * 25 + depthAmount * 10)
+                perfReverb.wetDryMix = Float(sideAmount * 50)
+
+                if let delay = delayNode {
+                    delay.delayTime = 0.0
+                    delay.feedback = 0
+                    delay.wetDryMix = 0
+                }
+                perfTimePitch.pitch = 0
+            }
+        }
+    }
+
+    // Clear XY pad effects
+    func clearXYPadEffects() {
+        // Clear filter
+        clearLowPassFilter()
+
+        // Reset delay
+        if let delay = delayNode {
+            delay.delayTime = 0.0
+            delay.feedback = 0
+            delay.wetDryMix = 0
+        }
+
+        // Reset reverb
+        perfReverb.wetDryMix = 0
+
+        // Reset distortion
+        perfDistortion.wetDryMix = 0
+        perfDistortion.preGain = 0
+
+        // Reset pitch
+        perfTimePitch.pitch = 0
     }
 
     // Apply all effect parameters from a preset

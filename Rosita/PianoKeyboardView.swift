@@ -45,66 +45,100 @@ struct PianoKeyboardView: View {
                         WhiteKey(
                             isPressed: pressedKeys.contains(whiteKeys[index]),
                             width: whiteKeyWidth,
-                            height: keyboardHeight
+                            height: keyboardHeight,
+                            keyIndex: index,
+                            isDrumLengthMode: audioEngine.selectedInstrument == 3,
+                            currentDrumLength: audioEngine.trackLengths[3]
                         )
                         .gesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { _ in
                                     if !pressedKeys.contains(whiteKeys[index]) {
                                         pressedKeys.insert(whiteKeys[index])
-                                        
-                                        // Always play the note sound
-                                        audioEngine.noteOn(note: whiteKeys[index])
-                                        
-                                        // Record if in recording mode
-                                        if audioEngine.isRecording {
-                                            audioEngine.recordNoteToStep(note: whiteKeys[index])
+
+                                        // Check if we're on drum track and this is a length control key (first 16)
+                                        if audioEngine.selectedInstrument == 3 && index < 16 {
+                                            // Set drum track length (1-16)
+                                            let newLength = index + 1
+                                            audioEngine.setTrackLength(track: 3, length: newLength)
+                                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                        } else {
+                                            // Normal keyboard behavior
+                                            audioEngine.noteOn(note: whiteKeys[index])
+
+                                            // Record if in recording mode
+                                            if audioEngine.isRecording {
+                                                audioEngine.recordNoteToStep(note: whiteKeys[index])
+                                            }
+
+                                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                         }
-                                        
-                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                     }
                                 }
                                 .onEnded { _ in
                                     pressedKeys.remove(whiteKeys[index])
-                                    audioEngine.noteOff(note: whiteKeys[index])
+                                    // Only send noteOff if not in drum length mode
+                                    if !(audioEngine.selectedInstrument == 3 && index < 16) {
+                                        audioEngine.noteOff(note: whiteKeys[index])
+                                    }
                                 }
                         )
                     }
                 }
                 
-                // Black keys layer - positioned absolutely
-                ForEach(Array(blackKeys.enumerated()), id: \.offset) { index, blackKey in
-                    BlackKey(
-                        isPressed: pressedKeys.contains(blackKey.note),
-                        width: blackKeyWidth,
-                        height: blackKeyHeight
-                    )
-                    .position(
-                        x: blackKey.position * whiteKeyWidth + blackKeyWidth / 2,
-                        y: blackKeyHeight / 2
-                    )
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { _ in
-                                if !pressedKeys.contains(blackKey.note) {
-                                    pressedKeys.insert(blackKey.note)
-                                    
-                                    // Always play the note sound
-                                    audioEngine.noteOn(note: blackKey.note)
-                                    
-                                    // Record if in recording mode
-                                    if audioEngine.isRecording {
-                                        audioEngine.recordNoteToStep(note: blackKey.note)
+                // Black keys layer - positioned absolutely (hidden in drum length mode)
+                if audioEngine.selectedInstrument != 3 {
+                    ForEach(Array(blackKeys.enumerated()), id: \.offset) { index, blackKey in
+                        BlackKey(
+                            isPressed: pressedKeys.contains(blackKey.note),
+                            width: blackKeyWidth,
+                            height: blackKeyHeight
+                        )
+                        .position(
+                            x: blackKey.position * whiteKeyWidth + blackKeyWidth / 2,
+                            y: blackKeyHeight / 2
+                        )
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { _ in
+                                    if !pressedKeys.contains(blackKey.note) {
+                                        pressedKeys.insert(blackKey.note)
+
+                                        // Always play the note sound
+                                        audioEngine.noteOn(note: blackKey.note)
+
+                                        // Record if in recording mode
+                                        if audioEngine.isRecording {
+                                            audioEngine.recordNoteToStep(note: blackKey.note)
+                                        }
+
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                     }
-                                    
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 }
-                            }
-                            .onEnded { _ in
-                                pressedKeys.remove(blackKey.note)
-                                audioEngine.noteOff(note: blackKey.note)
-                            }
-                    )
+                                .onEnded { _ in
+                                    pressedKeys.remove(blackKey.note)
+                                    audioEngine.noteOff(note: blackKey.note)
+                                }
+                        )
+                    }
+                }
+
+                // Drum length indicator label
+                if audioEngine.selectedInstrument == 3 {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Text("LENGTH: \(audioEngine.trackLengths[3])")
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.black.opacity(0.7))
+                                .cornerRadius(8)
+                            Spacer()
+                        }
+                        .padding(.leading, 8)
+                        .padding(.bottom, 8)
+                    }
                 }
             }
         }
@@ -154,15 +188,39 @@ struct WhiteKey: View {
     let isPressed: Bool
     let width: CGFloat
     let height: CGFloat
-    
+    let keyIndex: Int
+    let isDrumLengthMode: Bool
+    let currentDrumLength: Int
+
     var body: some View {
         Rectangle()
-            .fill(isPressed ? Color(hex: "FF69B4").opacity(0.3) : Color.white)
+            .fill(getKeyColor())
             .frame(width: width, height: height)
             .overlay(
                 Rectangle()
                     .stroke(Color.black, lineWidth: 2)
             )
+    }
+
+    private func getKeyColor() -> Color {
+        // Drum length mode - first 16 keys control length
+        if isDrumLengthMode && keyIndex < 16 {
+            let lengthIndex = keyIndex + 1  // 1-16
+
+            if lengthIndex == currentDrumLength {
+                // Currently selected length - bright blue
+                return Color(hex: "1E90FF")
+            } else if lengthIndex < currentDrumLength {
+                // Keys before current length - light blue
+                return Color(hex: "87CEEB").opacity(0.6)
+            } else {
+                // Keys after current length - very light blue
+                return Color(hex: "87CEEB").opacity(0.2)
+            }
+        }
+
+        // Normal keyboard mode
+        return isPressed ? Color(hex: "FF69B4").opacity(0.3) : Color.white
     }
 }
 

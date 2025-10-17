@@ -7,6 +7,7 @@ struct CustomSlider: View {
     let thumbColor: Color = Color(hex: "FF69B4") // Pink thumb like original
     let label: String
     var onlyUpdateOnRelease: Bool = false // New parameter for BPM slider behavior
+    var onValueChanged: ((Double) -> Void)? = nil // Callback for live value updates during drag
 
     @State private var isEditing = false
     @State private var tempValue: Double = 0
@@ -76,8 +77,10 @@ struct CustomSlider: View {
 
                             if onlyUpdateOnRelease {
                                 tempValue = clampedValue
+                                onValueChanged?(clampedValue)  // Notify of temp value change
                             } else {
                                 value = clampedValue
+                                onValueChanged?(clampedValue)  // Notify of value change
                             }
                         }
                         .onEnded { _ in

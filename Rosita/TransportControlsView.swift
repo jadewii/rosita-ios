@@ -203,16 +203,22 @@ struct Transport6Buttons: View {
                 fontSize: 12
             )
 
-            // KIT button - for drum kit browsing
+            // KIT button - toggles drum kit browsing
             RetroButton(
                 title: "KIT",
                 color: audioEngine.isKitBrowserMode ? Color(hex: "FFA500") : Color.white,
                 textColor: audioEngine.isKitBrowserMode ? .white : .black,
                 action: {
-                    // Always enable kit mode when pressed
-                    audioEngine.isKitBrowserMode = true
-                    audioEngine.isFXMode = false
-                    audioEngine.isMixerMode = false
+                    if audioEngine.isKitBrowserMode {
+                        // Already in kit mode - exit and return to last melodic instrument
+                        audioEngine.isKitBrowserMode = false
+                        audioEngine.selectedInstrument = audioEngine.lastMelodicInstrument
+                    } else {
+                        // Enter kit mode
+                        audioEngine.isKitBrowserMode = true
+                        audioEngine.isFXMode = false
+                        audioEngine.isMixerMode = false
+                    }
                 },
                 width: 56,
                 height: 56,
@@ -225,10 +231,16 @@ struct Transport6Buttons: View {
                 color: audioEngine.isMixerMode ? Color(hex: "FFA500") : Color.white,
                 iconColor: audioEngine.isMixerMode ? .white : .black,
                 action: {
-                    // Always enable mixer mode when pressed
-                    audioEngine.isMixerMode = true
-                    audioEngine.isFXMode = false
-                    audioEngine.isKitBrowserMode = false
+                    // Toggle mixer mode
+                    if audioEngine.isMixerMode {
+                        // Exit mixer mode
+                        audioEngine.isMixerMode = false
+                    } else {
+                        // Enter mixer mode
+                        audioEngine.isMixerMode = true
+                        audioEngine.isFXMode = false
+                        audioEngine.isKitBrowserMode = false
+                    }
                 },
                 width: 56,
                 height: 56
@@ -237,8 +249,8 @@ struct Transport6Buttons: View {
             // Scale button - tap to toggle scale selection, long press to lock selection mode
             ZStack {
                 RetroButton(
-                    title: getScaleName(),
-                    color: getScaleColor(),
+                    title: audioEngine.isScaleSelectionMode ? "SCALE" : getScaleName(),
+                    color: audioEngine.isScaleSelectionMode ? Color(hex: "FFD700") : getScaleColor(),
                     textColor: .black,
                     action: {
                         if !isScaleLongPressing {

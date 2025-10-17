@@ -188,7 +188,7 @@ struct MuteButton: View {
 
         ZStack {
             Rectangle()
-                .fill(isSoloed ? Color(hex: "FFD700") : (isMuted ? Color(hex: "FF9999") : Color(hex: "32CD32")))
+                .fill(getButtonColor(isSoloed: isSoloed, isMuted: isMuted))
                 .frame(width: 56, height: 56)
                 .overlay(
                     ZStack {
@@ -313,6 +313,21 @@ struct MuteButton: View {
         case 7: return "ALL\nDRUMS"
         default: return ""
         }
+    }
+
+    private func getButtonColor(isSoloed: Bool, isMuted: Bool) -> Color {
+        // If this track is soloed, show gold
+        if isSoloed {
+            return Color(hex: "FFD700")
+        }
+
+        // If another track is soloed, show gray (inactive)
+        if let soloedTrack = audioEngine.soloedTrack, soloedTrack != trackIndex {
+            return Color.gray
+        }
+
+        // Otherwise, show green (active) or pink (muted)
+        return isMuted ? Color(hex: "FF9999") : Color(hex: "32CD32")
     }
 }
 

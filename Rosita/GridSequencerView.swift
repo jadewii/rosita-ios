@@ -2,7 +2,7 @@ import SwiftUI
 
 struct GridSequencerView: View {
     @EnvironmentObject var audioEngine: AudioEngine
-    
+
     // Get instrument colors from InstrumentType
     private func getInstrumentColor(for instrumentIndex: Int) -> Color {
         guard let instrumentType = InstrumentType(rawValue: instrumentIndex) else {
@@ -10,7 +10,7 @@ struct GridSequencerView: View {
         }
         return instrumentType.color
     }
-    
+
     // Get darker shade for active steps
     private func getDarkerShade(of color: Color) -> Color {
         // Convert to darker version for active steps
@@ -22,7 +22,7 @@ struct GridSequencerView: View {
         default: return color.opacity(0.7)
         }
     }
-    
+
     // Get even darker shade for outlines
     private func getOutlineColor(for color: Color) -> Color {
         switch color {
@@ -33,9 +33,12 @@ struct GridSequencerView: View {
         default: return color.opacity(0.5)
         }
     }
-    
+
     var body: some View {
-        if audioEngine.isFXMode {
+        if audioEngine.isFXMode && audioEngine.isXYPadMode {
+            // XY Pad mode - touch-based effects control
+            XYPadView()
+        } else if audioEngine.isFXMode {
             // FX mode - show performance effects grid
             FXGridView()
         } else if audioEngine.isKitBrowserMode {
@@ -146,6 +149,29 @@ struct KitBrowserView: View {
         return colors[index]
     }
 
+    // Darker shades for selected kit
+    private func getKitColorDarker(_ index: Int) -> Color {
+        let darkerColors: [Color] = [
+            Color(hex: "FF1493"),  // Deep Pink
+            Color(hex: "FFB347"),  // Light Orange
+            Color(hex: "FFA07A"),  // Light Salmon
+            Color(hex: "BA55D3"),  // Medium Orchid
+            Color(hex: "6495ED"),  // Cornflower Blue
+            Color(hex: "5F9EA0"),  // Cadet Blue
+            Color(hex: "4682B4"),  // Steel Blue
+            Color(hex: "90EE90"),  // Light Green
+            Color(hex: "F0E68C"),  // Khaki Darker
+            Color(hex: "DEB887"),  // Burlywood
+            Color(hex: "FFB6C1"),  // Light Pink
+            Color(hex: "B0C4DE"),  // Light Steel Blue
+            Color(hex: "BDB76B"),  // Dark Khaki
+            Color(hex: "9370DB"),  // Medium Purple
+            Color(hex: "1E90FF"),  // Dodger Blue
+            Color(hex: "FFA500")   // Orange
+        ]
+        return darkerColors[index]
+    }
+
     // Drum track colors
     private let drumColors: [Color] = [
         Color(hex: "87CEEB"),  // Kick - Sky Blue
@@ -176,7 +202,7 @@ struct KitBrowserView: View {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     }) {
                         Rectangle()
-                            .fill(getKitColor(kitIndex))
+                            .fill(audioEngine.currentKitIndex == kitIndex ? getKitColorDarker(kitIndex) : getKitColor(kitIndex))
                             .overlay(
                                 Rectangle()
                                     .stroke(audioEngine.currentKitIndex == kitIndex ? Color.white : Color(hex: "9370DB").opacity(0.6),
@@ -397,7 +423,7 @@ struct GridCell: View {
                 }
         )
     }
-    
+
     private func isStepBeingEdited() -> Bool {
         // Check if this step is currently selected for editing in STEP EDIT mode
         if selectedInstrument == 3 && row < 4 {
@@ -429,7 +455,7 @@ struct GridCell: View {
         default: return darkerColor.opacity(0.8)
         }
     }
-    
+
     private var cellColor: Color {
         // Flash white when tapped in STEP EDIT mode on empty cell
         if isFlashing {
@@ -612,5 +638,104 @@ struct FXCell: View {
                 return color.opacity(0.3)
             }
         }
+    }
+}
+
+// XY Pad View - Touch-based effects control with visual feedback
+struct XYPadView: View {
+    @EnvironmentObject var audioEngine: AudioEngine
+    @State private var touchPosition: CGPoint? = nil
+    @State private var trail: [CGPoint] = []
+
+    var body: some View {
+        GeometryReader { geometry in
+                ZStack {
+                    // Gradient background - use effect type color
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            audioEngine.selectedXYEffect.color.opacity(0.3),
+                            audioEngine.selectedXYEffect.color.opacity(0.1),
+                            audioEngine.selectedXYEffect.color.opacity(0.3)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+
+                // Grid lines only
+                Path { path in
+                    for i in 1..<8 {
+                        let y = geometry.size.height * CGFloat(i) / 8
+                        path.move(to: CGPoint(x: 0, y: y))
+                        path.addLine(to: CGPoint(x: geometry.size.width, y: y))
+                    }
+                    for i in 1..<16 {
+                        let x = geometry.size.width * CGFloat(i) / 16
+                        path.move(to: CGPoint(x: x, y: 0))
+                        path.addLine(to: CGPoint(x: x, y: geometry.size.height))
+                    }
+                }
+                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+
+                // Trail effect
+                ForEach(trail.indices, id: \.self) { index in
+                    Circle()
+                        .fill(Color.white.opacity(Double(index) / Double(max(trail.count, 1)) * 0.6))
+                        .frame(width: 20, height: 20)
+                        .position(trail[index])
+                }
+
+                // Touch indicator - crosshair style
+                if let pos = touchPosition {
+                    ZStack {
+                        // Horizontal line
+                        Rectangle()
+                            .fill(Color.white)
+                            .frame(width: 80, height: 3)
+                        // Vertical line
+                        Rectangle()
+                            .fill(Color.white)
+                            .frame(width: 3, height: 80)
+                        // Center dot
+                        Circle()
+                            .fill(Color(hex: "FFD700"))
+                            .frame(width: 20, height: 20)
+                        // Outer ring
+                        Circle()
+                            .stroke(Color.white, lineWidth: 3)
+                            .frame(width: 40, height: 40)
+                    }
+                    .position(pos)
+                }
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        touchPosition = value.location
+                        trail.append(value.location)
+                        if trail.count > 20 {
+                            trail.removeFirst()
+                        }
+
+                        // Convert to normalized -1 to 1 coordinates
+                        let x = (value.location.x / geometry.size.width) * 2 - 1
+                        let y = 1 - (value.location.y / geometry.size.height) * 2
+                        audioEngine.xyPadPosition = CGPoint(x: x, y: y)
+
+                        // Apply effects based on XY position
+                        audioEngine.applyXYPadEffects(x: x, y: y)
+
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                    .onEnded { _ in
+                        touchPosition = nil
+                        trail.removeAll()
+
+                        // Clear effects when touch ends
+                        audioEngine.clearXYPadEffects()
+                    }
+            )
+        }
+        .padding(EdgeInsets(top: 0, leading: 8, bottom: 8, trailing: 8))
     }
 }

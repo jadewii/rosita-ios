@@ -58,20 +58,17 @@ struct RandomIconShape: Shape {
         let width = rect.width
         let height = rect.height
 
-        // Dice dots pattern - show 6 dots like a die
+        // Dice dots pattern - show 3 dots like a die (diagonal pattern)
         let dotSize = width * 0.12
         let padding = width * 0.2
 
-        // Top row
+        // Top-left dot
         path.addEllipse(in: CGRect(x: padding, y: padding, width: dotSize, height: dotSize))
-        path.addEllipse(in: CGRect(x: width - padding - dotSize, y: padding, width: dotSize, height: dotSize))
 
-        // Middle row
-        path.addEllipse(in: CGRect(x: padding, y: height/2 - dotSize/2, width: dotSize, height: dotSize))
-        path.addEllipse(in: CGRect(x: width - padding - dotSize, y: height/2 - dotSize/2, width: dotSize, height: dotSize))
+        // Center dot
+        path.addEllipse(in: CGRect(x: width/2 - dotSize/2, y: height/2 - dotSize/2, width: dotSize, height: dotSize))
 
-        // Bottom row
-        path.addEllipse(in: CGRect(x: padding, y: height - padding - dotSize, width: dotSize, height: dotSize))
+        // Bottom-right dot
         path.addEllipse(in: CGRect(x: width - padding - dotSize, y: height - padding - dotSize, width: dotSize, height: dotSize))
 
         return path
@@ -207,18 +204,31 @@ struct ArrowPendulumShape: Shape {
         let width = rect.width
         let height = rect.height
 
-        // Double arrow (left and right for Pendulum)
-        // Left arrow
-        path.move(to: CGPoint(x: width * 0.2, y: height * 0.5))
-        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.35))
-        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.45))
-        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.45))
-        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.35))
-        path.addLine(to: CGPoint(x: width * 0.8, y: height * 0.5))
-        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.65))
-        path.addLine(to: CGPoint(x: width * 0.65, y: height * 0.55))
-        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.55))
-        path.addLine(to: CGPoint(x: width * 0.35, y: height * 0.65))
+        // Stacked arrows: forward (right) on top, reverse (left) on bottom
+        // Using smaller versions of ArrowRightShape and ArrowLeftShape
+
+        // Forward arrow (top half) - scaled down version of ArrowRightShape
+        let topRect = CGRect(x: width * 0.15, y: height * 0.1, width: width * 0.7, height: height * 0.35)
+        // Right arrow pointing forward
+        path.move(to: CGPoint(x: topRect.maxX, y: topRect.midY))
+        path.addLine(to: CGPoint(x: topRect.midX, y: topRect.maxY))
+        path.addLine(to: CGPoint(x: topRect.midX, y: topRect.midY + topRect.height * 0.1))
+        path.addLine(to: CGPoint(x: topRect.minX, y: topRect.midY + topRect.height * 0.1))
+        path.addLine(to: CGPoint(x: topRect.minX, y: topRect.midY - topRect.height * 0.1))
+        path.addLine(to: CGPoint(x: topRect.midX, y: topRect.midY - topRect.height * 0.1))
+        path.addLine(to: CGPoint(x: topRect.midX, y: topRect.minY))
+        path.closeSubpath()
+
+        // Reverse arrow (bottom half) - scaled down version of ArrowLeftShape
+        let bottomRect = CGRect(x: width * 0.15, y: height * 0.55, width: width * 0.7, height: height * 0.35)
+        // Left arrow pointing backward
+        path.move(to: CGPoint(x: bottomRect.minX, y: bottomRect.midY))
+        path.addLine(to: CGPoint(x: bottomRect.midX, y: bottomRect.maxY))
+        path.addLine(to: CGPoint(x: bottomRect.midX, y: bottomRect.midY + bottomRect.height * 0.1))
+        path.addLine(to: CGPoint(x: bottomRect.maxX, y: bottomRect.midY + bottomRect.height * 0.1))
+        path.addLine(to: CGPoint(x: bottomRect.maxX, y: bottomRect.midY - bottomRect.height * 0.1))
+        path.addLine(to: CGPoint(x: bottomRect.midX, y: bottomRect.midY - bottomRect.height * 0.1))
+        path.addLine(to: CGPoint(x: bottomRect.midX, y: bottomRect.minY))
         path.closeSubpath()
 
         return path

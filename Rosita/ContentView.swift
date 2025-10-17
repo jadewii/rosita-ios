@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var keyboardOffsetX: Double = 0
     @State private var keyboardOffsetY: Double = -72
     @State private var octaveButtonOffsetY: Double = -95
+    @State private var displayBPM: Int = 120  // For live BPM display while dragging
 
     // Base positions for keyboard and octave (for drag accumulation)
     @State private var keyboardBaseX: Double = 0
@@ -193,11 +194,14 @@ struct ContentView: View {
                                     range: 60...200,
                                     trackColor: Color(hex: "FF1493"),
                                     label: "",
-                                    onlyUpdateOnRelease: true
+                                    onlyUpdateOnRelease: true,
+                                    onValueChanged: { newValue in
+                                        displayBPM = Int(newValue)
+                                    }
                                 )
                                 .frame(width: 120, height: 30)
 
-                                Text("\(Int(audioEngine.bpm))")
+                                Text("\(displayBPM)")
                                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                                     .foregroundColor(.black)
                                     .frame(width: 42, height: 24)
@@ -683,6 +687,9 @@ struct ContentView: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
+            // Initialize display BPM
+            displayBPM = Int(audioEngine.bpm)
+
             // Force landscape orientation
             if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
                 windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape))

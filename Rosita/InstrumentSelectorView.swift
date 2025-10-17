@@ -26,6 +26,10 @@ struct InstrumentSelectorView: View {
                         } else {
                             // Select this instrument and exit FX mode
                             audioEngine.selectedInstrument = index
+                            // Save last melodic instrument if this is a melodic track (0-2)
+                            if index < 3 {
+                                audioEngine.lastMelodicInstrument = index
+                            }
                             audioEngine.isFXMode = false
                             audioEngine.isKitBrowserMode = false
                             audioEngine.isMixerMode = false
@@ -33,18 +37,26 @@ struct InstrumentSelectorView: View {
                     }
                 }
 
-                // FX button - toggles between FX and KIT modes
+                // FX button - cycles through FX grid, XY pad, and KIT modes
                 RetroFXButton(
-                    isSelected: audioEngine.isFXMode
+                    isSelected: audioEngine.isFXMode,
+                    isXYMode: audioEngine.isXYPadMode
                 ) {
                     if audioEngine.isFXMode {
-                        // Currently in FX mode - switch to KIT mode
-                        audioEngine.isFXMode = false
-                        audioEngine.isKitBrowserMode = true
-                        audioEngine.isMixerMode = false
+                        if audioEngine.isXYPadMode {
+                            // Currently in XY pad mode - switch to KIT mode
+                            audioEngine.isFXMode = false
+                            audioEngine.isXYPadMode = false
+                            audioEngine.isKitBrowserMode = true
+                            audioEngine.isMixerMode = false
+                        } else {
+                            // Currently in FX grid mode - switch to XY pad mode
+                            audioEngine.isXYPadMode = true
+                        }
                     } else {
-                        // Not in FX mode - switch to FX mode
+                        // Not in FX mode - switch to FX grid mode
                         audioEngine.isFXMode = true
+                        audioEngine.isXYPadMode = false
                         audioEngine.isKitBrowserMode = false
                         audioEngine.isMixerMode = false
                     }
@@ -324,12 +336,13 @@ struct OctaveButton: View {
 // FX Button
 struct RetroFXButton: View {
     let isSelected: Bool
+    let isXYMode: Bool
     let action: () -> Void
 
     var body: some View {
         ZStack {
             Rectangle()
-                .fill(isSelected ? Color(hex: "9370DB") : Color.black)
+                .fill(buttonColor)
                 .frame(width: 56, height: 56)
                 .overlay(
                     ZStack {
@@ -365,9 +378,82 @@ struct RetroFXButton: View {
                     }
                 )
 
-            Text("FX")
+            Text(isSelected ? "XY" : "FX")
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
-                .foregroundColor(isSelected ? .black : .white)
+                .foregroundColor(textColor)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
+    }
+
+    private var buttonColor: Color {
+        if isXYMode {
+            return Color(hex: "FFD700")  // Yellow when in XY pad mode
+        } else if isSelected {
+            return Color(hex: "9370DB")  // Purple when in FX grid mode
+        } else {
+            return Color.black  // Black when not selected
+        }
+    }
+
+    private var textColor: Color {
+        if isXYMode {
+            return Color.black  // Black text when in XY mode
+        } else if isSelected {
+            return Color.black  // Black text when selected
+        } else {
+            return Color.white  // White text when not selected
+        }
+    }
+}
+
+// XY Pad Button
+struct RetroXYButton: View {
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color(hex: "FFD700")) // Always yellow
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect
+                        VStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.4))
+                                .frame(height: 2)
+                            Spacer()
+                        }
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.4))
+                                .frame(width: 2)
+                            Spacer()
+                        }
+                        VStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(height: 2)
+                        }
+                        HStack(spacing: 0) {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.black.opacity(0.6))
+                                .frame(width: 2)
+                        }
+                        Rectangle()
+                            .stroke(isSelected ? Color(hex: "9370DB") : Color.white, lineWidth: 2)
+                    }
+                )
+
+            Text("XY")
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .foregroundColor(Color(hex: "9370DB")) // Purple text
         }
         .contentShape(Rectangle())
         .onTapGesture {
