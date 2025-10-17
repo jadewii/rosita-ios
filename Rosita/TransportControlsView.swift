@@ -209,7 +209,10 @@ struct Transport6Buttons: View {
                 color: audioEngine.isKitBrowserMode ? Color(hex: "FFA500") : Color.white,
                 textColor: audioEngine.isKitBrowserMode ? .white : .black,
                 action: {
-                    audioEngine.isKitBrowserMode.toggle()
+                    // Always enable kit mode when pressed
+                    audioEngine.isKitBrowserMode = true
+                    audioEngine.isFXMode = false
+                    audioEngine.isMixerMode = false
                 },
                 width: 56,
                 height: 56,
@@ -222,7 +225,10 @@ struct Transport6Buttons: View {
                 color: audioEngine.isMixerMode ? Color(hex: "FFA500") : Color.white,
                 iconColor: audioEngine.isMixerMode ? .white : .black,
                 action: {
-                    audioEngine.isMixerMode.toggle()
+                    // Always enable mixer mode when pressed
+                    audioEngine.isMixerMode = true
+                    audioEngine.isFXMode = false
+                    audioEngine.isKitBrowserMode = false
                 },
                 width: 56,
                 height: 56
