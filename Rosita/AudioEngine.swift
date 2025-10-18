@@ -211,6 +211,32 @@ class AudioEngine: ObservableObject {
     @Published var drumRowsMuted = [false, false, false, false]  // Individual drum rows: Kick, Snare, Hat, Perc
     @Published var allDrumsMuted = false  // Master mute for all drums
 
+    // Drum performance modes - 8 modes controlled via 1-8 buttons on drum page
+    @Published var drumPerformanceMode = 0  // 0: MUTE, 1: PROB, 2: ROLL, 3: TIME, 4: VELO, 5: PITCH, 6: DECAY, 7: CHAOS
+    @Published var mutedDrumSteps = Set<Int>()  // Muted step indices (0-15)
+    @Published var stepProbabilities = [Int: Float]()  // Step probability (0-100%)
+    @Published var stepRolls = Set<Int>()  // Steps with active rolls
+    @Published var stepTimingOffsets = [Int: Float]()  // Timing offsets in ms (-50 to +50)
+    @Published var stepVelocities = [Int: Float]()  // Velocity multipliers (0.5-1.5)
+    @Published var stepPitchShifts = [Int: Float]()  // Pitch shift in semitones (-12 to +12)
+    @Published var stepDecays = [Int: Float]()  // Decay length multiplier (0.2 to 3.0)
+    @Published var stepChaos = Set<Int>()  // Steps with chaos/randomization enabled
+
+    // Global FX modes - 8 modes controlled via 1-8 buttons on FX/XY page
+    @Published var globalFXMode = 0  // 0: VOL, 1: PROB, 2: MUTE, 3: SWING, 4: FILT, 5: STUT, 6: GLITCH, 7: CHAOS
+    @Published var globalStepVolumes = [Int: Float]()  // Step volume (0.0 to 1.5)
+    @Published var globalStepProbabilities = [Int: Float]()  // Global probability (0-100%)
+    @Published var globalMutedSteps = Set<Int>()  // Globally muted steps (0-15)
+    @Published var globalStepSwing = [Int: Float]()  // Swing timing offset (0 to 50ms)
+    @Published var globalStepFilter = [Int: Float]()  // Filter cutoff (0.0 to 1.0)
+    @Published var globalStepStutter = Set<Int>()  // Steps with stutter effect
+    @Published var globalStepGlitch = Set<Int>()  // Steps with glitch effect
+    @Published var globalStepChaos = Set<Int>()  // Steps with global chaos
+
+    // Edit keyboard modes - 8 modes controlled via 1-8 buttons when in STEP EDIT mode
+    @Published var editKeyboardMode = 0  // 0: COPY, 1: CLEAR, 2: SHIFT, 3: TRANS, 4: LENGTH, 5: FILL, 6: ADSR, 7: CHAOS
+    @Published var copiedStepData: (instrument: Int, row: Int, col: Int)? = nil  // Copied step for paste
+
     // Solo state - which track is soloed (0-7 for buttons 1-8, nil if none)
     @Published var soloedTrack: Int? = nil
 
@@ -565,11 +591,50 @@ class AudioEngine: ObservableObject {
                         }
 
                         if instrument == 3 {
+                            // Drum performance modes - check muting, probability, timing, velocity, rolls
+                            if !isMuted && !mutedDrumSteps.contains(instrumentStep) {
+                                // PROB mode - probability check
+                                let probability = getStepProbability(step: instrumentStep)
+                                let shouldPlay = Float.random(in: 0...100) < probability
 
-                            if !isMuted {
-                                let drumNote = drumRowToNote(row: row)
-                                let pitch = getDrumPitch(row: row, col: instrumentStep)
-                                playDrumSound(drumType: drumNote, pitch: pitch)
+                                if shouldPlay {
+                                    let drumNote = drumRowToNote(row: row)
+                                    let basePitch = getDrumPitch(row: row, col: instrumentStep)
+
+                                    // VELO mode - velocity multiplier (affects pitch for now)
+                                    let velocityMultiplier = getStepVelocity(step: instrumentStep)
+                                    let finalPitch = basePitch * Double(velocityMultiplier)
+
+                                    // TIME mode - timing offset
+                                    let timingOffset = getStepTimingOffset(step: instrumentStep)
+                                    let offsetSeconds = Double(timingOffset) / 1000.0  // Convert ms to seconds
+
+                                    // ROLL mode - trigger multiple rapid hits
+                                    let shouldRoll = isStepRolling(step: instrumentStep)
+
+                                    if shouldRoll {
+                                        // Trigger 4 rapid hits (1/64 note subdivisions)
+                                        let rollInterval = (60.0 / bpm) / 16.0  // 1/64 note
+                                        for i in 0..<4 {
+                                            let rollDelay = offsetSeconds + (Double(i) * rollInterval)
+                                            if rollDelay >= 0 {
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + rollDelay) {
+                                                    self.playDrumSound(drumType: drumNote, pitch: finalPitch)
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        // Normal playback with timing offset
+                                        if offsetSeconds >= 0 {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + offsetSeconds) {
+                                                self.playDrumSound(drumType: drumNote, pitch: finalPitch)
+                                            }
+                                        } else {
+                                            // Negative offset - play immediately (can't go back in time)
+                                            playDrumSound(drumType: drumNote, pitch: finalPitch)
+                                        }
+                                    }
+                                }
                             }
                         } else {
                             // Melodic instruments
@@ -1311,6 +1376,368 @@ class AudioEngine: ObservableObject {
         guard track >= 0 && track < 4 else { return }
         guard [2, 4, 6, 8, 10, 12, 14, 16].contains(length) else { return }
         trackLengths[track] = length
+    }
+
+    // MARK: - Drum Performance Modes
+
+    func toggleDrumStepMute(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        if mutedDrumSteps.contains(step) {
+            mutedDrumSteps.remove(step)
+        } else {
+            mutedDrumSteps.insert(step)
+        }
+    }
+
+    func isDrumStepMuted(step: Int) -> Bool {
+        return mutedDrumSteps.contains(step)
+    }
+
+    func setStepProbability(step: Int, probability: Float) {
+        guard step >= 0 && step < 16 else { return }
+        stepProbabilities[step] = probability
+    }
+
+    func getStepProbability(step: Int) -> Float {
+        return stepProbabilities[step] ?? 100.0
+    }
+
+    func toggleStepRoll(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        if stepRolls.contains(step) {
+            stepRolls.remove(step)
+        } else {
+            stepRolls.insert(step)
+        }
+    }
+
+    func isStepRolling(step: Int) -> Bool {
+        return stepRolls.contains(step)
+    }
+
+    func setStepTimingOffset(step: Int, offset: Float) {
+        guard step >= 0 && step < 16 else { return }
+        stepTimingOffsets[step] = offset
+    }
+
+    func getStepTimingOffset(step: Int) -> Float {
+        return stepTimingOffsets[step] ?? 0.0
+    }
+
+    func setStepVelocity(step: Int, velocity: Float) {
+        guard step >= 0 && step < 16 else { return }
+        stepVelocities[step] = velocity
+    }
+
+    func getStepVelocity(step: Int) -> Float {
+        return stepVelocities[step] ?? 1.0
+    }
+
+    func cycleDrumPerformanceMode() {
+        drumPerformanceMode = (drumPerformanceMode + 1) % 8
+    }
+
+    func clearAllDrumStepMutes() {
+        mutedDrumSteps.removeAll()
+    }
+
+    // MARK: - Drum FX Mode Helpers - PITCH
+    func setStepPitchShift(step: Int, semitones: Float) {
+        guard step >= 0 && step < 16 else { return }
+        stepPitchShifts[step] = max(-12, min(12, semitones))
+    }
+
+    func getStepPitchShift(step: Int) -> Float {
+        return stepPitchShifts[step] ?? 0.0
+    }
+
+    // MARK: - Drum FX Mode Helpers - DECAY
+    func setStepDecay(step: Int, decay: Float) {
+        guard step >= 0 && step < 16 else { return }
+        stepDecays[step] = max(0.2, min(3.0, decay))
+    }
+
+    func getStepDecay(step: Int) -> Float {
+        return stepDecays[step] ?? 1.0
+    }
+
+    // MARK: - Drum FX Mode Helpers - CHAOS
+    func toggleStepChaos(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        if stepChaos.contains(step) {
+            stepChaos.remove(step)
+        } else {
+            stepChaos.insert(step)
+        }
+    }
+
+    func isStepChaos(step: Int) -> Bool {
+        return stepChaos.contains(step)
+    }
+
+    // MARK: - Global FX Mode Helpers
+    func cycleGlobalFXMode() {
+        globalFXMode = (globalFXMode + 1) % 8
+    }
+
+    // VOL mode
+    func setGlobalStepVolume(step: Int, volume: Float) {
+        guard step >= 0 && step < 16 else { return }
+        globalStepVolumes[step] = max(0.0, min(1.5, volume))
+    }
+
+    func getGlobalStepVolume(step: Int) -> Float {
+        return globalStepVolumes[step] ?? 1.0
+    }
+
+    // PROB mode
+    func setGlobalStepProbability(step: Int, probability: Float) {
+        guard step >= 0 && step < 16 else { return }
+        globalStepProbabilities[step] = max(0, min(100, probability))
+    }
+
+    func getGlobalStepProbability(step: Int) -> Float {
+        return globalStepProbabilities[step] ?? 100.0
+    }
+
+    // MUTE mode
+    func toggleGlobalStepMute(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        if globalMutedSteps.contains(step) {
+            globalMutedSteps.remove(step)
+        } else {
+            globalMutedSteps.insert(step)
+        }
+    }
+
+    func isGlobalStepMuted(step: Int) -> Bool {
+        return globalMutedSteps.contains(step)
+    }
+
+    // SWING mode
+    func setGlobalStepSwing(step: Int, swing: Float) {
+        guard step >= 0 && step < 16 else { return }
+        globalStepSwing[step] = max(0, min(50, swing))
+    }
+
+    func getGlobalStepSwing(step: Int) -> Float {
+        return globalStepSwing[step] ?? 0.0
+    }
+
+    // FILT mode
+    func setGlobalStepFilter(step: Int, filter: Float) {
+        guard step >= 0 && step < 16 else { return }
+        globalStepFilter[step] = max(0.0, min(1.0, filter))
+    }
+
+    func getGlobalStepFilter(step: Int) -> Float {
+        return globalStepFilter[step] ?? 1.0
+    }
+
+    // STUT mode
+    func toggleGlobalStepStutter(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        if globalStepStutter.contains(step) {
+            globalStepStutter.remove(step)
+        } else {
+            globalStepStutter.insert(step)
+        }
+    }
+
+    func isGlobalStepStutter(step: Int) -> Bool {
+        return globalStepStutter.contains(step)
+    }
+
+    // GLITCH mode
+    func toggleGlobalStepGlitch(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        if globalStepGlitch.contains(step) {
+            globalStepGlitch.remove(step)
+        } else {
+            globalStepGlitch.insert(step)
+        }
+    }
+
+    func isGlobalStepGlitch(step: Int) -> Bool {
+        return globalStepGlitch.contains(step)
+    }
+
+    // CHAOS mode
+    func toggleGlobalStepChaos(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        if globalStepChaos.contains(step) {
+            globalStepChaos.remove(step)
+        } else {
+            globalStepChaos.insert(step)
+        }
+    }
+
+    func isGlobalStepChaos(step: Int) -> Bool {
+        return globalStepChaos.contains(step)
+    }
+
+    // MARK: - Edit Keyboard Mode Helpers
+    func cycleEditKeyboardMode() {
+        editKeyboardMode = (editKeyboardMode + 1) % 8
+    }
+
+    // COPY mode - copy a step
+    func copyStep(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        copiedStepData = (instrument: selectedInstrument, row: 0, col: step)
+    }
+
+    // COPY mode - paste to a step
+    func pasteStep(step: Int) {
+        guard step >= 0 && step < 16, let copied = copiedStepData else { return }
+        // Copy all step data from copied step to target step
+        // This will be implemented based on your step data structure
+    }
+
+    // CLEAR mode - clear a step
+    func clearStep(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        // Clear step for all rows in the current instrument
+        for row in 0..<4 {
+            let key = "\(selectedInstrument)_\(row)_\(step)"
+            instrumentSteps[key] = false
+            instrumentNotes[key] = nil
+        }
+    }
+
+    // SHIFT mode - shift pattern left/right
+    func shiftPatternLeft() {
+        // Shift all steps left by 1
+        var newSteps: [String: Bool] = [:]
+        var newNotes: [String: Int] = [:]
+
+        for col in 0..<16 {
+            let targetCol = (col == 0) ? 15 : col - 1
+            for row in 0..<4 {
+                let sourceKey = "\(selectedInstrument)_\(row)_\(col)"
+                let targetKey = "\(selectedInstrument)_\(row)_\(targetCol)"
+                if let value = instrumentSteps[sourceKey] {
+                    newSteps[targetKey] = value
+                }
+                if let note = instrumentNotes[sourceKey] {
+                    newNotes[targetKey] = note
+                }
+            }
+        }
+
+        // Apply shifted pattern
+        for (key, value) in newSteps {
+            instrumentSteps[key] = value
+        }
+        for (key, value) in newNotes {
+            instrumentNotes[key] = value
+        }
+    }
+
+    func shiftPatternRight() {
+        // Shift all steps right by 1
+        var newSteps: [String: Bool] = [:]
+        var newNotes: [String: Int] = [:]
+
+        for col in 0..<16 {
+            let targetCol = (col == 15) ? 0 : col + 1
+            for row in 0..<4 {
+                let sourceKey = "\(selectedInstrument)_\(row)_\(col)"
+                let targetKey = "\(selectedInstrument)_\(row)_\(targetCol)"
+                if let value = instrumentSteps[sourceKey] {
+                    newSteps[targetKey] = value
+                }
+                if let note = instrumentNotes[sourceKey] {
+                    newNotes[targetKey] = note
+                }
+            }
+        }
+
+        // Apply shifted pattern
+        for (key, value) in newSteps {
+            instrumentSteps[key] = value
+        }
+        for (key, value) in newNotes {
+            instrumentNotes[key] = value
+        }
+    }
+
+    // TRANSPOSE mode - transpose a step
+    func transposeStep(step: Int, semitones: Float) {
+        guard step >= 0 && step < 16 else { return }
+        for row in 0..<4 {
+            let key = "\(selectedInstrument)_\(row)_\(step)"
+            if let existingNote = instrumentNotes[key] {
+                let newNote = Int(Float(existingNote) + semitones)
+                instrumentNotes[key] = max(0, min(127, newNote))
+            }
+        }
+    }
+
+    // FILL mode - generate Euclidean rhythm
+    func generateEuclideanFill(steps: Int, pulses: Int) {
+        guard pulses <= steps && pulses > 0 else { return }
+
+        // Clear current pattern
+        for col in 0..<16 {
+            for row in 0..<4 {
+                let key = "\(selectedInstrument)_\(row)_\(col)"
+                instrumentSteps[key] = false
+            }
+        }
+
+        // Generate Euclidean rhythm
+        let bucket = steps
+        var pattern: [Bool] = Array(repeating: false, count: steps)
+        var counts: [Int] = Array(repeating: 0, count: steps)
+
+        for i in 0..<pulses {
+            pattern[i] = true
+        }
+
+        // Bjorklund algorithm
+        var divisor = pulses
+        var remainder = steps - pulses
+
+        while remainder > 1 {
+            let temp = remainder
+            remainder = divisor % remainder
+            divisor = temp
+        }
+
+        // Apply pattern to first row
+        for (index, shouldTrigger) in pattern.enumerated() where index < 16 {
+            if shouldTrigger {
+                let key = "\(selectedInstrument)_0_\(index)"
+                instrumentSteps[key] = true
+                // Use a default note (middle C)
+                instrumentNotes[key] = 60
+            }
+        }
+    }
+
+    // RANDOM mode - randomize step
+    func randomizeStep(step: Int) {
+        guard step >= 0 && step < 16 else { return }
+        let shouldHaveNote = Bool.random()
+        for row in 0..<4 {
+            let key = "\(selectedInstrument)_\(row)_\(step)"
+            if shouldHaveNote && row == 0 {  // Only add to first row
+                instrumentSteps[key] = true
+                // Random note within octave
+                instrumentNotes[key] = Int.random(in: 48...72)
+            } else {
+                instrumentSteps[key] = false
+            }
+        }
+    }
+
+    // REPEAT mode - set retrig count for step
+    func setStepRepeatCount(step: Int, count: Int) {
+        guard step >= 0 && step < 16 else { return }
+        for row in 0..<4 {
+            setRetrigCount(row: row, col: step, instrument: selectedInstrument, count: count)
+        }
     }
 
     // MARK: - Retrig Control (STEP EDIT mode)

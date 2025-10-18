@@ -7,7 +7,27 @@ struct Pattern8Buttons: View {
     var body: some View {
         HStack(spacing: 6) {
             ForEach(0..<8) { slot in
-                if audioEngine.isMixerMode {
+                if audioEngine.selectedInstrument == 3 && !audioEngine.isFXMode && !audioEngine.isMixerMode && !audioEngine.isScaleSelectionMode && !audioEngine.isStepEditMode {
+                    // DRUM FX MODE - 8 drum performance mode buttons
+                    DrumFXModeButton(
+                        modeIndex: slot,
+                        isSelected: audioEngine.drumPerformanceMode == slot,
+                        action: {
+                            audioEngine.drumPerformanceMode = slot
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        }
+                    )
+                } else if audioEngine.isFXMode && !audioEngine.isMixerMode && !audioEngine.isScaleSelectionMode && !audioEngine.isStepEditMode {
+                    // GLOBAL FX MODE - 8 global FX mode buttons
+                    GlobalFXModeButton(
+                        modeIndex: slot,
+                        isSelected: audioEngine.globalFXMode == slot,
+                        action: {
+                            audioEngine.globalFXMode = slot
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        }
+                    )
+                } else if audioEngine.isMixerMode {
                     // MIXER MODE - 8 mute buttons
                     MuteButton(
                         trackIndex: slot
@@ -26,29 +46,14 @@ struct Pattern8Buttons: View {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         }
                     )
-                } else if audioEngine.isStepEditMode && slot < 4 {
-                    // First 4 buttons become sequence direction icon buttons in STEP EDIT mode
-                    SequenceDirectionButton(
-                        direction: slot,
-                        color: getSequenceDirectionColor(slot),
-                        iconColor: audioEngine.sequenceDirections[audioEngine.selectedInstrument] == slot ? .white : .black,
+                } else if audioEngine.isStepEditMode {
+                    // EDIT MODE - 8 edit mode buttons
+                    EditModeButton(
+                        modeIndex: slot,
+                        isSelected: audioEngine.editKeyboardMode == slot,
                         action: {
-                            print("🎯 Setting direction for instrument \(audioEngine.selectedInstrument) to \(slot)")
-                            audioEngine.sequenceDirections[audioEngine.selectedInstrument] = slot
-                            print("🎯 Directions array is now: \(audioEngine.sequenceDirections)")
-                        }
-                    )
-                } else if audioEngine.isStepEditMode && slot >= 4 && slot < 8 {
-                    // Buttons 5-8 (slots 4-7) become track speed buttons in STEP EDIT mode
-                    let speedIndex = slot - 4  // Map to 0-3
-                    TrackSpeedButton(
-                        speedIndex: speedIndex,
-                        color: getTrackSpeedColor(speedIndex),
-                        textColor: audioEngine.trackSpeeds[audioEngine.selectedInstrument] == speedIndex ? .white : .black,
-                        action: {
-                            print("🎯 Setting track speed for instrument \(audioEngine.selectedInstrument) to \(speedIndex)")
-                            audioEngine.trackSpeeds[audioEngine.selectedInstrument] = speedIndex
-                            print("🎯 Track speeds array is now: \(audioEngine.trackSpeeds)")
+                            audioEngine.editKeyboardMode = slot
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         }
                     )
                 } else {
@@ -397,13 +402,20 @@ struct SequenceDirectionButton: View {
                 .font(.system(size: 28))
                 .foregroundColor(iconColor)
         case 2:
-            Text("⟷")  // Pendulum
-                .font(.system(size: 28))
-                .foregroundColor(iconColor)
+            // Pendulum - stacked arrows
+            VStack(spacing: -2) {
+                Text("→")
+                    .font(.system(size: 20))
+                    .foregroundColor(iconColor)
+                Text("←")
+                    .font(.system(size: 20))
+                    .foregroundColor(iconColor)
+            }
         case 3:
-            Text("🎲")  // Random
-                .font(.system(size: 28))
-                .foregroundColor(iconColor)
+            // Random - dice icon matching the random button next to REC
+            RandomIconShape()
+                .fill(iconColor)
+                .frame(width: 32, height: 32)
         default:
             Text("→")
                 .font(.system(size: 28))
@@ -557,6 +569,273 @@ struct ScaleButton: View {
         case 6: return Color(hex: "FF8C00") // Mixolydian - Dark Orange
         case 7: return Color(hex: "8A2BE2") // Harmonic Minor - Blue Violet
         default: return Color.gray
+        }
+    }
+}
+
+// Drum FX Mode Button
+struct DrumFXModeButton: View {
+    let modeIndex: Int
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(getModeColor())
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect when selected
+                        if isSelected {
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 2)
+                                Spacer()
+                            }
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(width: 2)
+                                Spacer()
+                            }
+                            VStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(height: 2)
+                            }
+                            HStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(width: 2)
+                            }
+                        }
+                        Rectangle()
+                            .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                    }
+                )
+
+            // Mode label
+            Text(getModeLabel())
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(isSelected ? .white : .black)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
+    }
+
+    private func getModeLabel() -> String {
+        switch modeIndex {
+        case 0: return "MUTE"
+        case 1: return "PROB"
+        case 2: return "ROLL"
+        case 3: return "TIME"
+        case 4: return "VELO"
+        case 5: return "PITCH"
+        case 6: return "DECAY"
+        case 7: return "CHAOS"
+        default: return ""
+        }
+    }
+
+    private func getModeColor() -> Color {
+        if isSelected {
+            switch modeIndex {
+            case 0: return Color.black
+            case 1: return Color(hex: "9370DB")  // Purple
+            case 2: return Color(hex: "FF6347")  // Tomato red
+            case 3: return Color(hex: "FFD700")  // Gold
+            case 4: return Color(hex: "32CD32")  // Lime green
+            case 5: return Color(hex: "1E90FF")  // Dodger blue
+            case 6: return Color(hex: "FF8C00")  // Dark orange
+            case 7: return Color(hex: "FF1493")  // Deep pink
+            default: return Color.white
+            }
+        } else {
+            return Color.white
+        }
+    }
+}
+
+// Global FX Mode Button
+struct GlobalFXModeButton: View {
+    let modeIndex: Int
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(getModeColor())
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect when selected
+                        if isSelected {
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 2)
+                                Spacer()
+                            }
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(width: 2)
+                                Spacer()
+                            }
+                            VStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(height: 2)
+                            }
+                            HStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(width: 2)
+                            }
+                        }
+                        Rectangle()
+                            .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                    }
+                )
+
+            // Mode label
+            Text(getModeLabel())
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(isSelected ? .white : .black)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
+    }
+
+    private func getModeLabel() -> String {
+        switch modeIndex {
+        case 0: return "VOL"
+        case 1: return "PROB"
+        case 2: return "MUTE"
+        case 3: return "SWING"
+        case 4: return "FILT"
+        case 5: return "STUT"
+        case 6: return "GLITCH"
+        case 7: return "CHAOS"
+        default: return ""
+        }
+    }
+
+    private func getModeColor() -> Color {
+        if isSelected {
+            switch modeIndex {
+            case 0: return Color(hex: "32CD32")  // Lime green for volume
+            case 1: return Color(hex: "9370DB")  // Purple
+            case 2: return Color.black  // Black for mute
+            case 3: return Color(hex: "FFD700")  // Gold
+            case 4: return Color(hex: "1E90FF")  // Dodger blue
+            case 5: return Color(hex: "FF6347")  // Tomato red
+            case 6: return Color(hex: "FF8C00")  // Dark orange
+            case 7: return Color(hex: "FF1493")  // Deep pink
+            default: return Color.white
+            }
+        } else {
+            return Color.white
+        }
+    }
+}
+
+// Edit Mode Button
+struct EditModeButton: View {
+    let modeIndex: Int
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(getModeColor())
+                .frame(width: 56, height: 56)
+                .overlay(
+                    ZStack {
+                        // 3D bevel effect when selected
+                        if isSelected {
+                            VStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 2)
+                                Spacer()
+                            }
+                            HStack(spacing: 0) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(width: 2)
+                                Spacer()
+                            }
+                            VStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(height: 2)
+                            }
+                            HStack(spacing: 0) {
+                                Spacer()
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.6))
+                                    .frame(width: 2)
+                            }
+                        }
+                        Rectangle()
+                            .stroke(isSelected ? Color.white : Color.gray, lineWidth: 2)
+                    }
+                )
+
+            // Mode label
+            Text(getModeLabel())
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundColor(isSelected ? .white : .black)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            action()
+        }
+    }
+
+    private func getModeLabel() -> String {
+        switch modeIndex {
+        case 0: return "COPY"
+        case 1: return "CLEAR"
+        case 2: return "SHIFT"
+        case 3: return "TRANS"
+        case 4: return "LENGTH"
+        case 5: return "FILL"
+        case 6: return "ADSR"
+        case 7: return "CHAOS"
+        default: return ""
+        }
+    }
+
+    private func getModeColor() -> Color {
+        if isSelected {
+            switch modeIndex {
+            case 0: return Color(hex: "FFD700")  // Gold - COPY
+            case 1: return Color.black  // Black - CLEAR
+            case 2: return Color(hex: "1E90FF")  // Dodger blue - SHIFT
+            case 3: return Color(hex: "9370DB")  // Purple - TRANS
+            case 4: return Color(hex: "32CD32")  // Lime green - LENGTH
+            case 5: return Color(hex: "FF8C00")  // Dark orange - FILL
+            case 6: return Color(hex: "FF6347")  // Tomato red - ADSR
+            case 7: return Color(hex: "FF1493")  // Deep pink - CHAOS
+            default: return Color.white
+            }
+        } else {
+            return Color.white
         }
     }
 }

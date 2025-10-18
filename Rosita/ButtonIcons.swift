@@ -59,8 +59,8 @@ struct RandomIconShape: Shape {
         let height = rect.height
 
         // Dice dots pattern - show 3 dots like a die (diagonal pattern)
-        let dotSize = width * 0.12
-        let padding = width * 0.2
+        let dotSize = width * 0.18  // Larger dots to match REC button dice
+        let padding = width * 0.22
 
         // Top-left dot
         path.addEllipse(in: CGRect(x: padding, y: padding, width: dotSize, height: dotSize))
