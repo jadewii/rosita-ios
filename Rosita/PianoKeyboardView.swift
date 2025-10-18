@@ -42,47 +42,7 @@ struct PianoKeyboardView: View {
                 // White keys layer
                 HStack(spacing: 0) {
                     ForEach(0..<whiteKeys.count, id: \.self) { index in
-                        WhiteKey(
-                            isPressed: pressedKeys.contains(whiteKeys[index]),
-                            width: whiteKeyWidth,
-                            height: keyboardHeight,
-                            keyIndex: index,
-                            isDrumLengthMode: audioEngine.selectedInstrument == 3,
-                            currentDrumLength: audioEngine.trackLengths[3]
-                        )
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { _ in
-                                    if !pressedKeys.contains(whiteKeys[index]) {
-                                        pressedKeys.insert(whiteKeys[index])
-
-                                        // Check if we're on drum track and this is a length control key (first 16)
-                                        if audioEngine.selectedInstrument == 3 && index < 16 {
-                                            // Set drum track length (1-16)
-                                            let newLength = index + 1
-                                            audioEngine.setTrackLength(track: 3, length: newLength)
-                                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                        } else {
-                                            // Normal keyboard behavior
-                                            audioEngine.noteOn(note: whiteKeys[index])
-
-                                            // Record if in recording mode
-                                            if audioEngine.isRecording {
-                                                audioEngine.recordNoteToStep(note: whiteKeys[index])
-                                            }
-
-                                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                        }
-                                    }
-                                }
-                                .onEnded { _ in
-                                    pressedKeys.remove(whiteKeys[index])
-                                    // Only send noteOff if not in drum length mode
-                                    if !(audioEngine.selectedInstrument == 3 && index < 16) {
-                                        audioEngine.noteOff(note: whiteKeys[index])
-                                    }
-                                }
-                        )
+                        makeWhiteKeyView(index: index, whiteKeyWidth: whiteKeyWidth, keyboardHeight: keyboardHeight)
                     }
                 }
                 
@@ -94,6 +54,7 @@ struct PianoKeyboardView: View {
                             width: blackKeyWidth,
                             height: blackKeyHeight
                         )
+                        .contentShape(Rectangle())
                         .position(
                             x: blackKey.position * whiteKeyWidth + blackKeyWidth / 2,
                             y: blackKeyHeight / 2
@@ -152,7 +113,51 @@ struct PianoKeyboardView: View {
                 )
         )
     }
-    
+
+    @ViewBuilder
+    private func makeWhiteKeyView(index: Int, whiteKeyWidth: CGFloat, keyboardHeight: CGFloat) -> some View {
+        let key = WhiteKey(
+            isPressed: pressedKeys.contains(whiteKeys[index]),
+            width: whiteKeyWidth,
+            height: keyboardHeight,
+            keyIndex: index,
+            isDrumLengthMode: audioEngine.selectedInstrument == 3,
+            currentDrumLength: audioEngine.trackLengths[3]
+        )
+        .contentShape(Rectangle())
+
+        if audioEngine.selectedInstrument == 3 && index < 16 {
+            // Drum length mode - use tap gesture for instant response
+            key.onTapGesture {
+                let newLength = index + 1
+                audioEngine.setTrackLength(track: 3, length: newLength)
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            }
+        } else {
+            // Normal keyboard mode - use drag gesture for held notes
+            key.gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        if !pressedKeys.contains(whiteKeys[index]) {
+                            pressedKeys.insert(whiteKeys[index])
+                            audioEngine.noteOn(note: whiteKeys[index])
+
+                            // Record if in recording mode
+                            if audioEngine.isRecording {
+                                audioEngine.recordNoteToStep(note: whiteKeys[index])
+                            }
+
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                    }
+                    .onEnded { _ in
+                        pressedKeys.remove(whiteKeys[index])
+                        audioEngine.noteOff(note: whiteKeys[index])
+                    }
+            )
+        }
+    }
+
     private func hasBlackKeyAfter(whiteKeyIndex: Int) -> Bool {
         // Piano pattern: Black keys exist after C, D, F, G, A
         // But NOT after E and B
@@ -229,7 +234,7 @@ struct BlackKey: View {
     let isPressed: Bool
     let width: CGFloat
     let height: CGFloat
-    
+
     var body: some View {
         Rectangle()
             .fill(isPressed ? Color(hex: "FF1493") : Color(hex: "FF69B4"))

@@ -517,14 +517,14 @@ struct ScaleButton: View {
                                 .frame(width: 2)
                         }
                         Rectangle()
-                            .stroke(isSelected ? Color.white : Color.black, lineWidth: isSelected ? 3 : 2)
+                            .stroke(Color.black, lineWidth: isSelected ? 3 : 2)
                     }
                 )
 
             // Scale name
             Text(getScaleName())
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .foregroundColor(isSelected ? .white : .black)
+                .foregroundColor(isSelected ? .black : .white)
         }
         .contentShape(Rectangle())
         .onTapGesture {

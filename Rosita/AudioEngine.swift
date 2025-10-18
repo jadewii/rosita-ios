@@ -1730,13 +1730,14 @@ class AudioEngine: ObservableObject {
         perfEQ.bands[9].bypass = true
     }
 
-    // Apply XY pad effects based on position in grid (zoned approach)
-    // Different quadrants apply different effect combinations
+    // Apply XY pad effects based on position in grid
+    // X-axis controls filter (left = closed, right = open)
+    // Y-axis and position control delay amount
     func applyXYPadEffects(x: Double, y: Double) {
         guard perfEQ.bands.count >= 10 else { return }
 
-        // Y-axis always controls filter (top = open, bottom = closed)
-        let filterAmount = (y + 1.0) / 2.0  // Convert -1...1 to 0...1
+        // X-axis controls filter (left = closed, right = fully open)
+        let filterAmount = (x + 1.0) / 2.0  // Convert -1...1 to 0...1 (left to right)
         let minFreq: Float = 200.0
         let maxFreq: Float = 20000.0
         let logMin = log10(minFreq)
@@ -1750,122 +1751,40 @@ class AudioEngine: ObservableObject {
         perfEQ.bands[9].bypass = false
         perfEQ.bands[9].gain = 0
 
-        // Determine zone based on both X and Y position
-        let absX = abs(x)
+        // Y-axis controls delay amount (more delay everywhere)
+        // Top = more delay, bottom = less delay
         let absY = abs(y)
+        let yNormalized = (y + 1.0) / 2.0  // 0 at bottom, 1 at top
 
-        // TOP HALF (y > 0)
-        if y > 0.3 {
-            if absX < 0.4 {
-                // TOP CENTER: Delay + slight pitch up
-                if let delay = delayNode {
-                    let delayAmount = absX / 0.4
-                    if delayAmount > 0.05 {
-                        let tempo = bpm / 60.0
-                        let delayBeats = 0.125 + (delayAmount * 0.25)
-                        delay.delayTime = delayBeats / tempo
-                        delay.feedback = Float(20 + delayAmount * 30)
-                        delay.wetDryMix = Float(delayAmount * 40)
-                        delay.lowPassCutoff = Float(2000 + delayAmount * 6000)
-                    } else {
-                        delay.delayTime = 0.0
-                        delay.feedback = 0
-                        delay.wetDryMix = 0
-                    }
-                }
-                perfTimePitch.pitch = Float(y * 6.0)  // Subtle pitch shift up
-                perfReverb.wetDryMix = 0
-                perfDistortion.wetDryMix = 0
-                perfDistortion.preGain = 0
-            } else {
-                // TOP SIDES: Reverb + chorus effect (simulated with short delay)
-                let sideAmount = (absX - 0.4) / 0.6
-                perfReverb.wetDryMix = Float(sideAmount * 70 + y * 20)
+        // Calculate delay parameters based on Y position
+        if let delay = delayNode {
+            let tempo = bpm / 60.0
+            // More delay overall - range from 1/8 note to 1 full beat
+            let delayBeats = 0.125 + (yNormalized * 0.875)  // 1/8 to 1 beat
+            delay.delayTime = delayBeats / tempo
 
-                if let delay = delayNode {
-                    // Short delay for chorus effect
-                    delay.delayTime = 0.02
-                    delay.feedback = 10
-                    delay.wetDryMix = Float(sideAmount * 20)
-                    delay.lowPassCutoff = 8000
-                }
-                perfTimePitch.pitch = 0
-                perfDistortion.wetDryMix = 0
-                perfDistortion.preGain = 0
-            }
+            // Feedback increases with Y
+            delay.feedback = Float(30 + yNormalized * 50)  // 30-80%
+
+            // Wet/dry mix - always present, increases with Y
+            delay.wetDryMix = Float(40 + yNormalized * 40)  // 40-80%
+
+            // Delay filter tied to main filter cutoff
+            delay.lowPassCutoff = cutoffFreq
         }
-        // MIDDLE BAND (-0.3 < y < 0.3)
-        else if y > -0.3 {
-            if absX < 0.5 {
-                // CENTER: Clean with just filter + very subtle delay
-                if let delay = delayNode {
-                    let delayAmount = absX / 0.5
-                    if delayAmount > 0.1 {
-                        let tempo = bpm / 60.0
-                        delay.delayTime = 0.125 / tempo
-                        delay.feedback = Float(15 + delayAmount * 15)
-                        delay.wetDryMix = Float(delayAmount * 25)
-                        delay.lowPassCutoff = 4000
-                    } else {
-                        delay.delayTime = 0.0
-                        delay.feedback = 0
-                        delay.wetDryMix = 0
-                    }
-                }
-                perfReverb.wetDryMix = 0
-                perfDistortion.wetDryMix = 0
-                perfDistortion.preGain = 0
-                perfTimePitch.pitch = 0
-            } else {
-                // SIDES: Distortion + delay combo
-                let sideAmount = (absX - 0.5) / 0.5
-                perfDistortion.wetDryMix = Float(sideAmount * 50)
-                perfDistortion.preGain = Float(sideAmount * 15)
 
-                if let delay = delayNode {
-                    delay.delayTime = 0.25
-                    delay.feedback = Float(sideAmount * 25)
-                    delay.wetDryMix = Float(sideAmount * 20)
-                    delay.lowPassCutoff = 3000
-                }
-                perfReverb.wetDryMix = 0
-                perfTimePitch.pitch = 0
-            }
+        // Subtle effects based on position
+        if absY > 0.5 {
+            // Add reverb in extreme top/bottom
+            perfReverb.wetDryMix = Float(absY * 40)
+        } else {
+            perfReverb.wetDryMix = 0
         }
-        // BOTTOM HALF (y < -0.3)
-        else {
-            if absX < 0.4 {
-                // BOTTOM CENTER: Heavy delay + pitch down
-                if let delay = delayNode {
-                    let delayAmount = absX / 0.4 + 0.3
-                    let tempo = bpm / 60.0
-                    let delayBeats = 0.25 + (delayAmount * 0.5)
-                    delay.delayTime = delayBeats / tempo
-                    delay.feedback = Float(30 + delayAmount * 40)
-                    delay.wetDryMix = Float(delayAmount * 50)
-                    delay.lowPassCutoff = Float(1000 + delayAmount * 3000)
-                }
-                perfTimePitch.pitch = Float(y * 6.0)  // Pitch shift down
-                perfReverb.wetDryMix = 0
-                perfDistortion.wetDryMix = 0
-                perfDistortion.preGain = 0
-            } else {
-                // BOTTOM SIDES: Heavy distortion + reverb
-                let sideAmount = (absX - 0.4) / 0.6
-                let depthAmount = abs(y)
 
-                perfDistortion.wetDryMix = Float(sideAmount * 70 + depthAmount * 20)
-                perfDistortion.preGain = Float(sideAmount * 25 + depthAmount * 10)
-                perfReverb.wetDryMix = Float(sideAmount * 50)
-
-                if let delay = delayNode {
-                    delay.delayTime = 0.0
-                    delay.feedback = 0
-                    delay.wetDryMix = 0
-                }
-                perfTimePitch.pitch = 0
-            }
-        }
+        // Clear other effects
+        perfDistortion.wetDryMix = 0
+        perfDistortion.preGain = 0
+        perfTimePitch.pitch = 0
     }
 
     // Clear XY pad effects

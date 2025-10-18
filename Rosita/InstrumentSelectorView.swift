@@ -37,18 +37,15 @@ struct InstrumentSelectorView: View {
                     }
                 }
 
-                // FX button - cycles through FX grid, XY pad, and KIT modes
+                // FX button - toggles between FX grid and XY pad
                 RetroFXButton(
                     isSelected: audioEngine.isFXMode,
                     isXYMode: audioEngine.isXYPadMode
                 ) {
                     if audioEngine.isFXMode {
                         if audioEngine.isXYPadMode {
-                            // Currently in XY pad mode - switch to KIT mode
-                            audioEngine.isFXMode = false
+                            // Currently in XY pad mode - go back to FX grid
                             audioEngine.isXYPadMode = false
-                            audioEngine.isKitBrowserMode = true
-                            audioEngine.isMixerMode = false
                         } else {
                             // Currently in FX grid mode - switch to XY pad mode
                             audioEngine.isXYPadMode = true
@@ -378,7 +375,7 @@ struct RetroFXButton: View {
                     }
                 )
 
-            Text(isSelected ? "XY" : "FX")
+            Text(buttonText)
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
                 .foregroundColor(textColor)
         }
@@ -388,21 +385,27 @@ struct RetroFXButton: View {
         }
     }
 
+    private var buttonText: String {
+        if isSelected && isXYMode {
+            return "FX"  // Inside XY pad - show "FX" to go back
+        } else {
+            return "XY"  // On FX grid or not selected - show "XY"
+        }
+    }
+
     private var buttonColor: Color {
-        if isXYMode {
-            return Color(hex: "FFD700")  // Yellow when in XY pad mode
+        if isSelected && isXYMode {
+            return Color(hex: "9370DB")  // Purple when in XY pad mode
         } else if isSelected {
-            return Color(hex: "9370DB")  // Purple when in FX grid mode
+            return Color(hex: "FFD700")  // Yellow when in FX grid mode
         } else {
             return Color.black  // Black when not selected
         }
     }
 
     private var textColor: Color {
-        if isXYMode {
-            return Color.black  // Black text when in XY mode
-        } else if isSelected {
-            return Color.black  // Black text when selected
+        if isSelected {
+            return Color.black  // Black text when in FX mode (either grid or XY)
         } else {
             return Color.white  // White text when not selected
         }

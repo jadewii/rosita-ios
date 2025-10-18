@@ -251,7 +251,7 @@ struct Transport6Buttons: View {
                 RetroButton(
                     title: audioEngine.isScaleSelectionMode ? "SCALE" : getScaleName(),
                     color: audioEngine.isScaleSelectionMode ? Color(hex: "FFD700") : getScaleColor(),
-                    textColor: .black,
+                    textColor: audioEngine.isScaleSelectionMode ? .white : .black,
                     action: {
                         if !isScaleLongPressing {
                             // Tap: toggle scale selection mode
